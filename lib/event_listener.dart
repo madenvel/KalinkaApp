@@ -100,7 +100,9 @@ class EventListener {
         final response = await client.send(request);
 
         // Read the chunks from the response stream
-        await for (var chunk in response.stream.transform(utf8.decoder)) {
+        await for (var chunk in response.stream
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())) {
           try {
             var (eventType, args) = _parseEvent(chunk);
             _invokeCallbacks(eventType, args);
@@ -139,9 +141,9 @@ class EventListener {
       case EventType.TrackChanged:
         return [Track.fromJson(args[0])];
       case EventType.RequestMoreTracks:
-        return [args[0], args[1]];
+        return [];
       case EventType.TracksAdded:
-        return args[0].map((e) => Track.fromJson(e)).toList();
+        return [args[0].map((e) => Track.fromJson(e)).toList()];
       case EventType.TracksRemoved:
         return args;
       default:

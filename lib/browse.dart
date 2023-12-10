@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'rest_types.dart';
 
 class BrowsePage extends StatefulWidget {
@@ -105,7 +106,12 @@ class _BrowsePage extends State<BrowsePage> {
           child: Padding(
               padding: const EdgeInsets.only(right: 30),
               child: IconButton.filled(
-                  onPressed: () {},
+                  onPressed: () {
+                    if (widget.parentItem.url != null &&
+                        widget.parentItem.url!.isNotEmpty) {
+                      RpiPlayerProxy().add(widget.parentItem.url!);
+                    }
+                  },
                   icon: const Icon(Icons.play_arrow_rounded, size: 50.0))))
     ]);
   }
@@ -113,15 +119,15 @@ class _BrowsePage extends State<BrowsePage> {
   Widget _buildAlbumHeader() {
     return Center(
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Image.network(widget.parentItem.image?.small ?? ''),
-      Flexible(
-          child: Text(widget.parentItem.name ?? 'Unknown Album',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 25))),
-      Flexible(
-          child: Text(widget.parentItem.subname ?? 'Unknown Author',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 20))),
+      CachedNetworkImage(
+        imageUrl: widget.parentItem.image?.small ?? '',
+        placeholder: (context, url) => const CircularProgressIndicator(),
+        errorWidget: (context, url, error) => const Icon(Icons.error),
+      ),
+      Text(widget.parentItem.name ?? 'Unknown Album',
+          textAlign: TextAlign.center, style: const TextStyle(fontSize: 25)),
+      Text(widget.parentItem.subname ?? 'Unknown Author',
+          textAlign: TextAlign.center, style: const TextStyle(fontSize: 20)),
     ]));
   }
 }

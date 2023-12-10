@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:rpi_music/player_datasource.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 
-import 'event_listener.dart';
 import 'rest_types.dart';
 
 class Playbar extends StatefulWidget {
@@ -13,130 +14,134 @@ class Playbar extends StatefulWidget {
 
 class _PlaybarState extends State<Playbar> {
   _PlaybarState() {
-    subscriptionId = EventListener().registerCallback({
-      EventType.Progress: (List<dynamic> args) {
-        setState(() {
-          _progress = args[0];
-        });
-      },
-      EventType.TrackChanged: (List<dynamic> args) {
-        _progress = 0.0;
-        _duration = args[0].duration?.toDouble() ?? 0.0;
-        _currentTrack = args[0];
-      },
-      EventType.Playing: (List<dynamic> args) {
-        setState(() {
-          print('Setting state to playing');
-          _playState = PlayerStateType.playing;
-        });
-      },
-      EventType.Paused: (List<dynamic> args) {
-        setState(() {
-          _playState = PlayerStateType.paused;
-        });
-      },
-      EventType.Stopped: (List<dynamic> args) {
-        setState(() {
-          _playState = PlayerStateType.stopped;
-        });
-      },
+    stateChangeId = PlayerDataSource().onStateChange(() {
+      setState(() {
+        _carouselController.animateToPage(
+            PlayerDataSource().getState().currentTrack?.index ?? 0,
+            duration: const Duration(milliseconds: 1));
+      });
+    });
+    progressChangeId = PlayerDataSource().onProgressChange(() {
+      setState(() {});
     });
   }
 
   @override
   void dispose() {
-    EventListener().unregisterCallback(subscriptionId!);
+    if (stateChangeId != null) {
+      PlayerDataSource().removeListener(stateChangeId!);
+    }
+    if (progressChangeId != null) {
+      PlayerDataSource().removeListener(progressChangeId!);
+    }
     super.dispose();
   }
 
-  @override
-  void initState() {
-    super.initState();
-    RpiPlayerProxy().getState().then((state) {
-      setState(() {
-        _progress = state.progress ?? 0.0;
-        _duration = state.currentTrack?.duration?.toDouble() ?? 0.0;
-        _currentTrack = state.currentTrack;
-        _playState = state.state ?? PlayerStateType.idle;
-      });
-    });
-  }
-
-  double _progress = 0.0;
-  double _duration = 0.0;
-  Track? _currentTrack;
-  PlayerStateType _playState = PlayerStateType.idle;
-  String? subscriptionId;
+  String? stateChangeId;
+  String? progressChangeId;
+  final CarouselController _carouselController = CarouselController();
 
   String _formatProgress() {
-    int minutes = (_progress ~/ 60).toInt();
-    int seconds = (_progress % 60).toInt();
+    var state = PlayerDataSource().getState();
+    int minutes = (state.currentTrack?.duration ?? 0.0 / 60).toInt();
+    int seconds = (state.progress ?? 0.0 % 60).toInt();
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
-  double _calcRelativeProgress() {
-    if (_duration == 0.0) {
-      return 0.0;
+  double? _calculateRelativeProgress() {
+    var state = PlayerDataSource().getState();
+    if (state.progress == null) {
+      return null;
     }
-    return _progress / _duration;
+    int duration = state.currentTrack?.duration ?? 0;
+    return duration != 0 ? state.progress! / duration : 0.0;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.grey[300],
-      child: Stack(
-        children: [
-          Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              height: null,
-              width:
-                  MediaQuery.of(context).size.width * _calcRelativeProgress(),
-              child: Container(
-                color: Colors.purple,
-              )),
-          ListTile(
-              title: Text(_currentTrack?.title ?? 'Unknown track',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle:
-                  Text(_currentTrack?.performer?.name ?? 'Unknown artist'),
-              leading: _buildImage(),
-              trailing: _buildPlayIcon(),
-              dense: true),
-        ],
+    return Column(children: [
+      const Divider(height: 0),
+      Container(
+          color: Theme.of(context).appBarTheme.backgroundColor,
+          child: _buildTile()),
+      LinearProgressIndicator(
+          value: _calculateRelativeProgress(),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          valueColor: const AlwaysStoppedAnimation<Color>(Colors.blueAccent)),
+      const Divider(height: 0)
+    ]);
+  }
+
+  Widget _buildTile() {
+    // int currentTrackIndex =
+    //     PlayerDataSource().getState().currentTrack?.index ?? -1;
+    return Row(children: <Widget>[
+      _buildImage(),
+      // _buildInfoText(currentTrackIndex),
+      Expanded(child: _buildCarousel()),
+      _buildPlayIcon()
+    ]);
+  }
+
+  Widget _buildInfoText(int index) {
+    return Padding(
+        padding: const EdgeInsets.only(left: 8, right: 8),
+        child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                PlayerDataSource().getTracks()[index].title ?? 'Unknown title',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(PlayerDataSource().getTracks()[index].performer?.name ??
+                  'Unknonw artist')
+            ]));
+  }
+
+  Widget _buildImage() {
+    var imgSrc =
+        PlayerDataSource().getState().currentTrack?.album?.image?.thumbnail ??
+            '';
+    return imgSrc.isEmpty ? const Icon(Icons.folder) : Image.network(imgSrc);
+  }
+
+  Widget _buildIconButton(IconData icon, Function onPressed) {
+    return MaterialButton(
+      onPressed: () {
+        onPressed();
+      },
+      color: Theme.of(context).indicatorColor,
+      textColor: Theme.of(context).primaryColor,
+      padding: const EdgeInsets.all(16),
+      shape: const CircleBorder(),
+      child: Icon(
+        icon,
+        size: 24,
       ),
     );
   }
 
-  Widget _buildImage() {
-    var imgSrc = _currentTrack?.album?.image?.small ?? '';
-    return imgSrc.isEmpty ? const Icon(Icons.folder) : Image.network(imgSrc);
-  }
-
   Widget _buildPlayIcon() {
-    switch (_playState) {
+    switch (PlayerDataSource().getState().state) {
       case PlayerStateType.playing:
-        return IconButton(
-          icon: const Icon(Icons.pause_circle_filled),
-          onPressed: () {
-            print('Pausing');
+        return _buildIconButton(
+          Icons.pause,
+          () {
             RpiPlayerProxy().pause();
           },
         );
       case PlayerStateType.paused:
-        return IconButton(
-          icon: const Icon(Icons.play_circle_filled),
-          onPressed: () {
-            print('Unpause');
+        return _buildIconButton(
+          Icons.play_arrow,
+          () {
             RpiPlayerProxy().pause(paused: false);
           },
         );
       case PlayerStateType.stopped:
-        return IconButton(
-          icon: const Icon(Icons.play_circle_filled),
-          onPressed: () {
+        return _buildIconButton(
+          Icons.play_arrow,
+          () {
             RpiPlayerProxy().play();
           },
         );
@@ -145,5 +150,24 @@ class _PlaybarState extends State<Playbar> {
       default:
         return const Icon(Icons.play_circle_filled);
     }
+  }
+
+  Widget _buildCarousel() {
+    return CarouselSlider.builder(
+        carouselController: _carouselController,
+        options: CarouselOptions(
+            disableCenter: true,
+            viewportFraction: 1.0,
+            height: 48,
+            enableInfiniteScroll: false,
+            initialPage: PlayerDataSource().getState().currentTrack?.index ?? 0,
+            onPageChanged: (index, reason) {
+              if (reason == CarouselPageChangedReason.manual) {
+                RpiPlayerProxy().play(index);
+              }
+            }),
+        itemCount: PlayerDataSource().getTracks().length,
+        itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) =>
+            _buildInfoText(itemIndex));
   }
 }

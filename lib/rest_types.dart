@@ -45,9 +45,9 @@ extension PlayerStateTypeExtension on PlayerStateType {
 }
 
 class PlayerState {
-  final PlayerStateType? state;
-  final Track? currentTrack;
-  final double? progress;
+  PlayerStateType? state;
+  Track? currentTrack;
+  double? progress;
 
   PlayerState({
     this.state,
@@ -257,6 +257,21 @@ extension SearchTypeExtension on SearchType {
         return 'playlist';
       default:
         throw Exception('Invalid SearchType');
+    }
+  }
+
+  static SearchType fromStringValue(String value) {
+    switch (value) {
+      case 'track':
+        return SearchType.track;
+      case 'album':
+        return SearchType.album;
+      case 'artist':
+        return SearchType.artist;
+      case 'playlist':
+        return SearchType.playlist;
+      default:
+        throw Exception('Invalid SearchType value: $value');
     }
   }
 }

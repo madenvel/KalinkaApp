@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:rpi_music/event_listener.dart';
-import 'package:rpi_music/rpiplayer_proxy.dart';
+import 'package:rpi_music/player_datasource.dart';
+import 'playbar.dart';
 import 'playqueue.dart';
 import 'nowplaying.dart';
-import 'rest_types.dart';
 import 'search.dart';
 
 void main() {
@@ -12,7 +12,10 @@ void main() {
 
 class RpiMusic extends StatelessWidget {
   RpiMusic({super.key}) {
-    EventListener().startListening('http://192.168.3.28:8000/queue/events');
+    var host = '192.168.3.28';
+    var port = 8000;
+    EventListener().startListening('http://$host:$port/queue/events');
+    PlayerDataSource();
   }
 
   // This widget is the root of your application.
@@ -21,9 +24,19 @@ class RpiMusic extends StatelessWidget {
     return MaterialApp(
       title: 'Rpi Music',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        brightness: Brightness.light,
         useMaterial3: true,
+        /* light theme settings */
       ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        /* dark theme settings */
+      ),
+      themeMode: ThemeMode.system,
+      /* ThemeMode.system to follow system theme, 
+         ThemeMode.light for light theme, 
+         ThemeMode.dark for dark theme
+      */
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
@@ -48,88 +61,70 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  int currentPageIndex = 0;
+  final PageStorageBucket bucket = PageStorageBucket();
+  final List<Widget> pages = const <Widget>[
+    NowPlaying(key: PageStorageKey<String>('now_playing'), imgSource: ''),
+    PlayQueue(
+      key: PageStorageKey<String>('queue'),
+    ),
+    Search(key: PageStorageKey<String>('search')),
+  ];
+
   _MyHomePageState();
 
   @override
   void initState() {
     super.initState();
-    _retrieveState();
-    subscriptionId = EventListener().registerCallback({
-      EventType.TrackChanged: (List<dynamic> args) {
-        _retrieveState();
-      },
+    PlayerDataSource().onIsDataLoaded(() {
+      setState(() {});
     });
   }
 
   @override
   void dispose() {
-    EventListener().unregisterCallback(subscriptionId!);
+    PlayerDataSource().cancelOnIsDataLoaded();
     super.dispose();
   }
 
-  void _retrieveState() {
-    RpiPlayerProxy().getState().then((value) {
-      setState(() {
-        state = value;
-      });
-    }).catchError((error) {
-      print("Error: $error");
-    });
-  }
-
-  PlayerState? state;
-  int currentPageIndex = 0;
-  String? subscriptionId;
-
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-        // appBar: AppBar(
-        //   // TRY THIS: Try changing the color here to a specific color (to
-        //   // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        //   // change color while the other colors stay the same.
-        //   backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        //   // Here we take the value from the MyHomePage object that was created by
-        //   // the App.build method, and use it to set our appbar title.
-        //   title: Text(widget.title),
-        // ),
-        bottomNavigationBar: NavigationBar(
-          onDestinationSelected: (int index) {
-            setState(() {
-              currentPageIndex = index;
-            });
-          },
-          indicatorColor: Colors.purple,
-          selectedIndex: currentPageIndex,
-          destinations: const <Widget>[
-            NavigationDestination(
-              selectedIcon: Icon(Icons.music_note_outlined),
-              icon: Icon(Icons.music_note),
-              label: 'Now Playing',
-            ),
-            NavigationDestination(
-              selectedIcon: Icon(Icons.queue_music_outlined),
-              icon: Icon(Icons.queue_music),
-              label: 'Queue',
-            ),
-            NavigationDestination(
-                icon: Icon(Icons.search),
-                selectedIcon: Icon(Icons.search_outlined),
-                label: 'Search'),
-          ],
-        ),
-        body: <Widget>[
-          NowPlaying(
-            imgSource: state?.currentTrack?.album?.image?.large,
-          ),
-          const PlayQueue(),
-          const Search(),
-        ][currentPageIndex]);
+    return !PlayerDataSource().isDataLoaded()
+        ? const SizedBox.expand()
+        : Scaffold(
+            bottomNavigationBar: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const Playbar(),
+                  NavigationBar(
+                    onDestinationSelected: (int index) {
+                      setState(() {
+                        currentPageIndex = index;
+                      });
+                    },
+                    selectedIndex: currentPageIndex,
+                    destinations: const <Widget>[
+                      NavigationDestination(
+                        selectedIcon: Icon(Icons.music_note_outlined),
+                        icon: Icon(Icons.music_note),
+                        label: 'Now Playing',
+                      ),
+                      NavigationDestination(
+                        selectedIcon: Icon(Icons.queue_music_outlined),
+                        icon: Icon(Icons.queue_music),
+                        label: 'Queue',
+                      ),
+                      NavigationDestination(
+                          icon: Icon(Icons.search),
+                          selectedIcon: Icon(Icons.search_outlined),
+                          label: 'Search'),
+                    ],
+                  )
+                ]),
+            body: PageStorage(
+              bucket: bucket,
+              child: pages[currentPageIndex],
+            ));
   }
 }

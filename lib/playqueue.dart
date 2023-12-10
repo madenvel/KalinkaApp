@@ -1,5 +1,6 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:rpi_music/event_listener.dart';
+import 'package:rpi_music/player_datasource.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
 
 import 'rest_types.dart';
@@ -26,72 +27,24 @@ class _PlayQueueState extends State<PlayQueue>
       ..repeat(reverse: false);
 
     animation = Tween<double>(begin: 0.0, end: 1.0).animate(controller);
-    subscriptionId = EventListener().registerCallback({
-      EventType.TracksAdded: (args) {
-        _addTracks(args[0]);
-      },
-      EventType.Playing: (args) {
-        print('Playing');
-        setState(() {
-          stateType = PlayerStateType.playing;
-        });
-      },
-      EventType.Paused: (args) {
-        setState(() {
-          print('Paused');
-          stateType = PlayerStateType.paused;
-        });
-      },
-      EventType.Stopped: (args) {
-        setState(() {
-          stateType = PlayerStateType.stopped;
-        });
-      },
-      EventType.TrackChanged: (args) {
-        setState(() {
-          currentTrackIndex = args[0].index ?? -1;
-        });
-      }
+    stateChangeSubscription = PlayerDataSource().onStateChange(() {
+      setState(() {});
     });
-    _retrieveInitialState();
-  }
-
-  _retrieveInitialState() {
-    Future.wait<dynamic>([
-      RpiPlayerProxy().getState(),
-      RpiPlayerProxy().listTracks(limit: 200)
-    ]).then((List<dynamic> res) {
-      PlayerState state = res[0];
-      List<Track> tracks = res[1];
-      setState(() {
-        stateType = state.state ?? PlayerStateType.idle;
-        currentTrackIndex = state.currentTrack?.index ?? -1;
-        _tracks.addAll(tracks);
-        _listUpdateInprogress = false;
-      });
-    }).catchError((error) {
-      print('Failed to get state or tracks: $error');
+    tracksChangeSubscription = PlayerDataSource().onTracksChange(() {
+      setState(() {});
     });
   }
 
-  void _addTracks(List<Track> tracks) {
-    setState(() {
-      _tracks.addAll(tracks);
-    });
-  }
-
-  final List<Track> _tracks = [];
-  bool _listUpdateInprogress = true;
-  PlayerStateType stateType = PlayerStateType.idle;
-  int currentTrackIndex = -1;
-  late String subscriptionId;
+  late String stateChangeSubscription;
+  late String tracksChangeSubscription;
 
   late AnimationController controller;
   late Animation<double> animation;
 
   @override
   void dispose() {
-    EventListener().unregisterCallback(subscriptionId);
+    PlayerDataSource().removeListener(stateChangeSubscription);
+    PlayerDataSource().removeListener(tracksChangeSubscription);
     controller.dispose();
     super.dispose();
   }
@@ -102,30 +55,50 @@ class _PlayQueueState extends State<PlayQueue>
       appBar: AppBar(
         title: const Text('Play Queue'),
       ),
-      body: _listUpdateInprogress
-          ? const Center(child: CircularProgressIndicator())
-          : _buildList(),
+      body: _buildList(),
     );
   }
 
   Widget _buildList() {
     return ListView.separated(
-      itemCount: _tracks.length,
-      separatorBuilder: (context, index) => const Divider(),
+      itemCount: PlayerDataSource().getTracks().length,
+      separatorBuilder: (context, index) {
+        var currentTrackIndex =
+            PlayerDataSource().getState().currentTrack?.index ?? 0;
+        if (index == currentTrackIndex - 1) {
+          return const ListTile(
+              title: Text('Current track',
+                  style: TextStyle(fontWeight: FontWeight.bold)));
+        } else if (index == currentTrackIndex) {
+          return const ListTile(
+              title: Text('Next tracks',
+                  style: TextStyle(fontWeight: FontWeight.bold)));
+        }
+        return const Divider();
+      },
       itemBuilder: (context, index) {
         return ListTile(
-            leading: Image.network(_tracks[index].album?.image?.small ?? ''),
-            title: Text(_tracks[index].title ?? 'Unknown',
+            leading: CachedNetworkImage(
+              imageUrl:
+                  PlayerDataSource().getTracks()[index].album?.image?.small ??
+                      '',
+              placeholder: (context, url) => const CircularProgressIndicator(),
+              errorWidget: (context, url, error) => const Icon(Icons.error),
+            ),
+            title: Text(
+                PlayerDataSource().getTracks()[index].title ?? 'Unknown',
                 style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle:
-                Text(_tracks[index].performer?.name ?? 'Unknown performer'),
-            trailing: currentTrackIndex == index &&
-                    stateType == PlayerStateType.playing
+            subtitle: Text(
+                PlayerDataSource().getTracks()[index].performer?.name ??
+                    'Unknown performer'),
+            trailing: PlayerDataSource().getState().currentTrack?.index ==
+                        index &&
+                    PlayerDataSource().getState().state ==
+                        PlayerStateType.playing
                 ? AnimatedIcon(
                     icon: AnimatedIcons.play_pause, progress: animation)
                 : null,
             onTap: () {
-              print('Playing track $index');
               RpiPlayerProxy().play(index);
             },
             dense: true);

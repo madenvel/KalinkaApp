@@ -12,12 +12,11 @@ class NowPlaying extends StatelessWidget {
         appBar: AppBar(
           title: const Text('Now Playing'),
         ),
-        body: Center(
-            child: Column(children: [_buildImageWidget(), const Playbar()])));
+        body: Center(child: Column(children: [_buildImageWidget()])));
   }
 
   Widget _buildImageWidget() {
-    if (imgSource != null) {
+    if (imgSource != null && imgSource!.isNotEmpty) {
       return Image(
         image: NetworkImage(imgSource!),
       );

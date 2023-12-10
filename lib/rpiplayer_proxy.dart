@@ -11,9 +11,11 @@ class RpiPlayerProxy {
 
   RpiPlayerProxy._internal();
 
-  http.Client client = http.Client();
+  late PlayerState state;
+  late List<Track> tracks = [];
 
-  String host = '192.168.3.28';
+  http.Client client = http.Client();
+  final String host = '192.168.3.28';
   int port = 8000;
 
   Uri _buildUri(String endpoint, [Map<String, dynamic>? queryParameters]) {
@@ -27,8 +29,8 @@ class RpiPlayerProxy {
   }
 
   Future<StatusMessage> play([int? index]) async {
-    final url =
-        _buildUri('/play', index != null ? {'index': index.toString()} : null);
+    final url = _buildUri(
+        '/queue/play', index != null ? {'index': index.toString()} : null);
     return client.get(url).then((response) {
       return statusMessageFromResponse(response);
     });
