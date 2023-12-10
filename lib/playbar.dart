@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:rpi_music/player_datasource.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
@@ -16,9 +17,8 @@ class _PlaybarState extends State<Playbar> {
   _PlaybarState() {
     stateChangeId = PlayerDataSource().onStateChange(() {
       setState(() {
-        _carouselController.animateToPage(
-            PlayerDataSource().getState().currentTrack?.index ?? 0,
-            duration: const Duration(milliseconds: 1));
+        _carouselController
+            .jumpToPage(PlayerDataSource().getState().currentTrack?.index ?? 0);
       });
     });
     progressChangeId = PlayerDataSource().onProgressChange(() {
@@ -73,11 +73,8 @@ class _PlaybarState extends State<Playbar> {
   }
 
   Widget _buildTile() {
-    // int currentTrackIndex =
-    //     PlayerDataSource().getState().currentTrack?.index ?? -1;
     return Row(children: <Widget>[
       _buildImage(),
-      // _buildInfoText(currentTrackIndex),
       Expanded(child: _buildCarousel()),
       _buildPlayIcon()
     ]);
@@ -100,10 +97,13 @@ class _PlaybarState extends State<Playbar> {
   }
 
   Widget _buildImage() {
-    var imgSrc =
-        PlayerDataSource().getState().currentTrack?.album?.image?.thumbnail ??
-            '';
-    return imgSrc.isEmpty ? const Icon(Icons.folder) : Image.network(imgSrc);
+    return CachedNetworkImage(
+      imageUrl:
+          PlayerDataSource().getState().currentTrack?.album?.image?.thumbnail ??
+              '',
+      placeholder: (context, url) => const CircularProgressIndicator(),
+      errorWidget: (context, url, error) => const Icon(Icons.error),
+    );
   }
 
   Widget _buildIconButton(IconData icon, Function onPressed) {
@@ -113,7 +113,7 @@ class _PlaybarState extends State<Playbar> {
       },
       color: Theme.of(context).indicatorColor,
       textColor: Theme.of(context).primaryColor,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(8),
       shape: const CircleBorder(),
       child: Icon(
         icon,
@@ -138,6 +138,7 @@ class _PlaybarState extends State<Playbar> {
             RpiPlayerProxy().pause(paused: false);
           },
         );
+      case PlayerStateType.error:
       case PlayerStateType.stopped:
         return _buildIconButton(
           Icons.play_arrow,
@@ -148,7 +149,7 @@ class _PlaybarState extends State<Playbar> {
       case PlayerStateType.buffering:
         return const Icon(Icons.hourglass_empty);
       default:
-        return const Icon(Icons.play_circle_filled);
+        return const SizedBox(width: 48, height: 48);
     }
   }
 
