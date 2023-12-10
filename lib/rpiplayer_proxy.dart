@@ -43,6 +43,13 @@ class RpiPlayerProxy {
     });
   }
 
+  Future<StatusMessage> remove(int index) async {
+    final url = _buildUri('/queue/remove', {'index': index.toString()});
+    return client.get(url).then((response) {
+      return statusMessageFromResponse(response);
+    });
+  }
+
   Future<StatusMessage> addTracks(List<String> items) async {
     final url = _buildUri('/queue/add');
     return client.post(url, body: json.encode(items)).then((response) {

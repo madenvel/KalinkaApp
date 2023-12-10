@@ -97,10 +97,13 @@ class _PlaybarState extends State<Playbar> {
   }
 
   Widget _buildImage() {
+    String? imgSource =
+        PlayerDataSource().getState().currentTrack?.album?.image?.thumbnail;
+    if (imgSource == null || imgSource.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return CachedNetworkImage(
-      imageUrl:
-          PlayerDataSource().getState().currentTrack?.album?.image?.thumbnail ??
-              '',
+      imageUrl: imgSource,
       placeholder: (context, url) => const CircularProgressIndicator(),
       errorWidget: (context, url, error) => const Icon(Icons.error),
     );

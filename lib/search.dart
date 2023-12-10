@@ -143,7 +143,7 @@ class _SearchState extends State<Search> {
             border: const OutlineInputBorder(),
             labelText: 'Search for albums, artists, tracks, playlists',
             suffixIcon: IconButton(
-                icon: Icon(Icons.clear),
+                icon: const Icon(Icons.clear),
                 onPressed: () {
                   _clearSearchText();
                 }),

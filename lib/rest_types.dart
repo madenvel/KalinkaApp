@@ -71,13 +71,13 @@ class PlayerState {
 }
 
 class Track {
-  final int? index;
-  final bool? selected;
-  final String? id;
-  final String? title;
-  final int? duration;
-  final Performer? performer;
-  final Album? album;
+  int? index;
+  bool? selected;
+  String? id;
+  String? title;
+  int? duration;
+  Performer? performer;
+  Album? album;
 
   Track({
     this.index,

@@ -24,22 +24,28 @@ class PlayerDataSource {
   }
 
   void _initState() async {
-    await Future.wait([
-      RpiPlayerProxy().getState().then((state) {
-        _state = state;
-        _notifyStateChangeListeners();
-      }),
-      _listAllTracks().then((tracks) {
-        _tracks.addAll(tracks);
-        _notifyTracksChangeListeners();
-      })
-    ]);
-
+    await _requestInitialData();
     var eventListener = EventListener();
     eventListener.registerCallback({
       EventType.TracksAdded: (args) {
+        bool tracksEmpty = _tracks.isEmpty;
         _tracks.addAll(args[0].cast<Track>());
         _notifyTracksChangeListeners();
+        if (tracksEmpty) {
+          _state.currentTrack = _tracks[0];
+          _notifyStateChangeListeners();
+        }
+      },
+      EventType.TracksRemoved: (args) {
+        int len = args[0].length;
+        for (var i = 0; i < len; ++i) {
+          _tracks.removeAt(args[0][i]);
+        }
+        _notifyTracksChangeListeners();
+        RpiPlayerProxy().getState().then((state) {
+          _state = state;
+          _notifyStateChangeListeners();
+        });
       },
       EventType.Playing: (args) {
         _state.state = PlayerStateType.playing;
@@ -61,11 +67,28 @@ class PlayerDataSource {
       EventType.Progress: (args) {
         _state.progress = args[0];
         _notifyProgressChangeListeners();
+      },
+      EventType.NetworkRecover: (args) {
+        _requestInitialData();
       }
     });
 
     _isDataLoaded = true;
     _dataLoadedCallback?.call();
+  }
+
+  Future<List<dynamic>> _requestInitialData() async {
+    return Future.wait([
+      RpiPlayerProxy().getState().then((state) {
+        _state = state;
+        _notifyStateChangeListeners();
+      }),
+      _listAllTracks().then((tracks) {
+        _tracks.clear();
+        _tracks.addAll(tracks);
+        _notifyTracksChangeListeners();
+      })
+    ]);
   }
 
   void _notifyTracksChangeListeners() {

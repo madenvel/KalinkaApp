@@ -26,3 +26,22 @@ void showErrorDialog(BuildContext context,
     },
   );
 }
+
+Function showReconnectDialog(BuildContext context, {String message = ''}) {
+  // set up the AlertDialog
+  AlertDialog alert = AlertDialog(
+      title: const Text("Connection failure"),
+      content: Center(
+          child: Column(
+              children: [Text(message), const CircularProgressIndicator()])));
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return alert;
+    },
+  );
+  return () {
+    Navigator.of(context).pop();
+  };
+}

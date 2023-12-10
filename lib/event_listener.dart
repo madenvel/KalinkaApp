@@ -1,7 +1,9 @@
 // ignore_for_file: constant_identifier_names
 
+import 'dart:async';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 
 import 'rest_types.dart';
@@ -91,16 +93,38 @@ class EventListener {
   }
 
   void startListening(String url) async {
-    final parsedUrl = Uri.parse(url);
-    final client = http.Client();
+    final client = Dio(BaseOptions(
+        persistentConnection: true,
+        connectTimeout: const Duration(seconds: 2),
+        receiveTimeout: const Duration(seconds: 30)));
+    bool connectionFailure = false;
+
+    StreamTransformer<Uint8List, List<int>> unit8Transformer =
+        StreamTransformer.fromHandlers(
+      handleData: (data, sink) {
+        sink.add(List<int>.from(data));
+      },
+    );
 
     while (true) {
       try {
-        final request = http.Request('GET', parsedUrl);
-        final response = await client.send(request);
+        if (connectionFailure) {
+          print('Trying to reconnect to $url');
+        }
+        final response = await client.get(
+          url,
+          options: Options(
+              responseType:
+                  ResponseType.stream), // Set the response type to `stream`.
+        );
+        if (connectionFailure) {
+          connectionFailure = false;
+          _invokeCallbacks(EventType.NetworkRecover, []);
+        }
 
         // Read the chunks from the response stream
-        await for (var chunk in response.stream
+        await for (var chunk in response.data.stream
+            .transform(unit8Transformer)
             .transform(utf8.decoder)
             .transform(const LineSplitter())) {
           try {
@@ -111,8 +135,13 @@ class EventListener {
           }
         }
       } catch (e) {
-        print("Error: $e");
+        if (connectionFailure == false) {
+          connectionFailure = true;
+          print('Connection failure, $e');
+          _invokeCallbacks(EventType.NetworkError, []);
+        }
       }
+      await Future.delayed(const Duration(seconds: 1));
     }
   }
 

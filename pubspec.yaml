@@ -40,6 +40,7 @@ dependencies:
   cached_network_image: ^3.3.0
   shared_preferences: ^2.2.2
   carousel_slider: ^4.2.1
+  dio: ^5.4.0
 
 dev_dependencies:
   flutter_test:

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rpi_music/error_dialog.dart';
 import 'package:rpi_music/event_listener.dart';
 import 'package:rpi_music/player_datasource.dart';
 import 'playbar.dart';
@@ -37,24 +38,15 @@ class RpiMusic extends StatelessWidget {
          ThemeMode.light for light theme, 
          ThemeMode.dark for dark theme
       */
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+  const MyHomePage({
+    super.key,
+  });
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -70,12 +62,26 @@ class _MyHomePageState extends State<MyHomePage> {
     ),
     Search(key: PageStorageKey<String>('search')),
   ];
+  Function? closeErrorDialogCb;
+  late String subscriptionId;
 
   _MyHomePageState();
 
   @override
   void initState() {
     super.initState();
+    subscriptionId = EventListener().registerCallback({
+      EventType.NetworkError: (args) {
+        closeErrorDialogCb =
+            showReconnectDialog(context, message: 'Reconnecting...');
+      },
+      EventType.NetworkRecover: (args) {
+        if (closeErrorDialogCb != null) {
+          closeErrorDialogCb!();
+          closeErrorDialogCb = null;
+        }
+      }
+    });
     PlayerDataSource().onIsDataLoaded(() {
       setState(() {});
     });
@@ -84,6 +90,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void dispose() {
     PlayerDataSource().cancelOnIsDataLoaded();
+    EventListener().unregisterCallback(subscriptionId);
     super.dispose();
   }
 
@@ -96,7 +103,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  const Playbar(),
+                  PlayerDataSource().getTracks().isNotEmpty
+                      ? const Playbar()
+                      : const SizedBox.shrink(),
                   NavigationBar(
                     onDestinationSelected: (int index) {
                       setState(() {

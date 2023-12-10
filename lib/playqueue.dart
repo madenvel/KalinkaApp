@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:rpi_music/player_datasource.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
 
-import 'rest_types.dart';
-
 class PlayQueue extends StatefulWidget {
   const PlayQueue({Key? key}) : super(key: key);
 
@@ -91,13 +89,11 @@ class _PlayQueueState extends State<PlayQueue>
             subtitle: Text(
                 PlayerDataSource().getTracks()[index].performer?.name ??
                     'Unknown performer'),
-            trailing: PlayerDataSource().getState().currentTrack?.index ==
-                        index &&
-                    PlayerDataSource().getState().state ==
-                        PlayerStateType.playing
-                ? AnimatedIcon(
-                    icon: AnimatedIcons.play_pause, progress: animation)
-                : null,
+            trailing: IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () {
+                  RpiPlayerProxy().remove(index);
+                }),
             onTap: () {
               RpiPlayerProxy().play(index);
             },

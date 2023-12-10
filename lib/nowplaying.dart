@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'playbar.dart';
 
 class NowPlaying extends StatelessWidget {
   const NowPlaying({Key? key, this.imgSource}) : super(key: key);
