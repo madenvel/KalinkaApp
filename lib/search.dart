@@ -1,13 +1,15 @@
 import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
+import 'package:rpi_music/data_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
 
 import 'browse.dart';
 import 'error_dialog.dart';
-import 'rest_types.dart';
+import 'data_model.dart';
 
 class Search extends StatefulWidget {
   const Search({Key? key}) : super(key: key);
@@ -142,11 +144,13 @@ class _SearchState extends State<Search> {
           decoration: InputDecoration(
             border: const OutlineInputBorder(),
             labelText: 'Search for albums, artists, tracks, playlists',
-            suffixIcon: IconButton(
-                icon: const Icon(Icons.clear),
-                onPressed: () {
-                  _clearSearchText();
-                }),
+            suffixIcon: searchText.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _clearSearchText();
+                    })
+                : null,
           ),
           onSubmitted: (text) {
             _performSearch(text);
@@ -219,11 +223,15 @@ class _SearchState extends State<Search> {
             title: Text(browseItems[index].name ?? 'Unknown',
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text(browseItems[index].subname ?? 'Unknown artist'),
-            leading: CachedNetworkImage(
-              imageUrl: browseItems[index].image?.small ?? '',
-              placeholder: (context, url) => const CircularProgressIndicator(),
-              errorWidget: (context, url, error) => const Icon(Icons.error),
-            ),
+            leading: SizedBox(
+                width: 48,
+                height: 48,
+                child: CachedNetworkImage(
+                  imageUrl: browseItems[index].image?.small ?? '',
+                  placeholder: (context, url) =>
+                      const Icon(Icons.folder, size: 48.0),
+                  errorWidget: (context, url, error) => const Icon(Icons.error),
+                )),
             onTap: () {
               _addToPreviousSearch(index);
               if (browseItems[index].canBrowse ?? false) {
@@ -237,6 +245,25 @@ class _SearchState extends State<Search> {
             dense: true);
       },
     );
+  }
+
+  Widget _buildLeadingIcon(BuildContext context, int index) {
+    PlayerState state = context.watch<PlayerStateProvider>().state;
+    String playedTrackId = state.currentTrack?.id ?? '';
+    String? currentIndex = previousSearch[index].id;
+    bool isCurrent = playedTrackId == currentIndex;
+
+    return SizedBox(
+        width: 48,
+        height: 48,
+        child: !isCurrent
+            ? CachedNetworkImage(
+                imageUrl: previousSearch[index].image?.small ?? '',
+                placeholder: (context, url) =>
+                    const Icon(Icons.folder, size: 48.0),
+                errorWidget: (context, url, error) => const Icon(Icons.error),
+              )
+            : const Icon(Icons.music_note_sharp, size: 40.0));
   }
 
   Widget _buildSearchHistory() {
@@ -267,12 +294,7 @@ class _SearchState extends State<Search> {
               title: Text(previousSearch[index].name ?? 'Unknown',
                   style: const TextStyle(fontWeight: FontWeight.bold)),
               subtitle: Text(previousSearch[index].subname ?? 'Unknown artist'),
-              leading: CachedNetworkImage(
-                imageUrl: previousSearch[index].image?.small ?? '',
-                placeholder: (context, url) =>
-                    const CircularProgressIndicator(),
-                errorWidget: (context, url, error) => const Icon(Icons.error),
-              ),
+              leading: _buildLeadingIcon(context, index),
               trailing: IconButton(
                   icon: const Icon(Icons.clear),
                   onPressed: () {
@@ -281,17 +303,39 @@ class _SearchState extends State<Search> {
                     });
                   }),
               onTap: () {
+                if (previousSearch[index].id == null) {
+                  return;
+                }
                 if (previousSearch[index].canBrowse ?? false) {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                         builder: (context) =>
                             BrowsePage(parentItem: previousSearch[index])),
                   );
+                } else {
+                  _playTrack(context, previousSearch[index].id!);
                 }
               },
               dense: true);
         },
       ))
     ]);
+  }
+
+  void _playTrack(BuildContext context, String trackId) async {
+    PlayerState state = context.read<PlayerStateProvider>().state;
+
+    bool needToAdd = true;
+    if (state.currentTrack != null && state.currentTrack?.id == trackId) {
+      needToAdd = false;
+    }
+
+    if (!needToAdd) {
+      RpiPlayerProxy().play(state.currentTrack?.index);
+    } else {
+      await RpiPlayerProxy().clear();
+      await RpiPlayerProxy().addTracks([trackId]);
+      await RpiPlayerProxy().play();
+    }
   }
 }

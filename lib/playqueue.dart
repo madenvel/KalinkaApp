@@ -1,7 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:rpi_music/player_datasource.dart';
+import 'package:provider/provider.dart';
+import 'package:rpi_music/data_provider.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
+
+import 'data_model.dart';
 
 class PlayQueue extends StatefulWidget {
   const PlayQueue({Key? key}) : super(key: key);
@@ -25,12 +28,6 @@ class _PlayQueueState extends State<PlayQueue>
       ..repeat(reverse: false);
 
     animation = Tween<double>(begin: 0.0, end: 1.0).animate(controller);
-    stateChangeSubscription = PlayerDataSource().onStateChange(() {
-      setState(() {});
-    });
-    tracksChangeSubscription = PlayerDataSource().onTracksChange(() {
-      setState(() {});
-    });
   }
 
   late String stateChangeSubscription;
@@ -41,8 +38,6 @@ class _PlayQueueState extends State<PlayQueue>
 
   @override
   void dispose() {
-    PlayerDataSource().removeListener(stateChangeSubscription);
-    PlayerDataSource().removeListener(tracksChangeSubscription);
     controller.dispose();
     super.dispose();
   }
@@ -53,16 +48,19 @@ class _PlayQueueState extends State<PlayQueue>
       appBar: AppBar(
         title: const Text('Play Queue'),
       ),
-      body: _buildList(),
+      body: _buildList(context),
     );
   }
 
-  Widget _buildList() {
+  Widget _buildList(BuildContext context) {
+    List<Track> tracks = context.watch<TrackListProvider>().trackList;
+    // PlayerStateType state = context.select((PlayerStateProvider value) =>
+    //     (value.state.state ?? PlayerStateType.idle));
+    int currentTrackIndex = context.select(
+        (PlayerStateProvider value) => (value.state.currentTrack?.index ?? -1));
     return ListView.separated(
-      itemCount: PlayerDataSource().getTracks().length,
+      itemCount: tracks.length,
       separatorBuilder: (context, index) {
-        var currentTrackIndex =
-            PlayerDataSource().getState().currentTrack?.index ?? 0;
         if (index == currentTrackIndex - 1) {
           return const ListTile(
               title: Text('Current track',
@@ -76,19 +74,19 @@ class _PlayQueueState extends State<PlayQueue>
       },
       itemBuilder: (context, index) {
         return ListTile(
-            leading: CachedNetworkImage(
-              imageUrl:
-                  PlayerDataSource().getTracks()[index].album?.image?.small ??
-                      '',
-              placeholder: (context, url) => const CircularProgressIndicator(),
-              errorWidget: (context, url, error) => const Icon(Icons.error),
+            leading: SizedBox(
+              width: 48,
+              height: 48,
+              child: CachedNetworkImage(
+                  imageUrl: tracks[index].album?.image?.small ?? '',
+                  placeholder: (context, url) => const Icon(Icons.folder),
+                  errorWidget: (context, url, error) =>
+                      const Icon(Icons.error)),
             ),
-            title: Text(
-                PlayerDataSource().getTracks()[index].title ?? 'Unknown',
+            title: Text(tracks[index].title ?? 'Unknown',
                 style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(
-                PlayerDataSource().getTracks()[index].performer?.name ??
-                    'Unknown performer'),
+            subtitle:
+                Text(tracks[index].performer?.name ?? 'Unknown performer'),
             trailing: IconButton(
                 icon: const Icon(Icons.clear),
                 onPressed: () {

@@ -1,10 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:rpi_music/player_datasource.dart';
+import 'package:provider/provider.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
-import 'rest_types.dart';
+import 'data_model.dart';
+import 'data_provider.dart';
 
 class Playbar extends StatefulWidget {
   const Playbar({Key? key}) : super(key: key);
@@ -14,42 +15,19 @@ class Playbar extends StatefulWidget {
 }
 
 class _PlaybarState extends State<Playbar> {
-  _PlaybarState() {
-    stateChangeId = PlayerDataSource().onStateChange(() {
-      setState(() {
-        _carouselController
-            .jumpToPage(PlayerDataSource().getState().currentTrack?.index ?? 0);
-      });
-    });
-    progressChangeId = PlayerDataSource().onProgressChange(() {
-      setState(() {});
-    });
-  }
+  _PlaybarState();
 
-  @override
-  void dispose() {
-    if (stateChangeId != null) {
-      PlayerDataSource().removeListener(stateChangeId!);
-    }
-    if (progressChangeId != null) {
-      PlayerDataSource().removeListener(progressChangeId!);
-    }
-    super.dispose();
-  }
-
-  String? stateChangeId;
-  String? progressChangeId;
   final CarouselController _carouselController = CarouselController();
 
-  String _formatProgress() {
-    var state = PlayerDataSource().getState();
-    int minutes = (state.currentTrack?.duration ?? 0.0 / 60).toInt();
-    int seconds = (state.progress ?? 0.0 % 60).toInt();
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
-  }
+  // String _formatProgress(BuildContext context) {
+  //   var state = context.watch<PlayerState>().state;
+  //   int minutes = (state.currentTrack?.duration ?? 0.0 / 60).toInt();
+  //   int seconds = (state.progress ?? 0.0 % 60).toInt();
+  //   return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  // }
 
   double? _calculateRelativeProgress() {
-    var state = PlayerDataSource().getState();
+    var state = context.watch<PlayerStateProvider>().state;
     if (state.progress == null) {
       return null;
     }
@@ -58,12 +36,38 @@ class _PlaybarState extends State<Playbar> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    PlayerStateProvider playerStateProvider =
+        context.read<PlayerStateProvider>();
+    playerStateProvider.addListener(_onPlayerStateChange);
+  }
+
+  void _onPlayerStateChange() async {
+    if (!mounted || context.read<TrackListProvider>().trackList.isEmpty) {
+      return;
+    }
+    PlayerStateProvider playerStateProvider =
+        context.read<PlayerStateProvider>();
+    _carouselController
+        .jumpToPage(playerStateProvider.state.currentTrack?.index ?? 0);
+  }
+
+  @override
+  void dispose() {
+    // PlayerStateProvider playerStateProvider =
+    //     context.read<PlayerStateProvider>();
+    // playerStateProvider.removeListener(_onPlayerStateChange);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(children: [
       const Divider(height: 0),
       Container(
           color: Theme.of(context).appBarTheme.backgroundColor,
-          child: _buildTile()),
+          child: _buildTile(context)),
       LinearProgressIndicator(
           value: _calculateRelativeProgress(),
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -72,15 +76,17 @@ class _PlaybarState extends State<Playbar> {
     ]);
   }
 
-  Widget _buildTile() {
+  Widget _buildTile(BuildContext context) {
     return Row(children: <Widget>[
-      _buildImage(),
-      Expanded(child: _buildCarousel()),
-      _buildPlayIcon()
+      _buildImage(context),
+      Expanded(child: _buildCarousel(context)),
+      _buildPlayIcon(context)
     ]);
   }
 
-  Widget _buildInfoText(int index) {
+  Widget _buildInfoText(BuildContext context, int index) {
+    List<Track> trackList = context.watch<TrackListProvider>().trackList;
+
     return Padding(
         padding: const EdgeInsets.only(left: 8, right: 8),
         child: Column(
@@ -88,17 +94,21 @@ class _PlaybarState extends State<Playbar> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                PlayerDataSource().getTracks()[index].title ?? 'Unknown title',
+                trackList[index].title ?? 'Unknown title',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              Text(PlayerDataSource().getTracks()[index].performer?.name ??
-                  'Unknonw artist')
+              Text(trackList[index].performer?.name ?? 'Unknonw artist')
             ]));
   }
 
-  Widget _buildImage() {
-    String? imgSource =
-        PlayerDataSource().getState().currentTrack?.album?.image?.thumbnail;
+  Widget _buildImage(BuildContext context) {
+    String? imgSource = context
+        .watch<PlayerStateProvider>()
+        .state
+        .currentTrack
+        ?.album
+        ?.image
+        ?.thumbnail;
     if (imgSource == null || imgSource.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -125,8 +135,11 @@ class _PlaybarState extends State<Playbar> {
     );
   }
 
-  Widget _buildPlayIcon() {
-    switch (PlayerDataSource().getState().state) {
+  Widget _buildPlayIcon(BuildContext context) {
+    PlayerStateType stateType =
+        context.watch<PlayerStateProvider>().state.state ??
+            PlayerStateType.idle;
+    switch (stateType) {
       case PlayerStateType.playing:
         return _buildIconButton(
           Icons.pause,
@@ -143,6 +156,7 @@ class _PlaybarState extends State<Playbar> {
         );
       case PlayerStateType.error:
       case PlayerStateType.stopped:
+      case PlayerStateType.idle:
         return _buildIconButton(
           Icons.play_arrow,
           () {
@@ -156,7 +170,7 @@ class _PlaybarState extends State<Playbar> {
     }
   }
 
-  Widget _buildCarousel() {
+  Widget _buildCarousel(BuildContext context) {
     return CarouselSlider.builder(
         carouselController: _carouselController,
         options: CarouselOptions(
@@ -164,14 +178,16 @@ class _PlaybarState extends State<Playbar> {
             viewportFraction: 1.0,
             height: 48,
             enableInfiniteScroll: false,
-            initialPage: PlayerDataSource().getState().currentTrack?.index ?? 0,
+            initialPage:
+                context.read<PlayerStateProvider>().state.currentTrack?.index ??
+                    0,
             onPageChanged: (index, reason) {
               if (reason == CarouselPageChangedReason.manual) {
                 RpiPlayerProxy().play(index);
               }
             }),
-        itemCount: PlayerDataSource().getTracks().length,
+        itemCount: context.watch<TrackListProvider>().trackList.length,
         itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) =>
-            _buildInfoText(itemIndex));
+            _buildInfoText(context, itemIndex));
   }
 }

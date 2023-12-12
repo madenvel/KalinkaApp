@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'rest_types.dart';
+import 'data_model.dart';
 
 class RpiPlayerProxy {
   static final RpiPlayerProxy _instance = RpiPlayerProxy._internal();
@@ -51,8 +51,13 @@ class RpiPlayerProxy {
   }
 
   Future<StatusMessage> addTracks(List<String> items) async {
-    final url = _buildUri('/queue/add');
-    return client.post(url, body: json.encode(items)).then((response) {
+    final url = _buildUri('/queue/add/tracks');
+    final String encodedItems = jsonEncode(items);
+    print('Encoded items: $encodedItems');
+    return client
+        .post(url,
+            headers: {"Content-Type": "application/json"}, body: encodedItems)
+        .then((response) {
       return statusMessageFromResponse(response);
     });
   }
@@ -116,6 +121,15 @@ class RpiPlayerProxy {
 
       final list = jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
       return list.map((browseItem) => BrowseItem.fromJson(browseItem)).toList();
+    });
+  }
+
+  Future<void> clear() async {
+    final url = _buildUri('/queue/clear');
+    return client.get(url).then((response) {
+      if (response.statusCode != 200) {
+        throw Exception('Failed to clear queue, url=$url');
+      }
     });
   }
 

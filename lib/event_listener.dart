@@ -6,7 +6,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 
-import 'rest_types.dart';
+import 'data_model.dart';
 
 enum EventType {
   Invalid,
@@ -18,6 +18,7 @@ enum EventType {
   RequestMoreTracks,
   TracksAdded,
   TracksRemoved,
+  Error,
   NetworkError,
   NetworkRecover,
 }
@@ -51,6 +52,8 @@ extension EventTypeExtension on EventType {
         return "track_added";
       case EventType.TracksRemoved:
         return "track_removed";
+      case EventType.Error:
+        return "error";
       case EventType.NetworkError:
         return "network_error";
       case EventType.NetworkRecover:
@@ -96,7 +99,7 @@ class EventListener {
     final client = Dio(BaseOptions(
         persistentConnection: true,
         connectTimeout: const Duration(seconds: 2),
-        receiveTimeout: const Duration(seconds: 30)));
+        receiveTimeout: Duration.zero));
     bool connectionFailure = false;
 
     StreamTransformer<Uint8List, List<int>> unit8Transformer =
@@ -119,6 +122,7 @@ class EventListener {
         );
         if (connectionFailure) {
           connectionFailure = false;
+          print('Reconnect success');
           _invokeCallbacks(EventType.NetworkRecover, []);
         }
 
