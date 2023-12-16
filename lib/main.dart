@@ -1,15 +1,26 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:rpi_music/error_dialog.dart';
 import 'package:rpi_music/event_listener.dart';
 import 'package:provider/provider.dart';
 import 'data_provider.dart';
+import 'discover.dart';
+import 'library.dart';
 import 'playbar.dart';
-import 'playqueue.dart';
-import 'nowplaying.dart';
 import 'search.dart';
+import 'swipable_tabs.dart';
 
 void main() {
   runApp(RpiMusic());
+}
+
+class MyCustomScrollBehavior extends MaterialScrollBehavior {
+  // Override behavior methods and getters like dragDevices
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+      };
 }
 
 class RpiMusic extends StatelessWidget {
@@ -24,20 +35,28 @@ class RpiMusic extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
         providers: [
+          Provider<DateTimeProvider>(create: (context) => DateTimeProvider()),
           ChangeNotifierProvider(create: (context) => TrackListProvider()),
-          ChangeNotifierProvider(create: (context) => PlayerStateProvider())
+          ChangeNotifierProvider(create: (context) => PlayerStateProvider()),
+          ChangeNotifierProvider(create: (context) => TrackProgressProvider()),
+          ChangeNotifierProvider(create: (context) => UserFavoritesProvider())
         ],
         child: MaterialApp(
+          scrollBehavior: MyCustomScrollBehavior(),
           title: 'Rpi Music',
           theme: ThemeData(
-            brightness: Brightness.light,
-            useMaterial3: true,
-            /* light theme settings */
-          ),
+              brightness: Brightness.light,
+              useMaterial3: true,
+              visualDensity: VisualDensity.compact
+              /* light theme settings */
+              ),
           darkTheme: ThemeData(
-            brightness: Brightness.dark,
-            /* dark theme settings */
-          ),
+              brightness: Brightness.dark,
+              useMaterial3: true,
+              visualDensity: VisualDensity.compact,
+              colorSchemeSeed: Colors.blue
+              /* dark theme settings */
+              ),
           themeMode: ThemeMode.system,
           /* ThemeMode.system to follow system theme, 
          ThemeMode.light for light theme, 
@@ -61,10 +80,8 @@ class _MyHomePageState extends State<MyHomePage> {
   int currentPageIndex = 0;
   final PageStorageBucket bucket = PageStorageBucket();
   final List<Widget> pages = const <Widget>[
-    NowPlaying(key: PageStorageKey<String>('now_playing'), imgSource: ''),
-    PlayQueue(
-      key: PageStorageKey<String>('queue'),
-    ),
+    Discover(),
+    Library(),
     Search(key: PageStorageKey<String>('search')),
   ];
   Function? closeErrorDialogCb;
@@ -106,7 +123,14 @@ class _MyHomePageState extends State<MyHomePage> {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              isQueueNotEmpty ? const Playbar() : const SizedBox.shrink(),
+              isQueueNotEmpty
+                  ? Playbar(onTap: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const SwipableTabs()));
+                    })
+                  : const SizedBox.shrink(),
               NavigationBar(
                 onDestinationSelected: (int index) {
                   setState(() {
@@ -115,15 +139,20 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
                 selectedIndex: currentPageIndex,
                 destinations: const <Widget>[
+                  // NavigationDestination(
+                  //   selectedIcon: Icon(Icons.music_note_outlined),
+                  //   icon: Icon(Icons.music_note),
+                  //   label: 'Now Playing',
+                  // ),
                   NavigationDestination(
-                    selectedIcon: Icon(Icons.music_note_outlined),
-                    icon: Icon(Icons.music_note),
-                    label: 'Now Playing',
+                    selectedIcon: Icon(Icons.compass_calibration),
+                    icon: Icon(Icons.compass_calibration_outlined),
+                    label: 'Discover',
                   ),
                   NavigationDestination(
-                    selectedIcon: Icon(Icons.queue_music_outlined),
-                    icon: Icon(Icons.queue_music),
-                    label: 'Queue',
+                    selectedIcon: Icon(Icons.library_music),
+                    icon: Icon(Icons.library_music_outlined),
+                    label: 'My Library',
                   ),
                   NavigationDestination(
                       icon: Icon(Icons.search),

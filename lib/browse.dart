@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rpi_music/custom_cache_manager.dart';
 import 'package:rpi_music/data_provider.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:rpi_music/soundwave.dart';
 import 'data_model.dart';
 
 class BrowsePage extends StatefulWidget {
@@ -89,9 +91,15 @@ class _BrowsePage extends State<BrowsePage> {
     String? currentIndex = browseItems[index].id;
     bool isCurrent = playedTrackId == currentIndex;
 
-    return !isCurrent
-        ? Text("${index + 1}", style: const TextStyle(fontSize: 20.0))
-        : const Icon(Icons.music_note_sharp, size: 20.0);
+    return SizedBox(
+        width: 48,
+        height: 48,
+        child: !isCurrent
+            ? Align(
+                alignment: Alignment.center,
+                child: Text("${index + 1}",
+                    style: const TextStyle(fontSize: 20.0)))
+            : const SoundwaveWidget());
   }
 
   Widget _buildAlbum(BuildContext context) {
@@ -113,8 +121,7 @@ class _BrowsePage extends State<BrowsePage> {
                 if (widget.parentItem.url != null) {
                   _replaceAndPlay(widget.parentItem.url!, index - 1);
                 }
-              },
-              dense: true);
+              });
         }
       },
     );
@@ -141,14 +148,14 @@ class _BrowsePage extends State<BrowsePage> {
     return Stack(children: [
       Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Stack(children: [
-          SizedBox(height: screenWidth),
+          SizedBox(width: screenWidth, height: 350),
           Opacity(
               opacity: 0.2,
               child: Image.network(widget.parentItem.image?.thumbnail ?? '',
                   filterQuality: FilterQuality.low,
-                  fit: BoxFit.fill,
+                  fit: BoxFit.cover,
                   width: screenWidth,
-                  height: screenWidth)),
+                  height: 350)),
         ]),
         const SizedBox(height: 35.0)
       ]),
@@ -186,19 +193,24 @@ class _BrowsePage extends State<BrowsePage> {
               width: 200,
               height: 200,
               child: CachedNetworkImage(
+                cacheManager: RpiMusicCacheManager.instance,
                 imageUrl: widget.parentItem.image?.large ?? '',
                 filterQuality: FilterQuality.high,
                 placeholder: (context, url) =>
-                    const CircularProgressIndicator(),
+                    const Center(child: CircularProgressIndicator()),
                 errorWidget: (context, url, error) => const Icon(Icons.error),
               )),
           const SizedBox(height: 10.0),
-          Text(widget.parentItem.name ?? 'Unknown Album',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 23)),
+          Text(
+            widget.parentItem.name ?? 'Unknown Album',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 23, color: Colors.white),
+            overflow: TextOverflow.ellipsis,
+          ),
           Text(widget.parentItem.subname ?? 'Unknown Author',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18)),
+              style: const TextStyle(fontSize: 18, color: Colors.grey),
+              overflow: TextOverflow.ellipsis),
         ]));
   }
 }

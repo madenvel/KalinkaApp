@@ -36,6 +36,20 @@ class RpiPlayerProxy {
     });
   }
 
+  Future<StatusMessage> next() async {
+    final url = _buildUri('/queue/next');
+    return client.get(url).then((response) {
+      return statusMessageFromResponse(response);
+    });
+  }
+
+  Future<StatusMessage> previous() async {
+    final url = _buildUri('/queue/prev');
+    return client.get(url).then((response) {
+      return statusMessageFromResponse(response);
+    });
+  }
+
   Future<StatusMessage> add(String item) async {
     final url = _buildUri('/queue/add$item');
     return client.get(url).then((response) {
@@ -112,8 +126,10 @@ class RpiPlayerProxy {
     });
   }
 
-  Future<List<BrowseItem>> browse(String query) async {
-    final url = _buildUri('/browse$query');
+  Future<List<BrowseItem>> browse(String query,
+      {int offset = 0, int limit = 10}) async {
+    final url = _buildUri('/browse$query',
+        {'offset': offset.toString(), 'limit': limit.toString()});
     return client.get(url).then((response) {
       if (response.statusCode != 200) {
         throw Exception('Failed to browse $query, url=$url');
@@ -135,8 +151,8 @@ class RpiPlayerProxy {
 
   StatusMessage statusMessageFromResponse(http.Response response) {
     if (response.statusCode != 200) {
-      throw Exception(
-          'Request $response.request.url failed, url=$response.request.url');
+      var url = response.request?.url;
+      throw Exception('Request $response.request.url failed, url=$url');
     }
     return StatusMessage.fromJson(json.decode(utf8.decode(response.bodyBytes)));
   }

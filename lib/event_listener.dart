@@ -168,6 +168,7 @@ class EventListener {
       case EventType.Stopped:
       case EventType.NetworkError:
       case EventType.NetworkRecover:
+      case EventType.Error:
         return [];
       case EventType.Progress:
         return args;

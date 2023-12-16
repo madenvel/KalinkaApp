@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:rpi_music/data_provider.dart';
+import 'package:rpi_music/soundwave.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
 
 import 'browse.dart';
+import 'custom_cache_manager.dart';
 import 'error_dialog.dart';
 import 'data_model.dart';
 
@@ -23,7 +25,6 @@ class _SearchState extends State<Search> {
   final List<BrowseItem> previousSearch = [];
   bool searchInProgress = false;
   SearchType searchType = SearchType.album;
-  String searchText = '';
   final _textFieldController = TextEditingController();
   late SharedPreferences persistentStorage;
 
@@ -33,8 +34,7 @@ class _SearchState extends State<Search> {
     }
     setState(() {
       searchInProgress = true;
-      searchText = query;
-      persistentStorage.setString('searchText', searchText);
+      persistentStorage.setString('searchText', _textFieldController.text);
     });
     RpiPlayerProxy().search(searchType, query).then((items) {
       setState(() {
@@ -57,9 +57,8 @@ class _SearchState extends State<Search> {
 
   void _clearSearchText() {
     setState(() {
-      searchText = '';
       _textFieldController.clear();
-      persistentStorage.setString('searchText', searchText);
+      persistentStorage.setString('searchText', '');
     });
   }
 
@@ -78,7 +77,7 @@ class _SearchState extends State<Search> {
       var oldSearchType = searchType;
       searchType = selected;
       persistentStorage.setString('selectedChip', searchType.toStringValue());
-      _performSearch(searchText, onError: () {
+      _performSearch(_textFieldController.text, onError: () {
         searchType = oldSearchType;
         persistentStorage.setString('selectedChip', searchType.toStringValue());
       });
@@ -110,9 +109,9 @@ class _SearchState extends State<Search> {
         searchType = SearchTypeExtension.fromStringValue(
             persistentStorage.getString('selectedChip') ??
                 SearchType.album.toStringValue());
-        searchText = persistentStorage.getString('searchText') ?? '';
-        _textFieldController.text = searchText;
-        if (searchText.isNotEmpty) {
+        _textFieldController.text =
+            persistentStorage.getString('searchText') ?? '';
+        if (_textFieldController.text.isNotEmpty) {
           List<String> persistedBrowseItems =
               persistentStorage.getStringList('browseItems') ?? [];
           for (var element in persistedBrowseItems) {
@@ -125,108 +124,100 @@ class _SearchState extends State<Search> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Search'),
-      ),
-      body: Navigator(onGenerateRoute: (settings) {
-        return MaterialPageRoute(builder: (_) => _buildSearchPage());
-      }),
-    );
+    return Navigator(onGenerateRoute: (settings) {
+      return MaterialPageRoute(builder: (_) => _buildSearchPage());
+    });
   }
 
   Widget _buildSearchPage() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 10),
-        TextField(
-          controller: _textFieldController,
-          decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            labelText: 'Search for albums, artists, tracks, playlists',
-            suffixIcon: searchText.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      _clearSearchText();
-                    })
-                : null,
-          ),
-          onSubmitted: (text) {
-            _performSearch(text);
-          },
-        ),
-        const SizedBox(height: 10),
-        searchText.isNotEmpty ? _buildChipGroup() : const SizedBox.shrink(),
-        const SizedBox(height: 10),
+        AppBar(title: const Text('Search')),
+        Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _textFieldController,
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                labelText: 'Search for albums, artists, tracks, playlists',
+                suffixIcon: _textFieldController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _clearSearchText();
+                        })
+                    : null,
+              ),
+              onSubmitted: (text) {
+                _performSearch(text);
+              },
+            )),
+        _textFieldController.text.isNotEmpty
+            ? _buildChipGroup()
+            : const SizedBox.shrink(),
+        const SizedBox(height: 8),
         Expanded(
           child: searchInProgress
               ? const Center(child: CircularProgressIndicator())
-              : searchText.isEmpty
+              : (_textFieldController.text.isEmpty
                   ? _buildSearchHistory()
-                  : _buildSearchResults(),
+                  : _buildSearchResults()),
         ),
       ],
     );
   }
 
   Widget _buildChipGroup() {
-    return Wrap(
-      spacing: 8.0,
-      children: [
-        FilterChip(
-          label: const Text('Albums'),
-          selected: searchType == SearchType.album,
-          onSelected: (isSelected) {
-            if (isSelected) {
-              _updateSelectedChip(SearchType.album);
-            }
-          },
-        ),
-        FilterChip(
-          label: const Text('Artists'),
-          selected: searchType == SearchType.artist,
-          onSelected: (isSelected) {
-            if (isSelected) {
-              _updateSelectedChip(SearchType.artist);
-            }
-          },
-        ),
-        FilterChip(
-          label: const Text('Tracks'),
-          selected: searchType == SearchType.track,
-          onSelected: (isSelected) {
-            if (isSelected) {
-              _updateSelectedChip(SearchType.track);
-            }
-          },
-        ),
-        FilterChip(
-          label: const Text('Playlists'),
-          selected: searchType == SearchType.playlist,
-          onSelected: (isSelected) {
-            if (isSelected) {
-              _updateSelectedChip(SearchType.playlist);
-            }
-          },
-        ),
-      ],
-    );
+    final List<String> searchTypesStr = [
+      'Albums',
+      'Artists',
+      'Tracks',
+      'Playlists'
+    ];
+    final List<SearchType> searchTypes = [
+      SearchType.album,
+      SearchType.artist,
+      SearchType.track,
+      SearchType.playlist
+    ];
+    return SizedBox(
+        height: 36,
+        child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            scrollDirection: Axis.horizontal,
+            children: List<Widget>.generate(4, (index) {
+              return Padding(
+                  padding: const EdgeInsets.only(left: 4, right: 4),
+                  child: FilterChip(
+                    label: Text(searchTypesStr[index]),
+                    selected: searchType == searchTypes[index],
+                    onSelected: (isSelected) {
+                      if (isSelected) {
+                        _updateSelectedChip(searchTypes[index]);
+                      }
+                    },
+                  ));
+            })));
   }
 
   Widget _buildSearchResults() {
     return ListView.separated(
+      padding: EdgeInsets.zero,
       itemCount: browseItems.length,
       separatorBuilder: (context, index) => const Divider(),
       itemBuilder: (context, index) {
         return ListTile(
             title: Text(browseItems[index].name ?? 'Unknown',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(browseItems[index].subname ?? 'Unknown artist'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                overflow: TextOverflow.ellipsis),
+            subtitle: Text(browseItems[index].subname ?? 'Unknown artist',
+                overflow: TextOverflow.ellipsis),
             leading: SizedBox(
                 width: 48,
                 height: 48,
                 child: CachedNetworkImage(
+                  cacheManager: RpiMusicCacheManager.instance,
                   imageUrl: browseItems[index].image?.small ?? '',
                   placeholder: (context, url) =>
                       const Icon(Icons.folder, size: 48.0),
@@ -240,9 +231,11 @@ class _SearchState extends State<Search> {
                       builder: (context) =>
                           BrowsePage(parentItem: browseItems[index])),
                 );
+              } else if (browseItems[index].canAdd ?? false) {
+                _playTrack(context, browseItems[index].id!);
               }
             },
-            dense: true);
+            visualDensity: VisualDensity.compact);
       },
     );
   }
@@ -250,20 +243,21 @@ class _SearchState extends State<Search> {
   Widget _buildLeadingIcon(BuildContext context, int index) {
     PlayerState state = context.watch<PlayerStateProvider>().state;
     String playedTrackId = state.currentTrack?.id ?? '';
-    String? currentIndex = previousSearch[index].id;
-    bool isCurrent = playedTrackId == currentIndex;
+    String? currentId = previousSearch[index].id;
+    bool isCurrent = playedTrackId == currentId;
 
     return SizedBox(
         width: 48,
         height: 48,
         child: !isCurrent
             ? CachedNetworkImage(
+                cacheManager: RpiMusicCacheManager.instance,
                 imageUrl: previousSearch[index].image?.small ?? '',
                 placeholder: (context, url) =>
                     const Icon(Icons.folder, size: 48.0),
                 errorWidget: (context, url, error) => const Icon(Icons.error),
               )
-            : const Icon(Icons.music_note_sharp, size: 40.0));
+            : const Expanded(child: SoundwaveWidget()));
   }
 
   Widget _buildSearchHistory() {
@@ -287,6 +281,7 @@ class _SearchState extends State<Search> {
           : const SizedBox.shrink(),
       Expanded(
           child: ListView.separated(
+        padding: EdgeInsets.zero,
         itemCount: previousSearch.length,
         separatorBuilder: (context, index) => const Divider(),
         itemBuilder: (context, index) {
@@ -300,6 +295,8 @@ class _SearchState extends State<Search> {
                   onPressed: () {
                     setState(() {
                       previousSearch.removeAt(index);
+                      persistentStorage.setStringList('previousSearches',
+                          previousSearch.map((e) => json.encode(e)).toList());
                     });
                   }),
               onTap: () {
@@ -312,11 +309,10 @@ class _SearchState extends State<Search> {
                         builder: (context) =>
                             BrowsePage(parentItem: previousSearch[index])),
                   );
-                } else {
+                } else if (previousSearch[index].canAdd ?? false) {
                   _playTrack(context, previousSearch[index].id!);
                 }
-              },
-              dense: true);
+              });
         },
       ))
     ]);

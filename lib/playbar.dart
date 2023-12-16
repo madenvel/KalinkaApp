@@ -4,11 +4,14 @@ import 'package:provider/provider.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
+import 'custom_cache_manager.dart';
 import 'data_model.dart';
 import 'data_provider.dart';
 
 class Playbar extends StatefulWidget {
-  const Playbar({Key? key}) : super(key: key);
+  const Playbar({Key? key, this.onTap}) : super(key: key);
+
+  final Function? onTap;
 
   @override
   State<Playbar> createState() => _PlaybarState();
@@ -18,87 +21,78 @@ class _PlaybarState extends State<Playbar> {
   _PlaybarState();
 
   final CarouselController _carouselController = CarouselController();
-
-  // String _formatProgress(BuildContext context) {
-  //   var state = context.watch<PlayerState>().state;
-  //   int minutes = (state.currentTrack?.duration ?? 0.0 / 60).toInt();
-  //   int seconds = (state.progress ?? 0.0 % 60).toInt();
-  //   return '$minutes:${seconds.toString().padLeft(2, '0')}';
-  // }
+  int _currentPageIndex = 0;
 
   double? _calculateRelativeProgress() {
-    var state = context.watch<PlayerStateProvider>().state;
-    if (state.progress == null) {
-      return null;
-    }
+    double progress = context.watch<TrackProgressProvider>().progress;
+    PlayerState state = context.read<PlayerStateProvider>().state;
     int duration = state.currentTrack?.duration ?? 0;
-    return duration != 0 ? state.progress! / duration : 0.0;
+    return duration != 0 ? progress / duration : 0.0;
   }
 
   @override
   void initState() {
     super.initState();
-    PlayerStateProvider playerStateProvider =
-        context.read<PlayerStateProvider>();
-    playerStateProvider.addListener(_onPlayerStateChange);
-  }
-
-  void _onPlayerStateChange() async {
-    if (!mounted || context.read<TrackListProvider>().trackList.isEmpty) {
-      return;
-    }
-    PlayerStateProvider playerStateProvider =
-        context.read<PlayerStateProvider>();
-    _carouselController
-        .jumpToPage(playerStateProvider.state.currentTrack?.index ?? 0);
-  }
-
-  @override
-  void dispose() {
-    // PlayerStateProvider playerStateProvider =
-    //     context.read<PlayerStateProvider>();
-    // playerStateProvider.removeListener(_onPlayerStateChange);
-    super.dispose();
+    context.read<PlayerStateProvider>().addListener(() {
+      if (mounted) {
+        int index =
+            context.read<PlayerStateProvider>().state.currentTrack?.index ?? 0;
+        if (index != _currentPageIndex) {
+          _carouselController.animateToPage(index);
+        }
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(children: [
-      const Divider(height: 0),
-      Container(
-          color: Theme.of(context).appBarTheme.backgroundColor,
-          child: _buildTile(context)),
-      LinearProgressIndicator(
-          value: _calculateRelativeProgress(),
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          valueColor: const AlwaysStoppedAnimation<Color>(Colors.blueAccent)),
-      const Divider(height: 0)
-    ]);
+    return InkWell(
+        child: Container(
+            width: MediaQuery.of(context).size.width,
+            // height: 52.0,
+            color: Theme.of(context).bottomNavigationBarTheme.backgroundColor,
+            child: Column(children: [
+              const Divider(height: 0),
+              _buildTile(context),
+              LinearProgressIndicator(
+                  value: _calculateRelativeProgress(),
+                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue)),
+              const Divider(height: 0)
+            ])),
+        onTap: () {
+          widget.onTap?.call();
+        });
   }
 
   Widget _buildTile(BuildContext context) {
-    return Row(children: <Widget>[
+    return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+      const SizedBox(width: 8),
       _buildImage(context),
+      const SizedBox(width: 8),
       Expanded(child: _buildCarousel(context)),
-      _buildPlayIcon(context)
+      _buildPlayIcon(context),
+      const SizedBox(width: 8),
     ]);
   }
 
   Widget _buildInfoText(BuildContext context, int index) {
     List<Track> trackList = context.watch<TrackListProvider>().trackList;
 
-    return Padding(
-        padding: const EdgeInsets.only(left: 8, right: 8),
-        child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                trackList[index].title ?? 'Unknown title',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(trackList[index].performer?.name ?? 'Unknonw artist')
-            ]));
+    return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            trackList[index].title ?? 'Unknown title',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            trackList[index].performer?.name ?? 'Unknown artist',
+            overflow: TextOverflow.ellipsis,
+          )
+        ]);
   }
 
   Widget _buildImage(BuildContext context) {
@@ -112,11 +106,15 @@ class _PlaybarState extends State<Playbar> {
     if (imgSource == null || imgSource.isEmpty) {
       return const SizedBox.shrink();
     }
-    return CachedNetworkImage(
-      imageUrl: imgSource,
-      placeholder: (context, url) => const CircularProgressIndicator(),
-      errorWidget: (context, url, error) => const Icon(Icons.error),
-    );
+    return SizedBox(
+        width: 50,
+        height: 50,
+        child: CachedNetworkImage(
+          cacheManager: RpiMusicCacheManager.instance,
+          imageUrl: imgSource,
+          placeholder: (context, url) => const Icon(Icons.folder, size: 50.0),
+          errorWidget: (context, url, error) => const Icon(Icons.error),
+        ));
   }
 
   Widget _buildIconButton(IconData icon, Function onPressed) {
@@ -127,6 +125,7 @@ class _PlaybarState extends State<Playbar> {
       color: Theme.of(context).indicatorColor,
       textColor: Theme.of(context).primaryColor,
       padding: const EdgeInsets.all(8),
+      minWidth: 50,
       shape: const CircleBorder(),
       child: Icon(
         icon,
@@ -166,7 +165,7 @@ class _PlaybarState extends State<Playbar> {
       case PlayerStateType.buffering:
         return const Icon(Icons.hourglass_empty);
       default:
-        return const SizedBox(width: 48, height: 48);
+        return const SizedBox(width: 50, height: 50);
     }
   }
 
@@ -176,13 +175,14 @@ class _PlaybarState extends State<Playbar> {
         options: CarouselOptions(
             disableCenter: true,
             viewportFraction: 1.0,
-            height: 48,
+            height: 50,
             enableInfiniteScroll: false,
             initialPage:
                 context.read<PlayerStateProvider>().state.currentTrack?.index ??
                     0,
             onPageChanged: (index, reason) {
               if (reason == CarouselPageChangedReason.manual) {
+                _currentPageIndex = index;
                 RpiPlayerProxy().play(index);
               }
             }),

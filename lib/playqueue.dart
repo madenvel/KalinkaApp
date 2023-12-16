@@ -2,9 +2,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rpi_music/data_provider.dart';
+import 'package:rpi_music/playbar.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
 
+import 'custom_cache_manager.dart';
 import 'data_model.dart';
+import 'soundwave.dart';
 
 class PlayQueue extends StatefulWidget {
   const PlayQueue({Key? key}) : super(key: key);
@@ -44,18 +47,11 @@ class _PlayQueueState extends State<PlayQueue>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Play Queue'),
-      ),
-      body: _buildList(context),
-    );
+    return _buildList(context);
   }
 
   Widget _buildList(BuildContext context) {
     List<Track> tracks = context.watch<TrackListProvider>().trackList;
-    // PlayerStateType state = context.select((PlayerStateProvider value) =>
-    //     (value.state.state ?? PlayerStateType.idle));
     int currentTrackIndex = context.select(
         (PlayerStateProvider value) => (value.state.currentTrack?.index ?? -1));
     return ListView.separated(
@@ -77,16 +73,22 @@ class _PlayQueueState extends State<PlayQueue>
             leading: SizedBox(
               width: 48,
               height: 48,
-              child: CachedNetworkImage(
-                  imageUrl: tracks[index].album?.image?.small ?? '',
-                  placeholder: (context, url) => const Icon(Icons.folder),
-                  errorWidget: (context, url, error) =>
-                      const Icon(Icons.error)),
+              child: index == currentTrackIndex
+                  ? const SoundwaveWidget()
+                  : CachedNetworkImage(
+                      cacheManager: RpiMusicCacheManager.instance,
+                      imageUrl: tracks[index].album?.image?.small ?? '',
+                      placeholder: (context, url) => const Icon(Icons.folder),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.error)),
             ),
-            title: Text(tracks[index].title ?? 'Unknown',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle:
-                Text(tracks[index].performer?.name ?? 'Unknown performer'),
+            title: Text(
+              tracks[index].title ?? 'Unknown',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(tracks[index].performer?.name ?? 'Unknown performer',
+                overflow: TextOverflow.ellipsis),
             trailing: IconButton(
                 icon: const Icon(Icons.clear),
                 onPressed: () {
@@ -94,8 +96,7 @@ class _PlayQueueState extends State<PlayQueue>
                 }),
             onTap: () {
               RpiPlayerProxy().play(index);
-            },
-            dense: true);
+            });
       },
     );
   }
