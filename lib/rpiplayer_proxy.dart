@@ -90,7 +90,7 @@ class RpiPlayerProxy {
     });
   }
 
-  Future<List<Track>> listTracks({int offset = 0, int limit = 30}) async {
+  Future<TrackList> listTracks({int offset = 0, int limit = 100}) async {
     final url = _buildUri('/queue/list',
         {'offset': offset.toString(), 'limit': limit.toString()});
     return client.get(url).then((response) {
@@ -98,8 +98,7 @@ class RpiPlayerProxy {
         throw Exception('Failed to list tracks');
       }
 
-      final list = jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
-      return list.map((track) => Track.fromJson(track)).toList();
+      return TrackList.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
     });
   }
 
@@ -114,19 +113,21 @@ class RpiPlayerProxy {
     });
   }
 
-  Future<List<BrowseItem>> search(SearchType queryType, String query) async {
-    final url = _buildUri('/search/${queryType.toStringValue()}/$query');
+  Future<BrowseItemsList> search(SearchType queryType, String query,
+      {int offset = 0, int limit = 30}) async {
+    final url = _buildUri('/search/${queryType.toStringValue()}/$query',
+        {'offset': offset.toString(), 'limit': limit.toString()});
     return client.get(url).then((response) {
       if (response.statusCode != 200) {
         throw Exception('Failed to search for $queryType $query, url=$url');
       }
 
-      final list = jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
-      return list.map((browseItem) => BrowseItem.fromJson(browseItem)).toList();
+      return BrowseItemsList.fromJson(
+          jsonDecode(utf8.decode(response.bodyBytes)));
     });
   }
 
-  Future<List<BrowseItem>> browse(String query,
+  Future<BrowseItemsList> browse(String query,
       {int offset = 0, int limit = 10}) async {
     final url = _buildUri('/browse$query',
         {'offset': offset.toString(), 'limit': limit.toString()});
@@ -135,8 +136,8 @@ class RpiPlayerProxy {
         throw Exception('Failed to browse $query, url=$url');
       }
 
-      final list = jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
-      return list.map((browseItem) => BrowseItem.fromJson(browseItem)).toList();
+      return BrowseItemsList.fromJson(
+          jsonDecode(utf8.decode(response.bodyBytes)));
     });
   }
 
