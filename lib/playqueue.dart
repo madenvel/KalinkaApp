@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rpi_music/data_provider.dart';
-import 'package:rpi_music/playbar.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
 
 import 'custom_cache_manager.dart';
@@ -71,20 +70,24 @@ class _PlayQueueState extends State<PlayQueue>
       itemBuilder: (context, index) {
         return ListTile(
             leading: SizedBox(
-              width: 48,
-              height: 48,
-              child: index == currentTrackIndex
-                  ? const SoundwaveWidget()
-                  : CachedNetworkImage(
-                      cacheManager: RpiMusicCacheManager.instance,
-                      imageUrl: tracks[index].album?.image?.small ?? '',
-                      placeholder: (context, url) => const Icon(Icons.folder),
-                      errorWidget: (context, url, error) =>
-                          const Icon(Icons.error)),
-            ),
+                width: 50,
+                height: 50,
+                child: Stack(children: [
+                  Opacity(
+                      opacity: index == currentTrackIndex ? 0.3 : 1.0,
+                      child: CachedNetworkImage(
+                          cacheManager: RpiMusicCacheManager.instance,
+                          imageUrl: tracks[index].album?.image?.small ?? '',
+                          placeholder: (context, url) =>
+                              const Icon(Icons.music_note, size: 50.0),
+                          errorWidget: (context, url, error) =>
+                              const Icon(Icons.error, size: 50.0))),
+                  index == currentTrackIndex
+                      ? const Center(child: SoundwaveWidget())
+                      : const SizedBox.shrink()
+                ])),
             title: Text(
               tracks[index].title ?? 'Unknown',
-              style: const TextStyle(fontWeight: FontWeight.bold),
               overflow: TextOverflow.ellipsis,
             ),
             subtitle: Text(tracks[index].performer?.name ?? 'Unknown performer',
