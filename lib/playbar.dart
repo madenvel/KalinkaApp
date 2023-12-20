@@ -112,7 +112,8 @@ class _PlaybarState extends State<Playbar> {
         child: CachedNetworkImage(
           cacheManager: RpiMusicCacheManager.instance,
           imageUrl: imgSource,
-          placeholder: (context, url) => const Icon(Icons.folder, size: 50.0),
+          placeholder: (context, url) =>
+              const Icon(Icons.music_note, size: 50.0),
           errorWidget: (context, url, error) => const Icon(Icons.error),
         ));
   }
