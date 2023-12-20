@@ -103,14 +103,14 @@ class CustomListTile extends StatelessWidget {
             color: Colors.grey,
             child: image == null
                 ? Icon(fallbackIcon, size: 50.0)
-                : Center(
-                    child: CachedNetworkImage(
+                : CachedNetworkImage(
+                    fit: BoxFit.cover,
                     cacheManager: RpiMusicCacheManager.instance,
                     imageUrl: image,
                     placeholder: (context, url) =>
                         Icon(fallbackIcon, size: 50.0),
                     errorWidget: (context, url, error) =>
                         const Icon(Icons.error, size: 50.0),
-                  ))));
+                  )));
   }
 }
