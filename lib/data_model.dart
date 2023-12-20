@@ -197,6 +197,39 @@ class AlbumImage {
       };
 }
 
+class BrowseItemsList {
+  int offset;
+  int limit;
+  int total;
+  List<BrowseItem> items;
+
+  BrowseItemsList(this.offset, this.limit, this.total, this.items);
+
+  factory BrowseItemsList.fromJson(Map<String, dynamic> json) =>
+      BrowseItemsList(
+        json["offset"],
+        json["limit"],
+        json["total"],
+        List<BrowseItem>.from(json["items"].map((x) => BrowseItem.fromJson(x))),
+      );
+}
+
+class TrackList {
+  int offset;
+  int limit;
+  int total;
+  List<Track> items;
+
+  TrackList(this.offset, this.limit, this.total, this.items);
+
+  factory TrackList.fromJson(Map<String, dynamic> json) => TrackList(
+        json["offset"],
+        json["limit"],
+        json["total"],
+        List<Track>.from(json["items"].map((x) => Track.fromJson(x))),
+      );
+}
+
 class BrowseItem {
   final String? id;
   final String? name;
