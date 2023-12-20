@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:rpi_music/browse.dart';
 
+import 'data_model.dart';
 import 'data_provider.dart';
 
 class Discover extends StatelessWidget {
@@ -14,22 +16,30 @@ class Discover extends StatelessWidget {
         title: const Text('Discover'),
       ),
       body: ListView(
-        children: [
-          _buildSection('Top Albums', _buildHorizontalList(context)),
-          _buildSection('Playlists', _buildHorizontalList(context)),
-          _buildSection(
-              'My Weekly Q',
-              _buildWideImageWidget(
-                context,
-                'https://static.qobuz.com/images/dynamic/weekly_foreground_en.png',
-              ),
-              seeAll: false),
-        ],
+        children: _buildSectionList(context),
       ),
     );
   }
 
-  Widget _buildSection(String title, Widget horizontalList,
+  List<Widget> _buildSectionList(BuildContext context) {
+    final List<Widget> widgets = [];
+    DiscoverSectionProvider provider = context.watch<DiscoverSectionProvider>();
+    if (!provider.hasLoaded) {
+      return [const Center(child: CircularProgressIndicator())];
+    }
+
+    for (int i = 0; i < provider.sections.length; i++) {
+      widgets.add(_buildSection(
+          context,
+          provider.sections[i],
+          provider.sections[i].name ?? 'Unknown section',
+          _buildHorizontalList(context, provider.previews(i))));
+    }
+    return widgets;
+  }
+
+  Widget _buildSection(BuildContext context, BrowseItem item, String title,
+      Widget horizontalList,
       {bool seeAll = true}) {
     return Padding(
         padding: const EdgeInsets.all(8.0),
@@ -53,7 +63,18 @@ class Discover extends StatelessWidget {
                           child: TextButton(
                               child: const Text('See all >',
                                   style: TextStyle(fontSize: 16)),
-                              onPressed: () {})))
+                              onPressed: () {
+                                if (item.canBrowse ?? false) {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            BrowsePage(parentItem: item)),
+                                  );
+                                }
+                                //  else if (item.canAdd ?? false) {
+                                //   _playTrack(context, item.id!);
+                                // }
+                              })))
                   : const SizedBox.shrink()
             ]),
             horizontalList
@@ -61,10 +82,9 @@ class Discover extends StatelessWidget {
         ));
   }
 
-  Widget _buildHorizontalList(BuildContext context) {
+  Widget _buildHorizontalList(
+      BuildContext context, List<BrowseItem> browseItems) {
     var size = MediaQuery.of(context).size.width / 2.5;
-    var track = context.watch<PlayerStateProvider>().state.currentTrack;
-    var image = track?.album?.image?.small;
     return Container(
         height: size + 56,
         child: ListView.separated(
@@ -72,6 +92,8 @@ class Discover extends StatelessWidget {
           itemCount: 10,
           separatorBuilder: (context, index) => const SizedBox(width: 4),
           itemBuilder: (context, index) {
+            final item = browseItems[index];
+            var image = item.image?.large;
             return Container(
                 width: size,
                 child: Card(
@@ -90,19 +112,21 @@ class Discover extends StatelessWidget {
                                   : const SizedBox.shrink()),
                           const SizedBox(height: 8),
                           Flexible(
-                              child: Text(track?.title ?? 'Unknown Title',
+                              child: Text(item.name ?? 'Unknown Title',
                                   style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500),
                                   overflow: TextOverflow.ellipsis)),
-                          Text(
-                            track?.performer?.name ?? 'Unknown Album',
-                            style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                                color: Colors.grey),
-                            overflow: TextOverflow.ellipsis,
-                          )
+                          item.subname != null
+                              ? Text(
+                                  item.subname!,
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                      color: Colors.grey),
+                                  overflow: TextOverflow.ellipsis,
+                                )
+                              : const SizedBox.shrink()
                         ])));
           },
         ));

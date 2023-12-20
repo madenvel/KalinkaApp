@@ -33,11 +33,11 @@ class RpiMusic extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    const listTileTheme = ListTileThemeData(
-      titleTextStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-      subtitleTextStyle: TextStyle(
-          fontSize: 14, fontWeight: FontWeight.w400, color: Colors.grey),
-    );
+    var listTileTheme = Theme.of(context).listTileTheme.copyWith(
+        titleTextStyle:
+            const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        subtitleTextStyle: const TextStyle(
+            fontSize: 14, fontWeight: FontWeight.w400, color: Colors.grey));
     return MultiProvider(
         providers: [
           Provider<DateTimeProvider>(create: (context) => DateTimeProvider()),
@@ -46,6 +46,7 @@ class RpiMusic extends StatelessWidget {
           ChangeNotifierProvider(create: (context) => TrackProgressProvider()),
           ChangeNotifierProvider(create: (context) => UserFavoritesProvider()),
           ChangeNotifierProvider(create: (context) => SearchResultsProvider()),
+          ChangeNotifierProvider(create: (context) => DiscoverSectionProvider())
         ],
         child: MaterialApp(
           scrollBehavior: MyCustomScrollBehavior(),
@@ -54,7 +55,7 @@ class RpiMusic extends StatelessWidget {
               brightness: Brightness.light,
               useMaterial3: true,
               visualDensity: VisualDensity.compact,
-              colorSchemeSeed: Colors.blue,
+              // colorSchemeSeed: Colors.black,
               listTileTheme: listTileTheme
               /* light theme settings */
               ),
@@ -62,7 +63,7 @@ class RpiMusic extends StatelessWidget {
               brightness: Brightness.dark,
               useMaterial3: true,
               visualDensity: VisualDensity.compact,
-              colorSchemeSeed: Colors.blue,
+              // colorSchemeSeed: Colors.black,
               listTileTheme: listTileTheme
 
               /* dark theme settings */
