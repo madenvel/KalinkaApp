@@ -28,8 +28,7 @@ class _NowPlayingState extends State<NowPlaying> {
               const SizedBox(height: 20),
               _buildProgressBarWidget(context),
               const SizedBox(height: 10),
-              _buildTrackInfoWidget(context),
-              const Spacer(),
+              Expanded(child: _buildTrackInfoWidget(context)),
               _buildButtonsBar(context),
               const SizedBox(height: 20),
               _buildVolumeControl(context),
@@ -50,24 +49,28 @@ class _NowPlayingState extends State<NowPlaying> {
     return Stack(children: [
       Container(
           width: screenWidth,
-          height: screenWidth + 20,
-          child: imageUrl.isNotEmpty
-              ? CachedNetworkImage(
-                  cacheManager: RpiMusicCacheManager.instance,
-                  imageUrl: imageUrl,
-                  fit: BoxFit.fitWidth,
-                  placeholder: (context, url) =>
-                      const Center(child: CircularProgressIndicator()),
-                  errorWidget: (context, url, error) =>
-                      const Icon(Icons.folder, fill: 1.0))
-              : const Icon(Icons.folder, fill: 1.0)),
+          child: Column(children: [
+            imageUrl.isNotEmpty
+                ? Align(
+                    alignment: Alignment.topCenter,
+                    child: CachedNetworkImage(
+                        cacheManager: RpiMusicCacheManager.instance,
+                        imageUrl: imageUrl,
+                        fit: BoxFit.fitWidth,
+                        placeholder: (context, url) =>
+                            const Center(child: CircularProgressIndicator()),
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.music_note, fill: 1.0)))
+                : const Icon(Icons.music_note, fill: 1.0),
+            const SizedBox(height: 35)
+          ])),
       Positioned(bottom: 0, child: _buildOverlayPanel(context))
     ]);
   }
 
   Widget _buildTrackInfoWidget(BuildContext context) {
     PlayerState state = context.watch<PlayerStateProvider>().state;
-    return Column(children: [
+    return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
       Text(state.currentTrack?.title ?? 'Unknown',
           style: const TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold)),
       Text(state.currentTrack?.performer?.name ?? 'Unknown',
