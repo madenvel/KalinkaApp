@@ -203,13 +203,7 @@ class _BrowsePage extends State<BrowsePage> {
       Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Stack(children: [
           SizedBox(width: screenWidth, height: 350),
-          Opacity(
-              opacity: 0.2,
-              child: Image.network(widget.parentItem.image?.thumbnail ?? '',
-                  filterQuality: FilterQuality.low,
-                  fit: BoxFit.cover,
-                  width: screenWidth,
-                  height: 350)),
+          Opacity(opacity: 0.2, child: _buildBackgroundImage(screenWidth)),
         ]),
         const SizedBox(height: 35.0)
       ]),
@@ -235,6 +229,34 @@ class _BrowsePage extends State<BrowsePage> {
     ]);
   }
 
+  Widget _buildBackgroundImage(double width) {
+    String? imageUrl =
+        widget.parentItem.image?.small ?? widget.parentItem.image?.thumbnail;
+
+    return Stack(children: [
+      imageUrl != null
+          ? CachedNetworkImage(
+              imageUrl: widget.parentItem.image?.thumbnail ?? '',
+              filterQuality: FilterQuality.low,
+              fit: BoxFit.cover,
+              width: width,
+              height: 350)
+          : const SizedBox.shrink(),
+      Container(
+          width: width,
+          height: 350,
+          decoration: BoxDecoration(
+              gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: <Color>[
+                    Colors.grey.withOpacity(0),
+                    Colors.grey,
+                  ],
+                  tileMode: TileMode.mirror))),
+    ]);
+  }
+
   Widget _buildAlbumHeader() {
     return Positioned.fill(
         child: Column(
@@ -242,17 +264,27 @@ class _BrowsePage extends State<BrowsePage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
           const SizedBox(height: 48.0),
-          SizedBox(
-              width: 200,
+          Container(
               height: 200,
-              child: CachedNetworkImage(
-                cacheManager: RpiMusicCacheManager.instance,
-                imageUrl: widget.parentItem.image?.large ?? '',
-                filterQuality: FilterQuality.high,
-                placeholder: (context, url) =>
-                    const Center(child: CircularProgressIndicator()),
-                errorWidget: (context, url, error) => const Icon(Icons.error),
-              )),
+              decoration: BoxDecoration(boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).primaryColor,
+                  spreadRadius: 3,
+                  blurRadius: 3,
+                  offset: const Offset(1, 1), // changes position of shadow
+                ),
+              ]),
+              child: widget.parentItem.image?.large != null
+                  ? CachedNetworkImage(
+                      cacheManager: RpiMusicCacheManager.instance,
+                      imageUrl: widget.parentItem.image!.large!,
+                      filterQuality: FilterQuality.high,
+                      placeholder: (context, url) =>
+                          const Center(child: CircularProgressIndicator()),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.error),
+                    )
+                  : _buildImageReplacement()),
           const SizedBox(height: 10.0),
           Text(
             widget.parentItem.name ?? 'Unknown Album',
@@ -267,5 +299,28 @@ class _BrowsePage extends State<BrowsePage> {
                   style: const TextStyle(fontSize: 18, color: Colors.grey),
                   overflow: TextOverflow.ellipsis),
         ]));
+  }
+
+  Widget _buildImageReplacement() {
+    var type = widget.parentItem.url?.split('/')[1] ?? '';
+    late IconData icon;
+    switch (type) {
+      case 'album':
+        icon = Icons.album;
+        break;
+      case 'playlist':
+        icon = Icons.playlist_play;
+        break;
+      case 'artist':
+        icon = Icons.person;
+        break;
+      default:
+        icon = Icons.error;
+    }
+    return Container(
+        width: 200,
+        height: 200,
+        color: Colors.grey,
+        child: Icon(icon, size: 200.0));
   }
 }
