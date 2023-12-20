@@ -20,7 +20,7 @@ class _SoundwaveWidgetState extends State<SoundwaveWidget> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+    _timer = Timer.periodic(const Duration(milliseconds: 25), (timer) {
       if (context.read<PlayerStateProvider>().state.state !=
           PlayerStateType.playing) {
         return;
@@ -47,7 +47,9 @@ class _SoundwaveWidgetState extends State<SoundwaveWidget> {
 }
 
 class SoundBarsPainter extends CustomPainter {
-  const SoundBarsPainter({Listenable? repaint}) : super(repaint: repaint);
+  SoundBarsPainter({Listenable? repaint}) : super(repaint: repaint);
+
+  final List<double> bars = [0.0, 0.0, 0.0, 0.0];
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -56,12 +58,16 @@ class SoundBarsPainter extends CustomPainter {
       ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke;
 
-    const int barsNum = 4;
+    int barsNum = bars.length;
     final double barWidth = size.width / (barsNum * 2);
 
     for (int i = 0; i < barsNum; ++i) {
       final double x = i * 2 * barWidth;
-      final double barHeight = Random().nextDouble() * size.height;
+      final double barHeight = bars[i] * size.height;
+      bars[i] = max(0.0, bars[i] - 0.1);
+      if (bars[i] == 0.0) {
+        bars[i] = Random().nextDouble();
+      }
       canvas.drawRect(
           Rect.fromLTWH(x, size.height, barWidth, -barHeight), paint);
     }
