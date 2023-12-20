@@ -23,8 +23,11 @@ class CustomListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
         leading: _buildLeadingIcon(context),
-        title: Text(browseItem.name ?? 'Unknown title'),
-        subtitle: browseItem.subname != null ? Text(browseItem.subname!) : null,
+        title: Text(browseItem.name ?? 'Unknown title',
+            overflow: TextOverflow.ellipsis),
+        subtitle: browseItem.subname != null
+            ? Text(browseItem.subname!, overflow: TextOverflow.ellipsis)
+            : null,
         trailing: trailing,
         onTap: onTap,
         visualDensity: VisualDensity.comfortable);

@@ -149,11 +149,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
                 selectedIndex: currentPageIndex,
                 destinations: const <Widget>[
-                  // NavigationDestination(
-                  //   selectedIcon: Icon(Icons.music_note_outlined),
-                  //   icon: Icon(Icons.music_note),
-                  //   label: 'Now Playing',
-                  // ),
                   NavigationDestination(
                     selectedIcon: Icon(Icons.compass_calibration),
                     icon: Icon(Icons.compass_calibration_outlined),
