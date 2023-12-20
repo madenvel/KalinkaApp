@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:rpi_music/data_model.dart';
 
 import 'data_provider.dart';
-import 'info_card.dart';
 
 class Discover extends StatelessWidget {
   const Discover({Key? key}) : super(key: key);
@@ -87,8 +85,9 @@ class Discover extends StatelessWidget {
                         children: [
                           ClipRRect(
                               borderRadius: BorderRadius.circular(5.0),
-                              child: Image.network(image ?? '',
-                                  fit: BoxFit.fitWidth)),
+                              child: image != null
+                                  ? Image.network(image, fit: BoxFit.fitWidth)
+                                  : const SizedBox.shrink()),
                           const SizedBox(height: 8),
                           Flexible(
                               child: Text(track?.title ?? 'Unknown Title',
