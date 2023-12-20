@@ -17,9 +17,11 @@ class TrackListProvider with ChangeNotifier {
   TrackListProvider() {
     _listener.registerCallback({
       EventType.TracksAdded: (args) {
-        print('Tracks added: ${args[0]}');
-        _trackList.addAll(args[0].cast<Track>());
-        notifyListeners();
+        if (!isLoading) {
+          print('Tracks added: ${args[0]}');
+          _trackList.addAll(args[0].cast<Track>());
+          notifyListeners();
+        }
       },
       EventType.TracksRemoved: (args) {
         print('Tracks removed: ${args[0]}');
@@ -31,6 +33,7 @@ class TrackListProvider with ChangeNotifier {
       },
       EventType.NetworkRecover: (args) {
         getTracks();
+        notifyListeners();
       }
     });
   }
@@ -39,20 +42,19 @@ class TrackListProvider with ChangeNotifier {
     _isLoading = true;
     List<Track> tracks = [];
     const int chunkSize = 50;
+    int totalSize = 0;
     int offs = 0;
-    while (true) {
+    do {
       try {
         var chunk = await _service.listTracks(offset: offs, limit: chunkSize);
-        tracks.addAll(chunk);
-        if (chunk.length < chunkSize) {
-          break;
-        }
+        totalSize = chunk.total;
+        tracks.addAll(chunk.items);
         offs += chunkSize;
       } catch (e) {
         print('Error listing tracks: $e');
         return;
       }
-    }
+    } while (tracks.length != totalSize);
     _trackList = tracks;
     _isLoading = false;
 
@@ -165,22 +167,30 @@ class UserFavoritesIdsProvider with ChangeNotifier {
 
 class UserFavoritesProvider with ChangeNotifier {
   final List<BrowseItem> _favoriteAlbums = [];
-  // late List<Artist> _favoriteArtists;
+  final List<BrowseItem> _favoriteArtists = [];
   final List<BrowseItem> _favoriteTracks = [];
+  final List<BrowseItem> _favoritePlaylists = [];
   bool _isLoaded = false;
 
   List<BrowseItem> get favoriteAlbums => _favoriteAlbums;
-  // List<Artist> get favoriteArtists => _favoriteArtists;
+  List<BrowseItem> get favoriteArtists => _favoriteArtists;
   List<BrowseItem> get favoriteTracks => _favoriteTracks;
+  List<BrowseItem> get favoritePlaylists => _favoritePlaylists;
   bool get isLoaded => _isLoaded;
 
   UserFavoritesProvider() {
     Future.wait([
-      getAll('/favorite/albums').then((items) {
+      getAll('/favorite/album').then((items) {
         _favoriteAlbums.addAll(items);
       }),
-      getAll('/favorite/tracks').then((items) {
+      getAll('/favorite/track').then((items) {
         _favoriteTracks.addAll(items);
+      }),
+      getAll('/favorite/playlist').then((items) {
+        _favoritePlaylists.addAll(items);
+      }),
+      getAll('/favorite/artist').then((items) {
+        _favoriteArtists.addAll(items);
       })
     ]).then((_) {
       _isLoaded = true;
@@ -189,26 +199,65 @@ class UserFavoritesProvider with ChangeNotifier {
   }
 
   Future<List<BrowseItem>> getAll(String query) async {
-    int limit = 50;
+    int limit = 100;
     int offset = 0;
+    int total = 0;
     List<BrowseItem> items = [];
-    bool stop = false;
-    while (stop == false) {
+    do {
       try {
         await RpiPlayerProxy()
             .browse(query, offset: offset, limit: limit)
-            .then((values) {
-          if (values.length < limit) {
-            stop = true;
-          }
-          items.addAll(values);
-          offset += values.length;
+            .then((value) {
+          items.addAll(value.items);
+          total = value.total;
+          offset += value.items.length;
         });
       } catch (e) {
         print('Error getting favorites: $e');
         break;
       }
-    }
+    } while (offset < total);
     return items;
+  }
+}
+
+class SearchResultsProvider with ChangeNotifier {
+  String _query = '';
+  SearchType _searchType = SearchType.track;
+  int _totalItems = 0;
+  bool _hasLoaded = false;
+
+  final List<BrowseItem?> _results = [];
+
+  List<BrowseItem?> get results => _results;
+  int get totalItems => _totalItems;
+  String get query => _query;
+  SearchType get searchType => _searchType;
+
+  Future<void> loadMoreItems(int chunkSize) async {
+    if (_hasLoaded && _results.length >= _totalItems) {
+      return;
+    }
+    _results.add(null);
+    notifyListeners();
+    RpiPlayerProxy()
+        .search(_searchType, _query,
+            offset: _results.length - 1, limit: chunkSize)
+        .then((value) {
+      _results.removeLast();
+      _results.addAll(value.items);
+      _totalItems = value.total;
+      _hasLoaded = true;
+      notifyListeners();
+    });
+  }
+
+  Future<void> search(
+      String query, SearchType searchType, int chunkSize) async {
+    _query = query;
+    _searchType = searchType;
+    _results.clear();
+    _hasLoaded = false;
+    return loadMoreItems(chunkSize);
   }
 }
