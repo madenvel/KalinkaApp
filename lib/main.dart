@@ -33,13 +33,19 @@ class RpiMusic extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    const listTileTheme = ListTileThemeData(
+      titleTextStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+      subtitleTextStyle: TextStyle(
+          fontSize: 14, fontWeight: FontWeight.w400, color: Colors.grey),
+    );
     return MultiProvider(
         providers: [
           Provider<DateTimeProvider>(create: (context) => DateTimeProvider()),
           ChangeNotifierProvider(create: (context) => TrackListProvider()),
           ChangeNotifierProvider(create: (context) => PlayerStateProvider()),
           ChangeNotifierProvider(create: (context) => TrackProgressProvider()),
-          ChangeNotifierProvider(create: (context) => UserFavoritesProvider())
+          ChangeNotifierProvider(create: (context) => UserFavoritesProvider()),
+          ChangeNotifierProvider(create: (context) => SearchResultsProvider()),
         ],
         child: MaterialApp(
           scrollBehavior: MyCustomScrollBehavior(),
@@ -47,14 +53,18 @@ class RpiMusic extends StatelessWidget {
           theme: ThemeData(
               brightness: Brightness.light,
               useMaterial3: true,
-              visualDensity: VisualDensity.compact
+              visualDensity: VisualDensity.compact,
+              colorSchemeSeed: Colors.blue,
+              listTileTheme: listTileTheme
               /* light theme settings */
               ),
           darkTheme: ThemeData(
               brightness: Brightness.dark,
               useMaterial3: true,
               visualDensity: VisualDensity.compact,
-              colorSchemeSeed: Colors.blue
+              colorSchemeSeed: Colors.blue,
+              listTileTheme: listTileTheme
+
               /* dark theme settings */
               ),
           themeMode: ThemeMode.system,
