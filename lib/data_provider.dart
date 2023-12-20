@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'data_model.dart';
 import 'event_listener.dart';
 import 'rpiplayer_proxy.dart';
+import 'lazy_list.dart';
 
 class TrackListProvider with ChangeNotifier {
   List<Track> _trackList = [];
@@ -18,13 +19,11 @@ class TrackListProvider with ChangeNotifier {
     _listener.registerCallback({
       EventType.TracksAdded: (args) {
         if (!isLoading) {
-          print('Tracks added: ${args[0]}');
           _trackList.addAll(args[0].cast<Track>());
           notifyListeners();
         }
       },
       EventType.TracksRemoved: (args) {
-        print('Tracks removed: ${args[0]}');
         int len = args[0].length;
         for (var i = 0; i < len; ++i) {
           _trackList.removeAt(args[0][i]);
@@ -221,43 +220,83 @@ class UserFavoritesProvider with ChangeNotifier {
   }
 }
 
-class SearchResultsProvider with ChangeNotifier {
+class SearchResultsProvider extends LazyLoadingList with ChangeNotifier {
   String _query = '';
   SearchType _searchType = SearchType.track;
-  int _totalItems = 0;
-  bool _hasLoaded = false;
 
-  final List<BrowseItem?> _results = [];
-
-  List<BrowseItem?> get results => _results;
-  int get totalItems => _totalItems;
   String get query => _query;
   SearchType get searchType => _searchType;
 
-  Future<void> loadMoreItems(int chunkSize) async {
-    if (_hasLoaded && _results.length >= _totalItems) {
-      return;
-    }
-    _results.add(null);
+  @override
+  Future<BrowseItemsList> performRequest(int offset, int limit) {
+    return RpiPlayerProxy()
+        .search(_searchType, _query, offset: offset, limit: limit);
+  }
+
+  @override
+  void onLoading() {
     notifyListeners();
-    RpiPlayerProxy()
-        .search(_searchType, _query,
-            offset: _results.length - 1, limit: chunkSize)
-        .then((value) {
-      _results.removeLast();
-      _results.addAll(value.items);
-      _totalItems = value.total;
-      _hasLoaded = true;
-      notifyListeners();
-    });
+  }
+
+  @override
+  void onLoaded() {
+    notifyListeners();
   }
 
   Future<void> search(
       String query, SearchType searchType, int chunkSize) async {
     _query = query;
     _searchType = searchType;
-    _results.clear();
-    _hasLoaded = false;
+    results.clear();
     return loadMoreItems(chunkSize);
+  }
+}
+
+class DiscoverSectionProvider with ChangeNotifier {
+  final List<BrowseItem> _sections = [];
+  final List<List<BrowseItem>> _previews = [];
+  bool _hasLoaded = false;
+
+  List<BrowseItem> get sections => _sections;
+  List<BrowseItem> previews(int index) => _previews[index];
+  bool get hasLoaded => _hasLoaded;
+
+  DiscoverSectionProvider() {
+    _init();
+  }
+
+  Future<void> _loadSections() async {
+    _sections.clear();
+    await RpiPlayerProxy()
+        .browse('/catalog', offset: 0, limit: 10)
+        .then((value) {
+      _sections.addAll(value.items);
+    });
+  }
+
+  Future<void> _loadPreviews() async {
+    _previews.clear();
+    _previews.addAll(List.generate(_sections.length, (_) => []));
+    for (int i = 0; i < _sections.length; ++i) {
+      if (!(_sections[i].canBrowse ?? false)) {
+        _previews.add([]);
+        continue;
+      }
+      String? url = _sections[i].url;
+      if (url == null) {
+        continue;
+      }
+      await RpiPlayerProxy()
+          .browse(url, offset: 0, limit: 12)
+          .then((value) => {_previews[i].addAll(value.items)});
+    }
+  }
+
+  Future<void> _init() async {
+    _hasLoaded = false;
+    await _loadSections();
+    await _loadPreviews();
+    _hasLoaded = true;
+    notifyListeners();
   }
 }
