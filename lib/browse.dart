@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rpi_music/custom_cache_manager.dart';
+import 'package:rpi_music/custom_list_tile.dart';
 import 'package:rpi_music/data_provider.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:rpi_music/soundwave.dart';
 import 'data_model.dart';
 
 class BrowsePage extends StatefulWidget {
@@ -19,22 +19,33 @@ class BrowsePage extends StatefulWidget {
 class _BrowsePage extends State<BrowsePage> {
   _BrowsePage();
 
+  List<BrowseItem> browseItems = [];
+  bool _loadInProgress = true;
+
   @override
   void initState() {
     super.initState();
-    RpiPlayerProxy().browse(widget.parentItem.url ?? '').then((items) {
-      setState(() {
-        browseItems.clear();
-        browseItems.addAll(items);
-        _browseInProgress = false;
-      });
-    }).catchError((error) {
-      print('Failed to get browse items: $error');
-    });
+    _loadBrowseItems();
   }
 
-  List<BrowseItem> browseItems = [];
-  bool _browseInProgress = true;
+  void _loadBrowseItems() async {
+    if (widget.parentItem.url == null) {
+      return;
+    }
+    const int chunkSize = 50;
+    int offset = 0;
+    int total = 0;
+    do {
+      BrowseItemsList result = await RpiPlayerProxy()
+          .browse(widget.parentItem.url!, offset: offset, limit: chunkSize);
+      browseItems.addAll(result.items);
+      offset += result.items.length;
+      total = result.total;
+    } while (offset < total);
+    setState(() {
+      _loadInProgress = false;
+    });
+  }
 
   Future<void> _replaceAndPlay(String url, int index) async {
     List<Track> trackList = context.read<TrackListProvider>().trackList;
@@ -69,7 +80,7 @@ class _BrowsePage extends State<BrowsePage> {
               Navigator.pop(context);
             },
           )),
-      body: _browseInProgress
+      body: _loadInProgress
           ? const Center(child: CircularProgressIndicator())
           : _buildBrowsePage(context),
     );
@@ -80,26 +91,13 @@ class _BrowsePage extends State<BrowsePage> {
     switch (browseType) {
       case 'album':
         return _buildAlbum(context);
+      case 'playlist':
+        return _buildPlaylist(context);
+      case 'artist':
+        return _buildArtist(context);
       default:
         return const Center(child: Text('Unknown browse type'));
     }
-  }
-
-  Widget _buildLeadingIcon(BuildContext context, int index) {
-    PlayerState state = context.watch<PlayerStateProvider>().state;
-    String playedTrackId = state.currentTrack?.id ?? '';
-    String? currentIndex = browseItems[index].id;
-    bool isCurrent = playedTrackId == currentIndex;
-
-    return SizedBox(
-        width: 48,
-        height: 48,
-        child: !isCurrent
-            ? Align(
-                alignment: Alignment.center,
-                child: Text("${index + 1}",
-                    style: const TextStyle(fontSize: 20.0)))
-            : const SoundwaveWidget());
   }
 
   Widget _buildAlbum(BuildContext context) {
@@ -111,15 +109,17 @@ class _BrowsePage extends State<BrowsePage> {
         if (index == 0) {
           return _buildHeader(context);
         } else {
-          return ListTile(
-              title: Text(browseItems[index - 1].name ?? 'Unknown',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle:
-                  Text(browseItems[index - 1].subname ?? 'Unknown performer'),
-              leading: _buildLeadingIcon(context, index - 1),
+          return CustomListTile(
+              browseItem: browseItems[index - 1],
+              index: index - 1,
               onTap: () {
                 if (widget.parentItem.url != null) {
-                  _replaceAndPlay(widget.parentItem.url!, index - 1);
+                  if (widget.parentItem.canAdd ?? false) {
+                    _replaceAndPlay(widget.parentItem.url!, index - 1);
+                  } else if ((browseItems[index - 1].canAdd ?? false) &&
+                      browseItems[index - 1].url != null) {
+                    _replaceAndPlay(browseItems[index - 1].url!, 0);
+                  }
                 }
               });
         }
@@ -127,7 +127,59 @@ class _BrowsePage extends State<BrowsePage> {
     );
   }
 
-  Widget _buildIconButton(IconData icon, double size, Function onPressed) {
+  Widget _buildPlaylist(BuildContext context) {
+    return ListView.separated(
+      itemCount: browseItems.length + 1,
+      separatorBuilder: (context, index) =>
+          index == 0 ? const SizedBox.shrink() : const Divider(),
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return _buildHeader(context);
+        } else {
+          return CustomListTile(
+              browseItem: browseItems[index - 1],
+              onTap: () {
+                if (widget.parentItem.url != null) {
+                  if (widget.parentItem.canAdd ?? false) {
+                    _replaceAndPlay(widget.parentItem.url!, index - 1);
+                  } else if ((browseItems[index - 1].canAdd ?? false) &&
+                      browseItems[index - 1].url != null) {
+                    _replaceAndPlay(browseItems[index - 1].url!, 0);
+                  }
+                }
+              });
+        }
+      },
+    );
+  }
+
+  Widget _buildArtist(BuildContext context) {
+    return ListView.separated(
+      itemCount: browseItems.length + 1,
+      separatorBuilder: (context, index) =>
+          index == 0 ? const SizedBox.shrink() : const Divider(),
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return _buildHeader(context);
+        } else {
+          return CustomListTile(
+              browseItem: browseItems[index - 1],
+              onTap: () {
+                if (browseItems[index - 1].canBrowse ?? false) {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              BrowsePage(parentItem: browseItems[index - 1])));
+                }
+              });
+        }
+      },
+    );
+  }
+
+  Widget _buildIconButton(IconData icon, double size, Function onPressed,
+      {Color? color}) {
     return MaterialButton(
       onPressed: () {
         onPressed();
@@ -136,10 +188,12 @@ class _BrowsePage extends State<BrowsePage> {
       textColor: Theme.of(context).primaryColor,
       padding: const EdgeInsets.all(8),
       shape: const CircleBorder(),
-      child: Icon(
-        icon,
-        size: size,
-      ),
+      child: Padding(
+          padding: EdgeInsets.all(size / 5),
+          child: Icon(
+            icon,
+            size: size,
+          )),
     );
   }
 
@@ -168,17 +222,16 @@ class _BrowsePage extends State<BrowsePage> {
               child: _buildIconButton(Icons.favorite, 30, () {
                 print('Pressed');
               }))),
-      Positioned(
-          bottom: 0,
-          right: 0,
-          child: Padding(
-              padding: const EdgeInsets.only(right: 30),
-              child: _buildIconButton(Icons.play_arrow_rounded, 50.0, () {
-                if (widget.parentItem.url != null &&
-                    widget.parentItem.url!.isNotEmpty) {
-                  _replaceAndPlay(widget.parentItem.url!, 0);
-                }
-              })))
+      widget.parentItem.canAdd ?? false
+          ? Positioned(
+              bottom: 0,
+              right: 0,
+              child: Padding(
+                  padding: const EdgeInsets.only(right: 30),
+                  child: _buildIconButton(Icons.play_arrow_rounded, 50.0, () {
+                    _replaceAndPlay(widget.parentItem.url!, 0);
+                  })))
+          : const SizedBox.shrink()
     ]);
   }
 
@@ -207,10 +260,12 @@ class _BrowsePage extends State<BrowsePage> {
             style: const TextStyle(fontSize: 23, color: Colors.white),
             overflow: TextOverflow.ellipsis,
           ),
-          Text(widget.parentItem.subname ?? 'Unknown Author',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18, color: Colors.grey),
-              overflow: TextOverflow.ellipsis),
+          widget.parentItem.subname == null
+              ? const SizedBox.shrink()
+              : Text(widget.parentItem.subname!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 18, color: Colors.grey),
+                  overflow: TextOverflow.ellipsis),
         ]));
   }
 }

@@ -1,16 +1,13 @@
 import 'dart:convert';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
+import 'package:rpi_music/custom_list_tile.dart';
 import 'package:rpi_music/data_provider.dart';
-import 'package:rpi_music/soundwave.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
 
 import 'browse.dart';
-import 'custom_cache_manager.dart';
-import 'error_dialog.dart';
 import 'data_model.dart';
 
 class Search extends StatefulWidget {
@@ -21,37 +18,27 @@ class Search extends StatefulWidget {
 }
 
 class _SearchState extends State<Search> {
-  final List<BrowseItem> browseItems = [];
   final List<BrowseItem> previousSearch = [];
-  bool searchInProgress = false;
   SearchType searchType = SearchType.album;
+  String searchText = '';
   final _textFieldController = TextEditingController();
   late SharedPreferences persistentStorage;
+  final ScrollController _searchListScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _textFieldController.dispose();
+    _searchListScrollController.dispose();
+    super.dispose();
+  }
 
   void _performSearch(query, {Function? onError}) async {
     if (query.isEmpty) {
       return;
     }
+    SearchResultsProvider searchResults = context.read<SearchResultsProvider>();
     setState(() {
-      searchInProgress = true;
-      persistentStorage.setString('searchText', _textFieldController.text);
-    });
-    RpiPlayerProxy().search(searchType, query).then((items) {
-      setState(() {
-        browseItems.clear();
-        browseItems.addAll(items);
-        List<String> browseItemsJson =
-            browseItems.map((e) => json.encode(e)).toList();
-        persistentStorage.setStringList('browseItems', browseItemsJson);
-      });
-    }).catchError((error) {
-      showErrorDialog(context,
-          title: 'Error', message: 'Failed to get tracks: $error');
-      onError?.call();
-    }).whenComplete(() {
-      setState(() {
-        searchInProgress = false;
-      });
+      searchResults.search(_textFieldController.text, searchType, 50);
     });
   }
 
@@ -62,11 +49,9 @@ class _SearchState extends State<Search> {
     });
   }
 
-  void _addToPreviousSearch(int itemIndex) {
-    if (previousSearch
-            .indexWhere((element) => element.id == browseItems[itemIndex].id) ==
-        -1) {
-      previousSearch.insert(0, browseItems[itemIndex]);
+  void _addToPreviousSearch(BrowseItem item) {
+    if (previousSearch.indexWhere((element) => element.id == item.id) == -1) {
+      previousSearch.insert(0, item);
       persistentStorage.setStringList('previousSearches',
           previousSearch.map((e) => json.encode(e)).toList());
     }
@@ -74,13 +59,9 @@ class _SearchState extends State<Search> {
 
   void _updateSelectedChip(SearchType selected) {
     setState(() {
-      var oldSearchType = searchType;
       searchType = selected;
       persistentStorage.setString('selectedChip', searchType.toStringValue());
-      _performSearch(_textFieldController.text, onError: () {
-        searchType = oldSearchType;
-        persistentStorage.setString('selectedChip', searchType.toStringValue());
-      });
+      _performSearch(_textFieldController.text);
     });
   }
 
@@ -95,6 +76,20 @@ class _SearchState extends State<Search> {
   void initState() {
     super.initState();
     _initPersistentState();
+    _searchListScrollController.addListener(() {
+      if (!mounted) {
+        return;
+      }
+      if (_searchListScrollController.position.pixels >=
+          _searchListScrollController.position.maxScrollExtent) {
+        SearchResultsProvider searchResults =
+            context.read<SearchResultsProvider>();
+        if (searchResults.results.last == null) {
+          return;
+        }
+        searchResults.loadMoreItems(10);
+      }
+    });
   }
 
   void _initPersistentState() async {
@@ -106,17 +101,15 @@ class _SearchState extends State<Search> {
         for (var element in previousSearches) {
           previousSearch.add(BrowseItem.fromJson(json.decode(element)));
         }
-        searchType = SearchTypeExtension.fromStringValue(
-            persistentStorage.getString('selectedChip') ??
-                SearchType.album.toStringValue());
-        _textFieldController.text =
-            persistentStorage.getString('searchText') ?? '';
-        if (_textFieldController.text.isNotEmpty) {
-          List<String> persistedBrowseItems =
-              persistentStorage.getStringList('browseItems') ?? [];
-          for (var element in persistedBrowseItems) {
-            browseItems.add(BrowseItem.fromJson(json.decode(element)));
-          }
+        SearchResultsProvider searchResults =
+            context.read<SearchResultsProvider>();
+        _textFieldController.text = searchResults.query;
+        if (searchResults.query.isEmpty) {
+          searchType = SearchTypeExtension.fromStringValue(
+              persistentStorage.getString('selectedChip') ??
+                  SearchType.album.toStringValue());
+        } else {
+          searchType = searchResults.searchType;
         }
       });
     });
@@ -158,11 +151,9 @@ class _SearchState extends State<Search> {
             : const SizedBox.shrink(),
         const SizedBox(height: 8),
         Expanded(
-          child: searchInProgress
-              ? const Center(child: CircularProgressIndicator())
-              : (_textFieldController.text.isEmpty
-                  ? _buildSearchHistory()
-                  : _buildSearchResults()),
+          child: _textFieldController.text.isEmpty
+              ? _buildSearchHistory()
+              : _buildSearchResults(),
         ),
       ],
     );
@@ -202,62 +193,32 @@ class _SearchState extends State<Search> {
   }
 
   Widget _buildSearchResults() {
+    SearchResultsProvider searchResults =
+        context.watch<SearchResultsProvider>();
     return ListView.separated(
-      padding: EdgeInsets.zero,
-      itemCount: browseItems.length,
-      separatorBuilder: (context, index) => const Divider(),
-      itemBuilder: (context, index) {
-        return ListTile(
-            title: Text(browseItems[index].name ?? 'Unknown',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-                overflow: TextOverflow.ellipsis),
-            subtitle: Text(browseItems[index].subname ?? 'Unknown artist',
-                overflow: TextOverflow.ellipsis),
-            leading: SizedBox(
-                width: 48,
-                height: 48,
-                child: CachedNetworkImage(
-                  cacheManager: RpiMusicCacheManager.instance,
-                  imageUrl: browseItems[index].image?.small ?? '',
-                  placeholder: (context, url) =>
-                      const Icon(Icons.folder, size: 48.0),
-                  errorWidget: (context, url, error) => const Icon(Icons.error),
-                )),
-            onTap: () {
-              _addToPreviousSearch(index);
-              if (browseItems[index].canBrowse ?? false) {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          BrowsePage(parentItem: browseItems[index])),
-                );
-              } else if (browseItems[index].canAdd ?? false) {
-                _playTrack(context, browseItems[index].id!);
-              }
-            },
-            visualDensity: VisualDensity.compact);
-      },
-    );
-  }
-
-  Widget _buildLeadingIcon(BuildContext context, int index) {
-    PlayerState state = context.watch<PlayerStateProvider>().state;
-    String playedTrackId = state.currentTrack?.id ?? '';
-    String? currentId = previousSearch[index].id;
-    bool isCurrent = playedTrackId == currentId;
-
-    return SizedBox(
-        width: 48,
-        height: 48,
-        child: !isCurrent
-            ? CachedNetworkImage(
-                cacheManager: RpiMusicCacheManager.instance,
-                imageUrl: previousSearch[index].image?.small ?? '',
-                placeholder: (context, url) =>
-                    const Icon(Icons.folder, size: 48.0),
-                errorWidget: (context, url, error) => const Icon(Icons.error),
-              )
-            : const Expanded(child: SoundwaveWidget()));
+        controller: _searchListScrollController,
+        padding: EdgeInsets.zero,
+        itemCount: searchResults.results.length,
+        separatorBuilder: (context, index) => const Divider(),
+        itemBuilder: (context, index) {
+          BrowseItem? item = searchResults.results.elementAtOrNull(index);
+          if (item == null) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return CustomListTile(
+              browseItem: item,
+              onTap: () {
+                _addToPreviousSearch(item);
+                if (item.canBrowse ?? false) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (context) => BrowsePage(parentItem: item)),
+                  );
+                } else if (item.canAdd ?? false) {
+                  _playTrack(context, item.id!);
+                }
+              });
+        });
   }
 
   Widget _buildSearchHistory() {
@@ -285,11 +246,8 @@ class _SearchState extends State<Search> {
         itemCount: previousSearch.length,
         separatorBuilder: (context, index) => const Divider(),
         itemBuilder: (context, index) {
-          return ListTile(
-              title: Text(previousSearch[index].name ?? 'Unknown',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text(previousSearch[index].subname ?? 'Unknown artist'),
-              leading: _buildLeadingIcon(context, index),
+          return CustomListTile(
+              browseItem: previousSearch[index],
               trailing: IconButton(
                   icon: const Icon(Icons.clear),
                   onPressed: () {

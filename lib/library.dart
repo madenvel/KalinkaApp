@@ -1,10 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rpi_music/data_provider.dart';
+import 'package:rpi_music/custom_list_tile.dart';
 
 import 'browse.dart';
-import 'custom_cache_manager.dart';
 import 'data_model.dart';
 import 'rpiplayer_proxy.dart';
 
@@ -101,9 +100,9 @@ class _LibraryState extends State<Library> {
     UserFavoritesProvider provider = context.watch<UserFavoritesProvider>();
     List<BrowseItem> browseItems = _filterItems([
       provider.favoriteAlbums,
-      <BrowseItem>[],
+      provider.favoriteArtists,
       provider.favoriteTracks,
-      <BrowseItem>[]
+      provider.favoritePlaylists
     ][_selectedIndex]);
     return provider.isLoaded
         ? ListView.separated(
@@ -121,23 +120,8 @@ class _LibraryState extends State<Library> {
                       const SizedBox(width: 8)
                     ]));
               }
-              return ListTile(
-                  title: Text(browseItems[index].name ?? 'Unknown',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                      overflow: TextOverflow.ellipsis),
-                  subtitle: Text(browseItems[index].subname ?? 'Unknown artist',
-                      overflow: TextOverflow.ellipsis),
-                  leading: SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: CachedNetworkImage(
-                        cacheManager: RpiMusicCacheManager.instance,
-                        imageUrl: browseItems[index].image?.small ?? '',
-                        placeholder: (context, url) =>
-                            const Icon(Icons.folder, size: 48.0),
-                        errorWidget: (context, url, error) =>
-                            const Icon(Icons.error),
-                      )),
+              return CustomListTile(
+                  browseItem: browseItems[index],
                   onTap: () {
                     if (browseItems[index].canBrowse ?? false) {
                       Navigator.of(context).push(
