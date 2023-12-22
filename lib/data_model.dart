@@ -234,6 +234,7 @@ class BrowseItem {
   final String? id;
   final String? name;
   final String? subname;
+  final String? description;
   final String? comment;
   final String? url;
   final bool? canBrowse;
@@ -244,6 +245,7 @@ class BrowseItem {
     this.id,
     this.name,
     this.subname,
+    this.description,
     this.comment,
     this.url,
     this.canBrowse,
@@ -255,6 +257,7 @@ class BrowseItem {
         id: json["id"],
         name: json["name"],
         subname: json["subname"],
+        description: json["description"],
         comment: json["comment"],
         url: json["url"],
         canBrowse: json["can_browse"],
@@ -267,6 +270,7 @@ class BrowseItem {
         "id": id,
         "name": name,
         "subname": subname,
+        "description": description,
         "comment": comment,
         "url": url,
         "can_browse": canBrowse,

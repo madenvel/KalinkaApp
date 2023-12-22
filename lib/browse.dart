@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:rpi_music/custom_cache_manager.dart';
 import 'package:rpi_music/custom_list_tile.dart';
 import 'package:rpi_music/data_provider.dart';
+import 'package:rpi_music/list_card.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'data_model.dart';
@@ -35,13 +36,13 @@ class _BrowsePage extends State<BrowsePage> {
     const int chunkSize = 50;
     int offset = 0;
     int total = 0;
-    do {
-      BrowseItemsList result = await RpiPlayerProxy()
-          .browse(widget.parentItem.url!, offset: offset, limit: chunkSize);
-      browseItems.addAll(result.items);
-      offset += result.items.length;
-      total = result.total;
-    } while (offset < total);
+    // do {
+    BrowseItemsList result = await RpiPlayerProxy()
+        .browse(widget.parentItem.url!, offset: offset, limit: chunkSize);
+    browseItems.addAll(result.items);
+    offset += result.items.length;
+    total = result.total;
+    // } while (offset < total);
     setState(() {
       _loadInProgress = false;
     });
@@ -90,44 +91,56 @@ class _BrowsePage extends State<BrowsePage> {
     String browseType = widget.parentItem.url?.split('/')[1] ?? '';
     switch (browseType) {
       case 'album':
-        return _buildAlbum(context);
       case 'playlist':
-        return _buildPlaylist(context);
+        return _buildTrackList(context, displayIndex: browseType == 'album');
       case 'artist':
         return _buildArtist(context);
+      case 'catalog':
+        if (widget.parentItem.canAdd ?? false) {
+          return _buildTrackList(context);
+        }
+        return _buildCatalog(context);
       default:
         return const Center(child: Text('Unknown browse type'));
     }
   }
 
-  Widget _buildAlbum(BuildContext context) {
-    return ListView.separated(
-      itemCount: browseItems.length + 1,
-      separatorBuilder: (context, index) =>
-          index == 0 ? const SizedBox.shrink() : const Divider(),
+  Widget _buildCatalog(BuildContext context) {
+    double size = MediaQuery.of(context).size.width / 2;
+    double aspectRatio = size / (size + 64);
+    return GridView.builder(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2, childAspectRatio: aspectRatio),
+      itemCount: browseItems.length,
       itemBuilder: (context, index) {
-        if (index == 0) {
-          return _buildHeader(context);
-        } else {
-          return CustomListTile(
-              browseItem: browseItems[index - 1],
-              index: index - 1,
-              onTap: () {
-                if (widget.parentItem.url != null) {
-                  if (widget.parentItem.canAdd ?? false) {
-                    _replaceAndPlay(widget.parentItem.url!, index - 1);
-                  } else if ((browseItems[index - 1].canAdd ?? false) &&
-                      browseItems[index - 1].url != null) {
-                    _replaceAndPlay(browseItems[index - 1].url!, 0);
-                  }
-                }
-              });
-        }
+        final item = browseItems[index];
+        return Padding(
+            padding: const EdgeInsets.all(8), child: _buildCard(context, item));
       },
     );
   }
 
-  Widget _buildPlaylist(BuildContext context) {
+  Widget _buildCard(BuildContext context, BrowseItem? item) {
+    if (item == null) {
+      return const Spacer();
+    }
+
+    return ListCard(
+        browseItem: item,
+        onTap: () {
+          if (item.canBrowse ?? false) {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => BrowsePage(parentItem: item)));
+          }
+          // else if (item.canAdd ?? false) {
+          //   _replaceAndPlay(item.url!, 0);
+          // }
+        });
+  }
+
+  Widget _buildTrackList(BuildContext context, {bool displayIndex = false}) {
     return ListView.separated(
       itemCount: browseItems.length + 1,
       separatorBuilder: (context, index) =>
@@ -138,6 +151,7 @@ class _BrowsePage extends State<BrowsePage> {
         } else {
           return CustomListTile(
               browseItem: browseItems[index - 1],
+              index: displayIndex ? index - 1 : null,
               onTap: () {
                 if (widget.parentItem.url != null) {
                   if (widget.parentItem.canAdd ?? false) {
@@ -230,13 +244,15 @@ class _BrowsePage extends State<BrowsePage> {
   }
 
   Widget _buildBackgroundImage(double width) {
-    String? imageUrl =
-        widget.parentItem.image?.small ?? widget.parentItem.image?.thumbnail;
+    String? imageUrl = widget.parentItem.image?.small ??
+        widget.parentItem.image?.thumbnail ??
+        widget.parentItem.image?.large;
 
     return Stack(children: [
       imageUrl != null
           ? CachedNetworkImage(
-              imageUrl: widget.parentItem.image?.thumbnail ?? '',
+              cacheManager: RpiMusicCacheManager.instance,
+              imageUrl: imageUrl,
               filterQuality: FilterQuality.low,
               fit: BoxFit.cover,
               width: width,

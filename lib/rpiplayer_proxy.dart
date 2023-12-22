@@ -150,6 +150,26 @@ class RpiPlayerProxy {
     });
   }
 
+  Future<void> setVolume(double volume) async {
+    final url = _buildUri('/device/set_volume',
+        {'device_id': 'musiccast', 'volume': volume.toString()});
+    return client.get(url).then((response) {
+      if (response.statusCode != 200) {
+        throw Exception('Failed to set volume to $volume, url=$url');
+      }
+    });
+  }
+
+  Future<double> getVolume() async {
+    final url = _buildUri('/device/get_volume', {'device_id': 'musiccast'});
+    return client.get(url).then((response) {
+      if (response.statusCode != 200) {
+        throw Exception('Failed to get volume, url=$url');
+      }
+      return jsonDecode(utf8.decode(response.bodyBytes))['volume'];
+    });
+  }
+
   StatusMessage statusMessageFromResponse(http.Response response) {
     if (response.statusCode != 200) {
       var url = response.request?.url;

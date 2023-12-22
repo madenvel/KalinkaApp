@@ -11,18 +11,20 @@ class CustomListTile extends StatelessWidget {
   final int? index;
   final Widget? trailing;
   final GestureTapCallback? onTap;
+  final bool noLeadingIcon;
 
   const CustomListTile(
       {super.key,
       required this.browseItem,
       this.index,
       this.trailing,
-      this.onTap});
+      this.onTap,
+      this.noLeadingIcon = false});
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-        leading: _buildLeadingIcon(context),
+        leading: !noLeadingIcon ? _buildLeadingIcon(context) : null,
         title: Text(browseItem.name ?? 'Unknown title',
             overflow: TextOverflow.ellipsis),
         subtitle: browseItem.subname != null

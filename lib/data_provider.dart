@@ -258,7 +258,7 @@ class DiscoverSectionProvider with ChangeNotifier {
   bool _hasLoaded = false;
 
   List<BrowseItem> get sections => _sections;
-  List<BrowseItem> previews(int index) => _previews[index];
+  List<List<BrowseItem>> get previews => _previews;
   bool get hasLoaded => _hasLoaded;
 
   DiscoverSectionProvider() {
@@ -298,5 +298,39 @@ class DiscoverSectionProvider with ChangeNotifier {
     await _loadPreviews();
     _hasLoaded = true;
     notifyListeners();
+  }
+}
+
+class VolumeControlProvider with ChangeNotifier {
+  double _volume = 0.5;
+  bool _supported = false;
+
+  double get volume => _volume;
+  bool get supported => _supported;
+
+  VolumeControlProvider() {
+    _init();
+  }
+
+  Future<void> _init() async {
+    return RpiPlayerProxy().getVolume().then((value) {
+      _volume = value;
+      _supported = true;
+      notifyListeners();
+    }).catchError((err) {
+      _volume = 0;
+      _supported = false;
+      notifyListeners();
+    });
+  }
+
+  Future<void> setVolume(double volume) async {
+    if (!_supported) {
+      return;
+    }
+    return RpiPlayerProxy().setVolume(volume).then((value) {
+      _volume = volume;
+      // notifyListeners();
+    });
   }
 }

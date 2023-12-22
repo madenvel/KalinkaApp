@@ -1,45 +1,52 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:rpi_music/browse.dart';
+import 'package:rpi_music/custom_cache_manager.dart';
 
 import 'data_model.dart';
 import 'data_provider.dart';
+import 'list_card.dart';
 
 class Discover extends StatelessWidget {
   const Discover({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    DiscoverSectionProvider provider = context.watch<DiscoverSectionProvider>();
+    MediaQuery.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Discover'),
       ),
-      body: ListView(
-        children: _buildSectionList(context),
-      ),
+      body: provider.hasLoaded
+          ? ListView.builder(
+              scrollDirection: Axis.vertical,
+              itemCount: provider.sections.length,
+              itemBuilder: (context, index) {
+                return _buildSectionList(context, index);
+              })
+          : const Center(child: CircularProgressIndicator()),
     );
   }
 
-  List<Widget> _buildSectionList(BuildContext context) {
-    final List<Widget> widgets = [];
+  Widget _buildSectionList(BuildContext context, int index) {
     DiscoverSectionProvider provider = context.watch<DiscoverSectionProvider>();
-    if (!provider.hasLoaded) {
-      return [const Center(child: CircularProgressIndicator())];
-    }
-
-    for (int i = 0; i < provider.sections.length; i++) {
-      widgets.add(_buildSection(
-          context,
-          provider.sections[i],
-          provider.sections[i].name ?? 'Unknown section',
-          _buildHorizontalList(context, provider.previews(i))));
-    }
-    return widgets;
+    var section = provider.sections[index];
+    final image = section.image?.large ?? section.image?.small;
+    final bool hasImage = image != null && image.isNotEmpty;
+    return _buildSection(
+        context,
+        provider.sections[index],
+        hasImage
+            ? _buildWideImageWidget(context, section, image)
+            : _buildHorizontalList(context, provider.previews[index]),
+        seeAll: !hasImage);
   }
 
-  Widget _buildSection(BuildContext context, BrowseItem item, String title,
-      Widget horizontalList,
+  Widget _buildSection(
+      BuildContext context, BrowseItem item, Widget horizontalList,
       {bool seeAll = true}) {
     return Padding(
         padding: const EdgeInsets.all(8.0),
@@ -48,7 +55,7 @@ class Discover extends StatelessWidget {
           children: [
             Row(children: [
               Text(
-                title,
+                item.name ?? 'Unknown Section',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -77,7 +84,15 @@ class Discover extends StatelessWidget {
                               })))
                   : const SizedBox.shrink()
             ]),
-            horizontalList
+            horizontalList,
+            item.description != null
+                ? Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                        contentPadding: const EdgeInsets.all(0),
+                        title: Text(item.description!)),
+                  )
+                : const SizedBox.shrink(),
           ],
         ));
   }
@@ -85,95 +100,52 @@ class Discover extends StatelessWidget {
   Widget _buildHorizontalList(
       BuildContext context, List<BrowseItem> browseItems) {
     var size = MediaQuery.of(context).size.width / 2.5;
-    return Container(
-        height: size + 56,
+    return SizedBox(
+        height: size + 64,
         child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: 10,
-          separatorBuilder: (context, index) => const SizedBox(width: 4),
-          itemBuilder: (context, index) {
-            final item = browseItems[index];
-            var image = item.image?.large;
-            return Container(
-                width: size,
-                child: Card(
-                    elevation: 0,
-                    clipBehavior: Clip.antiAlias,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(5.0),
-                    ),
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                              borderRadius: BorderRadius.circular(5.0),
-                              child: image != null
-                                  ? Image.network(image, fit: BoxFit.fitWidth)
-                                  : const SizedBox.shrink()),
-                          const SizedBox(height: 8),
-                          Flexible(
-                              child: Text(item.name ?? 'Unknown Title',
-                                  style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500),
-                                  overflow: TextOverflow.ellipsis)),
-                          item.subname != null
-                              ? Text(
-                                  item.subname!,
-                                  style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w400,
-                                      color: Colors.grey),
-                                  overflow: TextOverflow.ellipsis,
-                                )
-                              : const SizedBox.shrink()
-                        ])));
+            shrinkWrap: true,
+            scrollDirection: Axis.horizontal,
+            itemCount: browseItems.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 4),
+            itemBuilder: (context, index) {
+              return _buildPreviewListItem(context, browseItems[index], size);
+            }));
+  }
+
+  Widget _buildPreviewListItem(
+      BuildContext context, BrowseItem item, double itemSize) {
+    return Container(
+        width: itemSize,
+        child: ListCard(
+          browseItem: item,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                  builder: (context) => BrowsePage(parentItem: item)),
+            );
           },
         ));
   }
 
-  static List<Color> myweeklyqColors = [
-    Colors.blue,
-    Colors.green,
-    Colors.orange,
-    Colors.purple,
-    Colors.red,
-    Colors.yellow
-  ];
-
-  Widget _buildWideImageWidget(BuildContext context, String imageUrl) {
-    return Container(
-      height: 144,
-      decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          color: myweeklyqColors[
-                  getWeekOfYear(context.read<DateTimeProvider>().dateTime) %
-                      myweeklyqColors.length]
-              .withOpacity(0.5)),
-      child: Stack(
-        children: [
-          ClipRRect(
+  Widget _buildWideImageWidget(
+      BuildContext context, BrowseItem section, String imageUrl) {
+    return InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+                builder: (context) => BrowsePage(parentItem: section)),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+          child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                imageUrl,
+              child: CachedNetworkImage(
+                cacheManager: RpiMusicCacheManager.instance,
+                imageUrl: imageUrl,
                 fit: BoxFit.contain,
-                width: double.infinity,
               )),
-          Positioned(
-            right: 8,
-            top: 56,
-            child: IconButton(
-              icon: const Icon(Icons.play_circle_filled),
-              onPressed: () {
-                // Add your play button logic here
-              },
-              color: Colors.white,
-              iconSize: 48,
-            ),
-          ),
-        ],
-      ),
-    );
+        ));
   }
 
   int getWeekOfYear(DateTime date) {

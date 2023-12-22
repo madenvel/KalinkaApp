@@ -101,10 +101,23 @@ class _NowPlayingState extends State<NowPlaying> {
   }
 
   Widget _buildVolumeControl(BuildContext context) {
-    return const Row(mainAxisSize: MainAxisSize.max, children: [
-      Icon(Icons.volume_down),
-      Expanded(child: Slider(value: 0.5, min: 0, max: 1, onChanged: null)),
-      Icon(Icons.volume_up)
+    var provider = context.watch<VolumeControlProvider>();
+    if (provider.supported == false) {
+      return const Spacer();
+    }
+
+    double volume = provider.volume;
+    return Row(mainAxisSize: MainAxisSize.max, children: [
+      const Icon(Icons.volume_down),
+      Expanded(
+          child: Slider(
+              value: volume,
+              min: 0,
+              max: 1,
+              onChanged: (double value) {
+                provider.setVolume(value);
+              })),
+      const Icon(Icons.volume_up)
     ]);
   }
 
