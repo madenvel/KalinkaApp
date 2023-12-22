@@ -150,7 +150,7 @@ class RpiPlayerProxy {
     });
   }
 
-  Future<void> setVolume(double volume) async {
+  Future<void> setVolume(int volume) async {
     final url = _buildUri('/device/set_volume',
         {'device_id': 'musiccast', 'volume': volume.toString()});
     return client.get(url).then((response) {
@@ -160,13 +160,13 @@ class RpiPlayerProxy {
     });
   }
 
-  Future<double> getVolume() async {
+  Future<Volume> getVolume() async {
     final url = _buildUri('/device/get_volume', {'device_id': 'musiccast'});
     return client.get(url).then((response) {
       if (response.statusCode != 200) {
         throw Exception('Failed to get volume, url=$url');
       }
-      return jsonDecode(utf8.decode(response.bodyBytes))['volume'];
+      return Volume.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
     });
   }
 

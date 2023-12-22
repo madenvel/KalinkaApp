@@ -302,10 +302,29 @@ class DiscoverSectionProvider with ChangeNotifier {
 }
 
 class VolumeControlProvider with ChangeNotifier {
-  double _volume = 0.5;
+  double _currentVolume = 0.0;
+  int _realVolume = 0;
+  int _maxVolume = 0;
   bool _supported = false;
+  bool _blockNotifications = false;
 
-  double get volume => _volume;
+  double get volume => _currentVolume;
+  int get maxVolume => _maxVolume;
+  set blockNotifications(bool blockNotifications) =>
+      _blockNotifications = blockNotifications;
+
+  set volume(double value) {
+    if (value < 0 || value > _maxVolume || value == _currentVolume) {
+      return;
+    }
+    _currentVolume = value;
+
+    if (_currentVolume.toInt() != _realVolume) {
+      _realVolume = _currentVolume.toInt();
+      RpiPlayerProxy().setVolume(_realVolume);
+    }
+  }
+
   bool get supported => _supported;
 
   VolumeControlProvider() {
@@ -313,24 +332,29 @@ class VolumeControlProvider with ChangeNotifier {
   }
 
   Future<void> _init() async {
-    return RpiPlayerProxy().getVolume().then((value) {
-      _volume = value;
+    EventListener().registerCallback({
+      EventType.VolumeChanged: (args) {
+        if (!_blockNotifications && _currentVolume != args[0]) {
+          _realVolume = args[0];
+          if (_realVolume != _currentVolume.toInt()) {
+            _currentVolume = _realVolume.toDouble();
+          }
+          notifyListeners();
+        }
+      }
+    });
+    return RpiPlayerProxy().getVolume().then((Volume value) {
+      _currentVolume = value.currentVolume.toDouble();
+      _realVolume = value.currentVolume;
+      _maxVolume = value.maxVolume;
       _supported = true;
       notifyListeners();
     }).catchError((err) {
-      _volume = 0;
+      _currentVolume = 0;
+      _realVolume = 0;
+      _maxVolume = 0;
       _supported = false;
       notifyListeners();
-    });
-  }
-
-  Future<void> setVolume(double volume) async {
-    if (!_supported) {
-      return;
-    }
-    return RpiPlayerProxy().setVolume(volume).then((value) {
-      _volume = volume;
-      // notifyListeners();
     });
   }
 }

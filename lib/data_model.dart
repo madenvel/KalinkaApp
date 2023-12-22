@@ -313,6 +313,26 @@ extension SearchTypeExtension on SearchType {
   }
 }
 
+class Volume {
+  final int maxVolume;
+  int currentVolume;
+
+  Volume({
+    this.maxVolume = 0,
+    this.currentVolume = 0,
+  });
+
+  factory Volume.fromJson(Map<String, dynamic> json) => Volume(
+        maxVolume: json["max_volume"],
+        currentVolume: json["current_volume"],
+      );
+
+  Map<String, dynamic> toJson() => {
+        "max_volume": maxVolume,
+        "current_volume": currentVolume,
+      };
+}
+
 class StatusMessage {
   final String? message;
 

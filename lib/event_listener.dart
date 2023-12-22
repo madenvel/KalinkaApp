@@ -21,6 +21,7 @@ enum EventType {
   Error,
   NetworkError,
   NetworkRecover,
+  VolumeChanged,
 }
 
 enum PlayState {
@@ -58,6 +59,8 @@ extension EventTypeExtension on EventType {
         return "network_error";
       case EventType.NetworkRecover:
         return "network_recover";
+      case EventType.VolumeChanged:
+        return "volume_changed";
       default:
         throw Exception("Invalid event type");
     }
@@ -150,6 +153,7 @@ class EventListener {
   }
 
   (EventType, List<dynamic>) _parseEvent(String data) {
+    // print('Received event data: $data');
     final json = jsonDecode(data);
     final eventType = EventType.values.firstWhere(
         (element) => element.value == json["event_type"],
@@ -179,6 +183,8 @@ class EventListener {
       case EventType.TracksAdded:
         return [args[0].map((e) => Track.fromJson(e)).toList()];
       case EventType.TracksRemoved:
+        return args;
+      case EventType.VolumeChanged:
         return args;
       default:
         throw Exception("Invalid event type");

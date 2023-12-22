@@ -106,17 +106,25 @@ class _NowPlayingState extends State<NowPlaying> {
       return const Spacer();
     }
 
-    double volume = provider.volume;
     return Row(mainAxisSize: MainAxisSize.max, children: [
       const Icon(Icons.volume_down),
       Expanded(
           child: Slider(
-              value: volume,
-              min: 0,
-              max: 1,
-              onChanged: (double value) {
-                provider.setVolume(value);
-              })),
+        value: provider.volume,
+        min: 0,
+        max: provider.maxVolume.toDouble(),
+        onChangeStart: (double value) {
+          provider.blockNotifications = true;
+        },
+        onChanged: (double value) {
+          provider.volume = value;
+          setState(() {});
+        },
+        onChangeEnd: (double value) {
+          provider.volume = value;
+          provider.blockNotifications = false;
+        },
+      )),
       const Icon(Icons.volume_up)
     ]);
   }
