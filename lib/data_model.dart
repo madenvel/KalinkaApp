@@ -45,14 +45,16 @@ extension PlayerStateTypeExtension on PlayerStateType {
 }
 
 class PlayerState {
-  PlayerStateType? state;
+  PlayerStateType state;
   Track? currentTrack;
-  double? progress;
+  int index;
+  double progress;
 
   PlayerState({
-    this.state,
+    required this.state,
     this.currentTrack,
-    this.progress,
+    this.index = 0,
+    this.progress = 0.0,
   });
 
   factory PlayerState.fromJson(Map<String, dynamic> json) => PlayerState(
@@ -60,50 +62,44 @@ class PlayerState {
         currentTrack: json["current_track"] == null
             ? null
             : Track.fromJson(json["current_track"]),
+        index: json["index"],
         progress: 0.0 + json["progress"],
       );
 
   Map<String, dynamic> toJson() => {
-        "state": state?.toValue(),
+        "state": state.toValue(),
         "current_track": currentTrack?.toJson(),
+        "index": index,
         "progress": progress
       };
 }
 
 class Track {
-  int? index;
-  bool? selected;
-  String? id;
-  String? title;
-  int? duration;
-  Performer? performer;
+  String id;
+  String title;
+  int duration;
+  Artist? performer;
   Album? album;
 
   Track({
-    this.index,
-    this.selected,
-    this.id,
-    this.title,
-    this.duration,
+    required this.id,
+    required this.title,
+    required this.duration,
     this.performer,
     this.album,
   });
 
   factory Track.fromJson(Map<String, dynamic> json) => Track(
-        index: json["index"],
-        selected: json["selected"],
         id: json["id"],
         title: json["title"],
         duration: json["duration"],
         performer: json["performer"] == null
             ? null
-            : Performer.fromJson(json["performer"]),
+            : Artist.fromJson(json["performer"]),
         album: json["album"] == null ? null : Album.fromJson(json["album"]),
       );
 
   Map<String, dynamic> toJson() => {
-        "index": index,
-        "selected": selected,
         "id": id,
         "title": title,
         "duration": duration,
@@ -113,59 +109,43 @@ class Track {
 }
 
 class Album {
-  final String? id;
-  final String? title;
+  final String id;
+  final String title;
   final int? duration;
+  final int? trackCount;
   final AlbumImage? image;
-  final Performer? label;
-  final Performer? genre;
+  final Artist? genre;
+  final Artist? artist;
 
   Album({
-    this.id,
-    this.title,
+    required this.id,
+    required this.title,
     this.duration,
+    this.trackCount,
     this.image,
-    this.label,
     this.genre,
+    this.artist,
   });
 
   factory Album.fromJson(Map<String, dynamic> json) => Album(
         id: json["id"],
         title: json["title"],
         duration: json["duration"],
+        trackCount: json["track_count"],
         image:
             json["image"] == null ? null : AlbumImage.fromJson(json["image"]),
-        label: json["label"] == null ? null : Performer.fromJson(json["label"]),
-        genre: json["genre"] == null ? null : Performer.fromJson(json["genre"]),
+        genre: json["genre"] == null ? null : Artist.fromJson(json["genre"]),
+        artist: json["artist"] == null ? null : Artist.fromJson(json["artist"]),
       );
 
   Map<String, dynamic> toJson() => {
         "id": id,
         "title": title,
         "duration": duration,
+        "track_count": trackCount,
         "image": image?.toJson(),
-        "label": label?.toJson(),
         "genre": genre?.toJson(),
-      };
-}
-
-class Performer {
-  final String? id;
-  final String? name;
-
-  Performer({
-    this.id,
-    this.name,
-  });
-
-  factory Performer.fromJson(Map<String, dynamic> json) => Performer(
-        id: json["id"],
-        name: json["name"],
-      );
-
-  Map<String, dynamic> toJson() => {
-        "id": id,
-        "name": name,
+        "artist": artist?.toJson(),
       };
 }
 
@@ -173,27 +153,138 @@ class AlbumImage {
   final String? small;
   final String? thumbnail;
   final String? large;
-  final String? back;
 
   AlbumImage({
     this.small,
     this.thumbnail,
     this.large,
-    this.back,
   });
 
   factory AlbumImage.fromJson(Map<String, dynamic> json) => AlbumImage(
         small: json["small"],
         thumbnail: json["thumbnail"],
         large: json["large"],
-        back: json["back"],
       );
 
   Map<String, dynamic> toJson() => {
         "small": small,
         "thumbnail": thumbnail,
         "large": large,
-        "back": back,
+      };
+}
+
+class Artist {
+  final String id;
+  final String name;
+  final AlbumImage? image;
+  final int? albumCount;
+
+  Artist({
+    required this.id,
+    required this.name,
+    this.image,
+    this.albumCount,
+  });
+
+  factory Artist.fromJson(Map<String, dynamic> json) => Artist(
+        id: json["id"],
+        name: json["name"],
+        image:
+            json["image"] == null ? null : AlbumImage.fromJson(json["image"]),
+        albumCount: json["album_count"],
+      );
+
+  Map<String, dynamic> toJson() => {
+        "id": id,
+        "name": name,
+        "image": image?.toJson(),
+        "album_count": albumCount,
+      };
+}
+
+class Owner {
+  final String name;
+  final String id;
+
+  Owner({
+    required this.name,
+    required this.id,
+  });
+
+  factory Owner.fromJson(Map<String, dynamic> json) => Owner(
+        name: json["name"],
+        id: json["id"],
+      );
+
+  Map<String, dynamic> toJson() => {
+        "name": name,
+        "id": id,
+      };
+}
+
+class Playlist {
+  final String id;
+  final String name;
+  final Owner? owner;
+  final AlbumImage? image;
+  final String? description;
+  final int? trackCount;
+
+  Playlist({
+    required this.id,
+    required this.name,
+    this.owner,
+    this.image,
+    this.description,
+    this.trackCount,
+  });
+
+  factory Playlist.fromJson(Map<String, dynamic> json) => Playlist(
+        id: json["id"],
+        name: json["name"],
+        owner: json["owner"] == null ? null : Owner.fromJson(json["owner"]),
+        image:
+            json["image"] == null ? null : AlbumImage.fromJson(json["image"]),
+        description: json["description"],
+        trackCount: json["track_count"],
+      );
+
+  Map<String, dynamic> toJson() => {
+        "id": id,
+        "name": name,
+        "owner": owner?.toJson(),
+        "image": image?.toJson(),
+        "description": description,
+        "track_count": trackCount,
+      };
+}
+
+class Catalog {
+  final String id;
+  final String title;
+  final AlbumImage? image;
+  final String? description;
+
+  Catalog({
+    required this.id,
+    required this.title,
+    this.image,
+    this.description,
+  });
+
+  factory Catalog.fromJson(Map<String, dynamic> json) => Catalog(
+        id: json["id"],
+        title: json["title"],
+        image:
+            json["image"] == null ? null : AlbumImage.fromJson(json["image"]),
+        description: json["description"],
+      );
+
+  Map<String, dynamic> toJson() => {
+        "id": id,
+        "title": title,
+        "image": image?.toJson(),
+        "description": description,
       };
 }
 
@@ -231,51 +322,101 @@ class TrackList {
 }
 
 class BrowseItem {
-  final String? id;
+  final String id;
   final String? name;
   final String? subname;
-  final String? description;
-  final String? comment;
-  final String? url;
-  final bool? canBrowse;
-  final bool? canAdd;
-  final AlbumImage? image;
+  final String url;
+  final bool canBrowse;
+  final bool canAdd;
 
-  BrowseItem({
-    this.id,
-    this.name,
-    this.subname,
-    this.description,
-    this.comment,
-    this.url,
-    this.canBrowse,
-    this.canAdd,
-    this.image,
-  });
+  final Track? track;
+  final Album? album;
+  final Artist? artist;
+  final Playlist? playlist;
+  final Catalog? catalog;
+
+  BrowseItem(
+      {required this.id,
+      this.name,
+      this.subname,
+      required this.url,
+      required this.canBrowse,
+      required this.canAdd,
+      this.track,
+      this.album,
+      this.artist,
+      this.playlist,
+      this.catalog});
+
+  get image {
+    if (album != null) {
+      return album?.image;
+    } else if (artist != null) {
+      return artist?.image;
+    } else if (playlist != null) {
+      return playlist?.image;
+    } else if (catalog != null) {
+      return catalog?.image;
+    } else if (track != null) {
+      return track?.album?.image;
+    }
+    return null;
+  }
+
+  get browseType {
+    if (album != null) {
+      return 'album';
+    } else if (artist != null) {
+      return 'artist';
+    } else if (playlist != null) {
+      return 'playlist';
+    } else if (catalog != null) {
+      return 'catalog';
+    } else if (track != null) {
+      return 'track';
+    }
+    return null;
+  }
+
+  get description {
+    if (catalog != null) {
+      return catalog?.description;
+    } else if (playlist != null) {
+      return playlist?.description;
+    }
+
+    return null;
+  }
 
   factory BrowseItem.fromJson(Map<String, dynamic> json) => BrowseItem(
         id: json["id"],
         name: json["name"],
         subname: json["subname"],
-        description: json["description"],
-        comment: json["comment"],
         url: json["url"],
         canBrowse: json["can_browse"],
         canAdd: json["can_add"],
-        image:
-            json["image"] == null ? null : AlbumImage.fromJson(json["image"]),
+        track: json["track"] == null ? null : Track.fromJson(json["track"]),
+        album: json["album"] == null ? null : Album.fromJson(json["album"]),
+        artist: json["artist"] == null ? null : Artist.fromJson(json["artist"]),
+        playlist: json["playlist"] == null
+            ? null
+            : Playlist.fromJson(json["playlist"]),
+        catalog:
+            json["catalog"] == null ? null : Catalog.fromJson(json["catalog"]),
       );
 
   Map<String, dynamic> toJson() => {
         "id": id,
         "name": name,
         "subname": subname,
-        "description": description,
-        "comment": comment,
         "url": url,
         "can_browse": canBrowse,
         "can_add": canAdd,
-        "image": image?.toJson(),
+        "track": track?.toJson(),
+        "album": album?.toJson(),
+        "artist": artist?.toJson(),
+        "playlist": playlist?.toJson(),
+        "catalog": catalog?.toJson(),
       };
 }
 

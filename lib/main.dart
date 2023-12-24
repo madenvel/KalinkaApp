@@ -35,7 +35,7 @@ class RpiMusic extends StatelessWidget {
   Widget build(BuildContext context) {
     var listTileTheme = Theme.of(context).listTileTheme.copyWith(
         titleTextStyle:
-            const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            const TextStyle(fontSize: 15, fontWeight: FontWeight.w400),
         subtitleTextStyle: const TextStyle(
             fontSize: 14, fontWeight: FontWeight.w400, color: Colors.grey));
     return MultiProvider(
@@ -58,18 +58,27 @@ class RpiMusic extends StatelessWidget {
               useMaterial3: true,
               visualDensity: VisualDensity.compact,
               // colorSchemeSeed: Colors.black,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.blue,
+                // ···
+                brightness: Brightness.light,
+              ),
               listTileTheme: listTileTheme
               /* light theme settings */
               ),
           darkTheme: ThemeData(
+            brightness: Brightness.dark,
+            useMaterial3: true,
+            visualDensity: VisualDensity.compact,
+            // colorSchemeSeed: Colors.black,
+            listTileTheme: listTileTheme,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.blue,
+              // ···
               brightness: Brightness.dark,
-              useMaterial3: true,
-              visualDensity: VisualDensity.compact,
-              // colorSchemeSeed: Colors.black,
-              listTileTheme: listTileTheme
-
-              /* dark theme settings */
-              ),
+            ),
+            /* dark theme settings */
+          ),
           themeMode: ThemeMode.system,
           /* ThemeMode.system to follow system theme, 
          ThemeMode.light for light theme, 

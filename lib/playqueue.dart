@@ -51,8 +51,8 @@ class _PlayQueueState extends State<PlayQueue>
 
   Widget _buildList(BuildContext context) {
     List<Track> tracks = context.watch<TrackListProvider>().trackList;
-    int currentTrackIndex = context.select(
-        (PlayerStateProvider value) => (value.state.currentTrack?.index ?? -1));
+    int currentTrackIndex =
+        context.select((PlayerStateProvider value) => (value.state.index));
     return ListView.separated(
       itemCount: tracks.length,
       separatorBuilder: (context, index) {
@@ -87,7 +87,7 @@ class _PlayQueueState extends State<PlayQueue>
                       : const SizedBox.shrink()
                 ])),
             title: Text(
-              tracks[index].title ?? 'Unknown',
+              tracks[index].title,
               overflow: TextOverflow.ellipsis,
             ),
             subtitle: Text(tracks[index].performer?.name ?? 'Unknown performer',

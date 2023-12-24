@@ -62,7 +62,7 @@ class TrackListProvider with ChangeNotifier {
 }
 
 class PlayerStateProvider with ChangeNotifier {
-  PlayerState _state = PlayerState();
+  PlayerState _state = PlayerState(state: PlayerStateType.idle);
   bool _isLoading = false;
 
   final RpiPlayerProxy _service = RpiPlayerProxy();
@@ -87,8 +87,7 @@ class PlayerStateProvider with ChangeNotifier {
         notifyListeners();
       },
       EventType.TrackChanged: (args) {
-        _state.currentTrack = args[0];
-        notifyListeners();
+        getState();
       },
       EventType.NetworkRecover: (args) {
         getState();
@@ -278,14 +277,11 @@ class DiscoverSectionProvider with ChangeNotifier {
     _previews.clear();
     _previews.addAll(List.generate(_sections.length, (_) => []));
     for (int i = 0; i < _sections.length; ++i) {
-      if (!(_sections[i].canBrowse ?? false)) {
+      if (!(_sections[i].canBrowse)) {
         _previews.add([]);
         continue;
       }
-      String? url = _sections[i].url;
-      if (url == null) {
-        continue;
-      }
+      String url = _sections[i].url;
       await RpiPlayerProxy()
           .browse(url, offset: 0, limit: 12)
           .then((value) => {_previews[i].addAll(value.items)});

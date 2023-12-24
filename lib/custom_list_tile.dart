@@ -36,11 +36,7 @@ class CustomListTile extends StatelessWidget {
   }
 
   IconData _getFallbackIcon() {
-    if (browseItem.url == null) {
-      return Icons.help;
-    }
-
-    final String browseItemType = browseItem.url!.split('/')[1];
+    final String browseItemType = browseItem.browseType;
     switch (browseItemType) {
       case 'artist':
         return Icons.person;
@@ -93,7 +89,7 @@ class CustomListTile extends StatelessWidget {
       image = item.image!.small ?? item.image!.thumbnail;
     }
     bool rounded = false;
-    if (browseItem.url!.startsWith('/artist')) {
+    if (browseItem.artist != null) {
       rounded = true;
     }
 

@@ -71,7 +71,7 @@ class Discover extends StatelessWidget {
                               child: const Text('See all >',
                                   style: TextStyle(fontSize: 16)),
                               onPressed: () {
-                                if (item.canBrowse ?? false) {
+                                if (item.canBrowse) {
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
                                         builder: (context) =>
@@ -114,7 +114,7 @@ class Discover extends StatelessWidget {
 
   Widget _buildPreviewListItem(
       BuildContext context, BrowseItem item, double itemSize) {
-    return Container(
+    return SizedBox(
         width: itemSize,
         child: ListCard(
           browseItem: item,

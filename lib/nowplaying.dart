@@ -47,7 +47,7 @@ class _NowPlayingState extends State<NowPlaying> {
         '';
     var screenWidth = MediaQuery.of(context).size.width;
     return Stack(children: [
-      Container(
+      SizedBox(
           width: screenWidth,
           child: Column(children: [
             imageUrl.isNotEmpty
@@ -87,7 +87,7 @@ class _NowPlayingState extends State<NowPlaying> {
   Widget _buildProgressBarWidget(BuildContext context) {
     double duration =
         context.select<PlayerStateProvider, double>((stateProvider) {
-      return stateProvider.state.currentTrack?.duration?.toDouble() ?? 0.0;
+      return stateProvider.state.currentTrack?.duration.toDouble() ?? 0.0;
     });
     double progress = context.watch<TrackProgressProvider>().progress;
     return Column(children: [
@@ -148,8 +148,8 @@ class _NowPlayingState extends State<NowPlaying> {
 
   Widget _buildButtonsBar(BuildContext context) {
     PlayerStateType state =
-        context.select<PlayerStateProvider, PlayerStateType>((stateProvider) =>
-            stateProvider.state.state ?? PlayerStateType.idle);
+        context.select<PlayerStateProvider, PlayerStateType>(
+            (stateProvider) => stateProvider.state.state);
     late IconData playIcon;
     switch (state) {
       case PlayerStateType.playing:

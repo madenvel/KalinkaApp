@@ -67,7 +67,6 @@ class RpiPlayerProxy {
   Future<StatusMessage> addTracks(List<String> items) async {
     final url = _buildUri('/queue/add/tracks');
     final String encodedItems = jsonEncode(items);
-    print('Encoded items: $encodedItems');
     return client
         .post(url,
             headers: {"Content-Type": "application/json"}, body: encodedItems)

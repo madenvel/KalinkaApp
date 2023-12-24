@@ -30,18 +30,15 @@ class _BrowsePage extends State<BrowsePage> {
   }
 
   void _loadBrowseItems() async {
-    if (widget.parentItem.url == null) {
-      return;
-    }
     const int chunkSize = 50;
     int offset = 0;
-    int total = 0;
+    // int total = 0;
     // do {
     BrowseItemsList result = await RpiPlayerProxy()
-        .browse(widget.parentItem.url!, offset: offset, limit: chunkSize);
+        .browse(widget.parentItem.url, offset: offset, limit: chunkSize);
     browseItems.addAll(result.items);
     offset += result.items.length;
-    total = result.total;
+    // total = result.total;
     // } while (offset < total);
     setState(() {
       _loadInProgress = false;
@@ -64,7 +61,7 @@ class _BrowsePage extends State<BrowsePage> {
 
     if (!itemsEqual) {
       await RpiPlayerProxy().clear();
-      await RpiPlayerProxy().add(widget.parentItem.url!);
+      await RpiPlayerProxy().add(widget.parentItem.url);
     }
 
     await RpiPlayerProxy().play(index);
@@ -88,7 +85,7 @@ class _BrowsePage extends State<BrowsePage> {
   }
 
   Widget _buildBrowsePage(BuildContext context) {
-    String browseType = widget.parentItem.url?.split('/')[1] ?? '';
+    String browseType = widget.parentItem.browseType;
     switch (browseType) {
       case 'album':
       case 'playlist':
@@ -96,7 +93,7 @@ class _BrowsePage extends State<BrowsePage> {
       case 'artist':
         return _buildArtist(context);
       case 'catalog':
-        if (widget.parentItem.canAdd ?? false) {
+        if (widget.parentItem.canAdd) {
           return _buildTrackList(context);
         }
         return _buildCatalog(context);
@@ -128,7 +125,7 @@ class _BrowsePage extends State<BrowsePage> {
     return ListCard(
         browseItem: item,
         onTap: () {
-          if (item.canBrowse ?? false) {
+          if (item.canBrowse) {
             Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -153,13 +150,10 @@ class _BrowsePage extends State<BrowsePage> {
               browseItem: browseItems[index - 1],
               index: displayIndex ? index - 1 : null,
               onTap: () {
-                if (widget.parentItem.url != null) {
-                  if (widget.parentItem.canAdd ?? false) {
-                    _replaceAndPlay(widget.parentItem.url!, index - 1);
-                  } else if ((browseItems[index - 1].canAdd ?? false) &&
-                      browseItems[index - 1].url != null) {
-                    _replaceAndPlay(browseItems[index - 1].url!, 0);
-                  }
+                if (widget.parentItem.canAdd) {
+                  _replaceAndPlay(widget.parentItem.url, index - 1);
+                } else if (browseItems[index - 1].canAdd) {
+                  _replaceAndPlay(browseItems[index - 1].url, 0);
                 }
               });
         }
@@ -179,7 +173,7 @@ class _BrowsePage extends State<BrowsePage> {
           return CustomListTile(
               browseItem: browseItems[index - 1],
               onTap: () {
-                if (browseItems[index - 1].canBrowse ?? false) {
+                if (browseItems[index - 1].canBrowse) {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -192,8 +186,7 @@ class _BrowsePage extends State<BrowsePage> {
     );
   }
 
-  Widget _buildIconButton(IconData icon, double size, Function onPressed,
-      {Color? color}) {
+  Widget _buildIconButton(IconData icon, double size, Function onPressed) {
     return MaterialButton(
       onPressed: () {
         onPressed();
@@ -230,23 +223,29 @@ class _BrowsePage extends State<BrowsePage> {
               child: _buildIconButton(Icons.favorite, 30, () {
                 print('Pressed');
               }))),
-      widget.parentItem.canAdd ?? false
+      widget.parentItem.canAdd
           ? Positioned(
               bottom: 0,
               right: 0,
               child: Padding(
                   padding: const EdgeInsets.only(right: 30),
                   child: _buildIconButton(Icons.play_arrow_rounded, 50.0, () {
-                    _replaceAndPlay(widget.parentItem.url!, 0);
+                    _replaceAndPlay(widget.parentItem.url, 0);
                   })))
           : const SizedBox.shrink()
     ]);
   }
 
+  AlbumImage? getParentImage() {
+    return widget.parentItem.album?.image ??
+        widget.parentItem.artist?.image ??
+        widget.parentItem.playlist?.image ??
+        widget.parentItem.catalog?.image;
+  }
+
   Widget _buildBackgroundImage(double width) {
-    String? imageUrl = widget.parentItem.image?.small ??
-        widget.parentItem.image?.thumbnail ??
-        widget.parentItem.image?.large;
+    var image = getParentImage();
+    String? imageUrl = image?.small ?? image?.thumbnail ?? image?.large;
 
     return Stack(children: [
       imageUrl != null
@@ -290,10 +289,10 @@ class _BrowsePage extends State<BrowsePage> {
                   offset: const Offset(1, 1), // changes position of shadow
                 ),
               ]),
-              child: widget.parentItem.image?.large != null
+              child: getParentImage()?.large != null
                   ? CachedNetworkImage(
                       cacheManager: RpiMusicCacheManager.instance,
-                      imageUrl: widget.parentItem.image!.large!,
+                      imageUrl: getParentImage()!.large!,
                       filterQuality: FilterQuality.high,
                       placeholder: (context, url) =>
                           const Center(child: CircularProgressIndicator()),
@@ -318,7 +317,7 @@ class _BrowsePage extends State<BrowsePage> {
   }
 
   Widget _buildImageReplacement() {
-    var type = widget.parentItem.url?.split('/')[1] ?? '';
+    var type = widget.parentItem.browseType;
     late IconData icon;
     switch (type) {
       case 'album':

@@ -35,8 +35,7 @@ class _PlaybarState extends State<Playbar> {
     super.initState();
     context.read<PlayerStateProvider>().addListener(() {
       if (mounted) {
-        int index =
-            context.read<PlayerStateProvider>().state.currentTrack?.index ?? 0;
+        int index = context.read<PlayerStateProvider>().state.index;
         if (index != _currentPageIndex) {
           _carouselController.animateToPage(index);
         }
@@ -84,7 +83,7 @@ class _PlaybarState extends State<Playbar> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            trackList[index].title ?? 'Unknown title',
+            trackList[index].title,
             style: const TextStyle(fontWeight: FontWeight.bold),
             overflow: TextOverflow.ellipsis,
           ),
@@ -137,8 +136,7 @@ class _PlaybarState extends State<Playbar> {
 
   Widget _buildPlayIcon(BuildContext context) {
     PlayerStateType stateType =
-        context.watch<PlayerStateProvider>().state.state ??
-            PlayerStateType.idle;
+        context.watch<PlayerStateProvider>().state.state;
     switch (stateType) {
       case PlayerStateType.playing:
         return _buildIconButton(
@@ -178,9 +176,7 @@ class _PlaybarState extends State<Playbar> {
             viewportFraction: 1.0,
             height: 50,
             enableInfiniteScroll: false,
-            initialPage:
-                context.read<PlayerStateProvider>().state.currentTrack?.index ??
-                    0,
+            initialPage: context.read<PlayerStateProvider>().state.index,
             onPageChanged: (index, reason) {
               if (reason == CarouselPageChangedReason.manual) {
                 _currentPageIndex = index;

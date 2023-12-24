@@ -50,11 +50,7 @@ class _ListCardState extends State<ListCard> {
   }
 
   IconData _getFallbackIcon() {
-    if (widget.browseItem.url == null) {
-      return Icons.help;
-    }
-
-    final String browseItemType = widget.browseItem.url!.split('/')[1];
+    final String browseItemType = widget.browseItem.url.split('/')[1];
     switch (browseItemType) {
       case 'artist':
         return Icons.person;
@@ -76,7 +72,7 @@ class _ListCardState extends State<ListCard> {
       image = item.image!.large ?? item.image!.small ?? item.image!.thumbnail;
     }
 
-    return Container(
+    return SizedBox(
         width: constraints.maxWidth,
         height: constraints.maxWidth,
         child: ClipRRect(

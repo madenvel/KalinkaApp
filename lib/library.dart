@@ -123,14 +123,14 @@ class _LibraryState extends State<Library> {
               return CustomListTile(
                   browseItem: browseItems[index],
                   onTap: () {
-                    if (browseItems[index].canBrowse ?? false) {
+                    if (browseItems[index].canBrowse) {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (context) =>
                                 BrowsePage(parentItem: browseItems[index])),
                       );
-                    } else if (browseItems[index].canAdd ?? false) {
-                      _playTrack(context, browseItems[index].id!);
+                    } else if (browseItems[index].canAdd) {
+                      _playTrack(context, browseItems[index].id, index);
                     }
                   });
             },
@@ -139,7 +139,7 @@ class _LibraryState extends State<Library> {
             alignment: Alignment.topCenter, child: CircularProgressIndicator());
   }
 
-  void _playTrack(BuildContext context, String trackId) async {
+  void _playTrack(BuildContext context, String trackId, int index) async {
     PlayerState state = context.read<PlayerStateProvider>().state;
 
     bool needToAdd = true;
@@ -148,7 +148,7 @@ class _LibraryState extends State<Library> {
     }
 
     if (!needToAdd) {
-      RpiPlayerProxy().play(state.currentTrack?.index);
+      RpiPlayerProxy().play(index);
     } else {
       await RpiPlayerProxy().clear();
       await RpiPlayerProxy().addTracks([trackId]);

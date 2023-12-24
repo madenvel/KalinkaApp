@@ -32,7 +32,7 @@ class _SearchState extends State<Search> {
     super.dispose();
   }
 
-  void _performSearch(query, {Function? onError}) async {
+  void _performSearch(query) async {
     if (query.isEmpty) {
       return;
     }
@@ -209,13 +209,13 @@ class _SearchState extends State<Search> {
               browseItem: item,
               onTap: () {
                 _addToPreviousSearch(item);
-                if (item.canBrowse ?? false) {
+                if (item.canBrowse) {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                         builder: (context) => BrowsePage(parentItem: item)),
                   );
-                } else if (item.canAdd ?? false) {
-                  _playTrack(context, item.id!);
+                } else if (item.canAdd) {
+                  _playTrack(context, item.id);
                 }
               });
         });
@@ -258,17 +258,14 @@ class _SearchState extends State<Search> {
                     });
                   }),
               onTap: () {
-                if (previousSearch[index].id == null) {
-                  return;
-                }
-                if (previousSearch[index].canBrowse ?? false) {
+                if (previousSearch[index].canBrowse) {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                         builder: (context) =>
                             BrowsePage(parentItem: previousSearch[index])),
                   );
-                } else if (previousSearch[index].canAdd ?? false) {
-                  _playTrack(context, previousSearch[index].id!);
+                } else if (previousSearch[index].canAdd) {
+                  _playTrack(context, previousSearch[index].id);
                 }
               });
         },
@@ -280,12 +277,12 @@ class _SearchState extends State<Search> {
     PlayerState state = context.read<PlayerStateProvider>().state;
 
     bool needToAdd = true;
-    if (state.currentTrack != null && state.currentTrack?.id == trackId) {
+    if (state.currentTrack?.id == trackId) {
       needToAdd = false;
     }
 
     if (!needToAdd) {
-      RpiPlayerProxy().play(state.currentTrack?.index);
+      RpiPlayerProxy().play(state.index);
     } else {
       await RpiPlayerProxy().clear();
       await RpiPlayerProxy().addTracks([trackId]);
