@@ -98,13 +98,10 @@ class _PlaybarState extends State<Playbar> {
   }
 
   Widget _buildImage(BuildContext context) {
-    String? imgSource = context
-        .watch<PlayerStateProvider>()
-        .state
-        .currentTrack
-        ?.album
-        ?.image
-        ?.thumbnail;
+    PlayerStateProvider provider = context.watch<PlayerStateProvider>();
+    String? imgSource = provider.state.currentTrack?.album?.image?.small ??
+        provider.state.currentTrack?.album?.image?.thumbnail ??
+        provider.state.currentTrack?.album?.image?.large;
     if (imgSource == null || imgSource.isEmpty) {
       return const SizedBox.shrink();
     }
