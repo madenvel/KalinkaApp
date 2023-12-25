@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rpi_music/favorite_button.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
 
 import 'custom_cache_manager.dart';
@@ -37,14 +38,21 @@ class _NowPlayingState extends State<NowPlaying> {
   }
 
   Widget _buildImageWidget(BuildContext context) {
-    String imageUrl = context
-            .watch<PlayerStateProvider>()
-            .state
-            .currentTrack
-            ?.album
-            ?.image
-            ?.large ??
-        '';
+    PlayerStateProvider playerStateProvider =
+        context.watch<PlayerStateProvider>();
+    Track? track = playerStateProvider.state.currentTrack;
+    BrowseItem? item = track != null
+        ? BrowseItem(
+            id: track.id,
+            name: track.title,
+            subname: track.performer?.name,
+            url: '/track/${track.id}',
+            canAdd: true,
+            canBrowse: false,
+            track: track)
+        : null;
+    String imageUrl =
+        playerStateProvider.state.currentTrack?.album?.image?.large ?? '';
     var screenWidth = MediaQuery.of(context).size.width;
     return Stack(children: [
       SizedBox(
@@ -64,7 +72,9 @@ class _NowPlayingState extends State<NowPlaying> {
                 : const Icon(Icons.music_note, fill: 1.0),
             const SizedBox(height: 35)
           ])),
-      Positioned(bottom: 0, child: _buildOverlayPanel(context))
+      item != null
+          ? Positioned(bottom: 0, child: _buildOverlayPanel(context, item))
+          : const SizedBox.shrink()
     ]);
   }
 
@@ -129,7 +139,7 @@ class _NowPlayingState extends State<NowPlaying> {
     ]);
   }
 
-  Widget _buildOverlayPanel(BuildContext context) {
+  Widget _buildOverlayPanel(BuildContext context, BrowseItem item) {
     var screenWidth = MediaQuery.of(context).size.width;
     return SizedBox(
         width: screenWidth - 40,
@@ -140,23 +150,36 @@ class _NowPlayingState extends State<NowPlaying> {
               iconSize: 48,
               onPressed: () {}),
           const Spacer(),
-          IconButton(
-              icon: const Icon(Icons.favorite), iconSize: 48, onPressed: () {}),
+          FavoriteButton(item: item),
           const SizedBox(width: 20)
         ]));
   }
 
   Widget _buildButtonsBar(BuildContext context) {
-    PlayerStateType state =
-        context.select<PlayerStateProvider, PlayerStateType>(
+    PlayerStateType? state =
+        context.select<PlayerStateProvider, PlayerStateType?>(
             (stateProvider) => stateProvider.state.state);
+
+    if (state == null) {
+      return const SizedBox.shrink();
+    }
     late IconData playIcon;
     switch (state) {
       case PlayerStateType.playing:
         playIcon = Icons.pause_circle_filled;
         break;
-      default:
+      case PlayerStateType.paused:
+      case PlayerStateType.stopped:
         playIcon = Icons.play_arrow;
+        break;
+      case PlayerStateType.buffering:
+        playIcon = Icons.hourglass_empty;
+        break;
+      case PlayerStateType.error:
+        playIcon = Icons.error;
+        break;
+      default:
+        playIcon = Icons.question_mark;
         break;
     }
     return Row(children: [

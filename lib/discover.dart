@@ -99,7 +99,7 @@ class Discover extends StatelessWidget {
 
   Widget _buildHorizontalList(
       BuildContext context, List<BrowseItem> browseItems) {
-    var size = MediaQuery.of(context).size.width / 2.5;
+    var size = MediaQuery.of(context).size.width / 3;
     return SizedBox(
         height: size + 64,
         child: ListView.separated(

@@ -140,6 +140,46 @@ class RpiPlayerProxy {
     });
   }
 
+  Future<BrowseItemsList> getFavorite(SearchType queryType,
+      {int offset = 0, int limit = 10}) async {
+    final url = _buildUri('/favorite/list/${queryType.toStringValue()}',
+        {'offset': offset.toString(), 'limit': limit.toString()});
+    return client.get(url).then((response) {
+      if (response.statusCode != 200) {
+        throw Exception(
+            'Failed to get favorite ${queryType.toStringValue()}, url=$url');
+      }
+
+      return BrowseItemsList.fromJson(
+          jsonDecode(utf8.decode(response.bodyBytes)));
+    });
+  }
+
+  Future<StatusMessage> addFavorite(SearchType queryType, String id) async {
+    final url = _buildUri('/favorite/add/${queryType.toStringValue()}/$id');
+    return client.get(url).then((response) {
+      return statusMessageFromResponse(response);
+    });
+  }
+
+  Future<StatusMessage> removeFavorite(SearchType queryType, String id) async {
+    final url = _buildUri('/favorite/remove/${queryType.toStringValue()}/$id');
+    return client.get(url).then((response) {
+      return statusMessageFromResponse(response);
+    });
+  }
+
+  Future<FavoriteIds> getFavoriteIds() async {
+    final url = _buildUri('/favorite/ids');
+    return client.get(url).then((response) {
+      if (response.statusCode != 200) {
+        throw Exception('Failed to get favorite ids, url=$url');
+      }
+
+      return FavoriteIds.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+    });
+  }
+
   Future<void> clear() async {
     final url = _buildUri('/queue/clear');
     return client.get(url).then((response) {

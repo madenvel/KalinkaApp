@@ -45,33 +45,42 @@ extension PlayerStateTypeExtension on PlayerStateType {
 }
 
 class PlayerState {
-  PlayerStateType state;
+  PlayerStateType? state;
   Track? currentTrack;
-  int index;
-  double progress;
+  int? index;
+  double? progress;
 
   PlayerState({
-    required this.state,
+    this.state,
     this.currentTrack,
     this.index = 0,
     this.progress = 0.0,
   });
 
   factory PlayerState.fromJson(Map<String, dynamic> json) => PlayerState(
-        state: PlayerStateTypeExtension.fromValue(json["state"]),
+        state: json.containsKey('state')
+            ? PlayerStateTypeExtension.fromValue(json["state"])
+            : null,
         currentTrack: json["current_track"] == null
             ? null
             : Track.fromJson(json["current_track"]),
         index: json["index"],
-        progress: 0.0 + json["progress"],
+        progress: json["progress"],
       );
 
   Map<String, dynamic> toJson() => {
-        "state": state.toValue(),
+        "state": state?.toValue(),
         "current_track": currentTrack?.toJson(),
         "index": index,
         "progress": progress
       };
+
+  void copyFrom(PlayerState other) {
+    state = other.state ?? state;
+    currentTrack = other.currentTrack ?? currentTrack;
+    index = other.index ?? index;
+    progress = other.progress ?? progress;
+  }
 }
 
 class Track {
@@ -420,7 +429,7 @@ class BrowseItem {
       };
 }
 
-enum SearchType { track, album, artist, playlist }
+enum SearchType { invalid, track, album, artist, playlist }
 
 extension SearchTypeExtension on SearchType {
   String toStringValue() {
@@ -471,6 +480,83 @@ class Volume {
   Map<String, dynamic> toJson() => {
         "max_volume": maxVolume,
         "current_volume": currentVolume,
+      };
+}
+
+class FavoriteIds {
+  List<String> albums;
+  List<String> tracks;
+  List<String> artists;
+  List<String> playlists;
+
+  FavoriteIds({
+    required this.albums,
+    required this.tracks,
+    required this.artists,
+    required this.playlists,
+  });
+
+  factory FavoriteIds.fromJson(Map<String, dynamic> json) => FavoriteIds(
+        albums: json["albums"] == null
+            ? []
+            : List<String>.from(json["albums"]!.map((x) => x)),
+        tracks: json["tracks"] == null
+            ? []
+            : List<String>.from(json["tracks"]!.map((x) => x)),
+        artists: json["artists"] == null
+            ? []
+            : List<String>.from(json["artists"]!.map((x) => x)),
+        playlists: json["playlists"] == null
+            ? []
+            : List<String>.from(json["playlists"]!.map((x) => x)),
+      );
+
+  Map<String, dynamic> toJson() => {
+        "albums": List<dynamic>.from(albums.map((x) => x)),
+        "tracks": List<dynamic>.from(tracks.map((x) => x)),
+        "artists": List<dynamic>.from(artists.map((x) => x)),
+        "playlists": List<dynamic>.from(playlists.map((x) => x)),
+      };
+}
+
+class FavoriteAdded {
+  final String id;
+  final SearchType type;
+
+  FavoriteAdded({
+    required this.id,
+    required this.type,
+  });
+
+  factory FavoriteAdded.fromJson(Map<String, dynamic> json) => FavoriteAdded(
+        id: json["id"],
+        type: SearchTypeExtension.fromStringValue(json["type"]),
+      );
+
+  Map<String, dynamic> toJson() => {
+        "id": id,
+        "type": type,
+      };
+}
+
+class FavoriteRemoved {
+  final String id;
+  final String type;
+
+  FavoriteRemoved({
+    required this.id,
+    required this.type,
+  });
+
+  factory FavoriteRemoved.fromJson(Map<String, dynamic> json) =>
+      FavoriteRemoved(
+        id: json["id"],
+        type: json["type"],
+      );
+
+  Map<String, dynamic> toJson() => {
+        "id": id,
+        "type": type,
       };
 }
 

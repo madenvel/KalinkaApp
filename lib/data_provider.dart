@@ -70,28 +70,15 @@ class PlayerStateProvider with ChangeNotifier {
 
   PlayerStateProvider() {
     _listener.registerCallback({
-      EventType.Playing: (args) {
-        _state.state = PlayerStateType.playing;
-        notifyListeners();
+      EventType.StateChanged: (args) {
+        PlayerState newState = args[0];
+        _state.copyFrom(newState);
+        if (newState.state != null ||
+            newState.currentTrack != null ||
+            newState.index != null) {
+          notifyListeners();
+        }
       },
-      EventType.Paused: (args) {
-        _state.state = PlayerStateType.paused;
-        notifyListeners();
-      },
-      EventType.Stopped: (args) {
-        _state.state = PlayerStateType.stopped;
-        notifyListeners();
-      },
-      EventType.Error: (args) {
-        _state.state = PlayerStateType.error;
-        notifyListeners();
-      },
-      EventType.TrackChanged: (args) {
-        getState();
-      },
-      EventType.NetworkRecover: (args) {
-        getState();
-      }
     });
   }
 
@@ -119,9 +106,12 @@ class TrackProgressProvider with ChangeNotifier {
 
   TrackProgressProvider() {
     _listener.registerCallback({
-      EventType.Progress: (args) {
-        _progress = args[0];
-        notifyListeners();
+      EventType.StateChanged: (args) {
+        PlayerState newState = args[0];
+        if (newState.progress != null) {
+          _progress = newState.progress!;
+          notifyListeners();
+        }
       },
     });
   }
@@ -135,76 +125,100 @@ class DateTimeProvider {
   DateTimeProvider();
 }
 
-class UserFavoritesIdsProvider with ChangeNotifier {
-  late List<String> _favoriteAlbumIds;
-  late List<String> _favoriteArtistIds;
-  late List<String> _favoriteTrackIds;
-
-  List<String> get favoriteAlbumIds => _favoriteAlbumIds;
-  List<String> get favoriteArtistIds => _favoriteArtistIds;
-  List<String> get favoriteTrackIds => _favoriteTrackIds;
-
-  UserFavoritesIdsProvider() {
-    _favoriteAlbumIds = [];
-    _favoriteArtistIds = [];
-    _favoriteTrackIds = [];
-    getFavoritesIds();
-  }
-
-  Future<void> getFavoritesIds() async {
-    try {
-      // _favoriteAlbumIds = await RpiPlayerProxy().getFavoriteAlbumIds();
-      // _favoriteArtistIds = await RpiPlayerProxy().getFavoriteArtistIds();
-      // _favoriteTrackIds = await RpiPlayerProxy().getFavoriteTrackIds();
-    } catch (e) {
-      print('Error getting favorites ids: $e');
-    }
-    notifyListeners();
-  }
+class FavoriteInfo {
+  bool isLoaded = false;
+  Set<String> ids = {};
+  List<BrowseItem> items = [];
 }
 
 class UserFavoritesProvider with ChangeNotifier {
-  final List<BrowseItem> _favoriteAlbums = [];
-  final List<BrowseItem> _favoriteArtists = [];
-  final List<BrowseItem> _favoriteTracks = [];
-  final List<BrowseItem> _favoritePlaylists = [];
-  bool _isLoaded = false;
+  final Map<SearchType, FavoriteInfo> _favorites = {
+    SearchType.track: FavoriteInfo(),
+    SearchType.album: FavoriteInfo(),
+    SearchType.artist: FavoriteInfo(),
+    SearchType.playlist: FavoriteInfo(),
+  };
 
-  List<BrowseItem> get favoriteAlbums => _favoriteAlbums;
-  List<BrowseItem> get favoriteArtists => _favoriteArtists;
-  List<BrowseItem> get favoriteTracks => _favoriteTracks;
-  List<BrowseItem> get favoritePlaylists => _favoritePlaylists;
-  bool get isLoaded => _isLoaded;
+  bool _idsLoaded = false;
+
+  final Map<SearchType, bool> _requestInProgress = {
+    SearchType.track: false,
+    SearchType.album: false,
+    SearchType.artist: false,
+    SearchType.playlist: false,
+  };
+
+  FavoriteInfo favorite(SearchType searchType) {
+    if (!(_favorites[searchType]?.isLoaded ?? false) &&
+        !(_requestInProgress[searchType] ?? false)) {
+      getAll(searchType).then((value) {
+        _favorites[searchType]!.items = value;
+        _favorites[searchType]!.isLoaded = true;
+        notifyListeners();
+      });
+    }
+    return _favorites[searchType] ?? FavoriteInfo();
+  }
+
+  bool get idsLoaded => _idsLoaded;
 
   UserFavoritesProvider() {
-    Future.wait([
-      getAll('/favorite/album').then((items) {
-        _favoriteAlbums.addAll(items);
-      }),
-      getAll('/favorite/track').then((items) {
-        _favoriteTracks.addAll(items);
-      }),
-      getAll('/favorite/playlist').then((items) {
-        _favoritePlaylists.addAll(items);
-      }),
-      getAll('/favorite/artist').then((items) {
-        _favoriteArtists.addAll(items);
-      })
-    ]).then((_) {
-      _isLoaded = true;
+    // EventListener().registerCallback({
+    //   EventType.FavoriteAdded: (args) {
+    //     _favorites[SearchType.track]!.ids.addAll(args[0].cast<String>());
+    //     notifyListeners();
+    //   },
+    //   EventType.FavoriteRemoved: (args) {
+    //     _favorites[SearchType.track]!.ids.removeAll(args[0].cast<String>());
+    //     notifyListeners();
+    //   }
+    // });
+    _loadIds();
+  }
+
+  Future<void> _loadIds() async {
+    _idsLoaded = false;
+    await RpiPlayerProxy().getFavoriteIds().then((value) {
+      _favorites[SearchType.track]!.ids = value.tracks.toSet();
+      _favorites[SearchType.album]!.ids = value.albums.toSet();
+      _favorites[SearchType.artist]!.ids = value.artists.toSet();
+      _favorites[SearchType.playlist]!.ids = value.playlists.toSet();
+      _idsLoaded = true;
       notifyListeners();
     });
   }
 
-  Future<List<BrowseItem>> getAll(String query) async {
+  Future<void> add(BrowseItem item) async {
+    SearchType searchType =
+        SearchTypeExtension.fromStringValue(item.browseType);
+    _favorites[searchType]!.ids.add(item.id);
+    _favorites[searchType]!.items.insert(0, item);
+    await RpiPlayerProxy().addFavorite(searchType, item.id);
+    notifyListeners();
+  }
+
+  Future<void> remove(BrowseItem item) async {
+    SearchType searchType =
+        SearchTypeExtension.fromStringValue(item.browseType);
+    _favorites[searchType]!.ids.remove(item.id);
+    _favorites[searchType]!
+        .items
+        .removeWhere((element) => element.id == item.id);
+    await RpiPlayerProxy().removeFavorite(searchType, item.id);
+    notifyListeners();
+  }
+
+  Future<List<BrowseItem>> getAll(SearchType queryType) async {
+    _requestInProgress[queryType] = true;
     int limit = 100;
     int offset = 0;
     int total = 0;
     List<BrowseItem> items = [];
+    print('Getting favorites for $queryType');
     do {
       try {
         await RpiPlayerProxy()
-            .browse(query, offset: offset, limit: limit)
+            .getFavorite(queryType, offset: offset, limit: limit)
             .then((value) {
           items.addAll(value.items);
           total = value.total;
@@ -215,6 +229,7 @@ class UserFavoritesProvider with ChangeNotifier {
         break;
       }
     } while (offset < total);
+    _requestInProgress[queryType] = false;
     return items;
   }
 }

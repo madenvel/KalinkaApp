@@ -10,26 +10,15 @@ import 'data_model.dart';
 
 enum EventType {
   Invalid,
-  Playing,
-  Paused,
-  Stopped,
-  Progress,
-  TrackChanged,
+  StateChanged,
   RequestMoreTracks,
   TracksAdded,
   TracksRemoved,
-  Error,
   NetworkError,
   NetworkRecover,
   VolumeChanged,
-}
-
-enum PlayState {
-  Idle,
-  Playing,
-  Paused,
-  Stopped,
-  Buffering,
+  FavoriteAdded,
+  FavoriteRemoved,
 }
 
 extension EventTypeExtension on EventType {
@@ -37,32 +26,26 @@ extension EventTypeExtension on EventType {
     switch (this) {
       case EventType.Invalid:
         return "invalid";
-      case EventType.Playing:
-        return "playing";
-      case EventType.Paused:
-        return "paused";
-      case EventType.Stopped:
-        return "stopped";
-      case EventType.Progress:
-        return "current_progress";
-      case EventType.TrackChanged:
-        return "change_track";
+      case EventType.StateChanged:
+        return "state_changed";
       case EventType.RequestMoreTracks:
         return "request_more_tracks";
       case EventType.TracksAdded:
         return "track_added";
       case EventType.TracksRemoved:
         return "track_removed";
-      case EventType.Error:
-        return "error";
       case EventType.NetworkError:
         return "network_error";
       case EventType.NetworkRecover:
         return "network_recover";
       case EventType.VolumeChanged:
         return "volume_changed";
+      case EventType.FavoriteAdded:
+        return "favorite_added";
+      case EventType.FavoriteRemoved:
+        return "favorite_removed";
       default:
-        throw Exception("Invalid event type");
+        throw Exception("Invalid event type = $this");
     }
   }
 }
@@ -167,17 +150,8 @@ class EventListener {
 
   List<dynamic> _parseArgs(EventType eventType, List<dynamic> args) {
     switch (eventType) {
-      case EventType.Playing:
-      case EventType.Paused:
-      case EventType.Stopped:
-      case EventType.NetworkError:
-      case EventType.NetworkRecover:
-      case EventType.Error:
-        return [];
-      case EventType.Progress:
-        return args;
-      case EventType.TrackChanged:
-        return [Track.fromJson(args[0])];
+      case EventType.StateChanged:
+        return [PlayerState.fromJson(args[0])];
       case EventType.RequestMoreTracks:
         return [];
       case EventType.TracksAdded:
@@ -186,8 +160,12 @@ class EventListener {
         return args;
       case EventType.VolumeChanged:
         return args;
+      case EventType.FavoriteAdded:
+        return [FavoriteAdded.fromJson(args[0])];
+      case EventType.FavoriteRemoved:
+        return [FavoriteRemoved.fromJson(args[0])];
       default:
-        throw Exception("Invalid event type");
+        throw Exception("Invalid event arguments");
     }
   }
 

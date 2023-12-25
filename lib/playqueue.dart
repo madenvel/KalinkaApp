@@ -51,12 +51,12 @@ class _PlayQueueState extends State<PlayQueue>
 
   Widget _buildList(BuildContext context) {
     List<Track> tracks = context.watch<TrackListProvider>().trackList;
-    int currentTrackIndex =
+    int? currentTrackIndex =
         context.select((PlayerStateProvider value) => (value.state.index));
     return ListView.separated(
       itemCount: tracks.length,
       separatorBuilder: (context, index) {
-        if (index == currentTrackIndex - 1) {
+        if (index + 1 == currentTrackIndex) {
           return const ListTile(
               title: Text('Current track',
                   style: TextStyle(fontWeight: FontWeight.bold)));

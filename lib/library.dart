@@ -98,13 +98,15 @@ class _LibraryState extends State<Library> {
 
   Widget _buildItemList(BuildContext context) {
     UserFavoritesProvider provider = context.watch<UserFavoritesProvider>();
-    List<BrowseItem> browseItems = _filterItems([
-      provider.favoriteAlbums,
-      provider.favoriteArtists,
-      provider.favoriteTracks,
-      provider.favoritePlaylists
-    ][_selectedIndex]);
-    return provider.isLoaded
+    List<SearchType> searchTypes = [
+      SearchType.album,
+      SearchType.artist,
+      SearchType.track,
+      SearchType.playlist
+    ];
+    var favorite = provider.favorite(searchTypes[_selectedIndex]);
+    List<BrowseItem> browseItems = _filterItems(favorite.items);
+    return favorite.isLoaded
         ? ListView.separated(
             itemCount: browseItems.length + 1,
             separatorBuilder: (context, index) => const Divider(),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:rpi_music/custom_cache_manager.dart';
 import 'package:rpi_music/custom_list_tile.dart';
 import 'package:rpi_music/data_provider.dart';
+import 'package:rpi_music/favorite_button.dart';
 import 'package:rpi_music/list_card.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -220,9 +221,7 @@ class _BrowsePage extends State<BrowsePage> {
           left: 0,
           child: Padding(
               padding: const EdgeInsets.only(left: 30),
-              child: _buildIconButton(Icons.favorite, 30, () {
-                print('Pressed');
-              }))),
+              child: FavoriteButton(item: widget.parentItem))),
       widget.parentItem.canAdd
           ? Positioned(
               bottom: 0,
