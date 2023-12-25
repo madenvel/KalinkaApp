@@ -78,13 +78,9 @@ class Discover extends StatelessWidget {
                                             BrowsePage(parentItem: item)),
                                   );
                                 }
-                                //  else if (item.canAdd ?? false) {
-                                //   _playTrack(context, item.id!);
-                                // }
                               })))
                   : const SizedBox.shrink()
             ]),
-            horizontalList,
             item.description != null
                 ? Padding(
                     padding: const EdgeInsets.only(bottom: 8),
@@ -93,6 +89,7 @@ class Discover extends StatelessWidget {
                         title: Text(item.description!)),
                   )
                 : const SizedBox.shrink(),
+            horizontalList
           ],
         ));
   }

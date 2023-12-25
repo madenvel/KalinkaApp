@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rpi_music/play_button.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
@@ -48,11 +49,13 @@ class _PlaybarState extends State<Playbar> {
     return InkWell(
         child: Container(
             width: MediaQuery.of(context).size.width,
-            // height: 52.0,
             color: Theme.of(context).bottomNavigationBarTheme.backgroundColor,
             child: Column(children: [
               const Divider(height: 0),
-              _buildTile(context),
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0, bottom: 6.0),
+                child: _buildTile(context),
+              ),
               LinearProgressIndicator(
                   value: _calculateRelativeProgress(),
                   backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -70,7 +73,7 @@ class _PlaybarState extends State<Playbar> {
       _buildImage(context),
       const SizedBox(width: 8),
       Expanded(child: _buildCarousel(context)),
-      _buildPlayIcon(context),
+      const PlayButton(size: 36),
       const SizedBox(width: 8),
     ]);
   }
@@ -115,57 +118,6 @@ class _PlaybarState extends State<Playbar> {
               const Icon(Icons.music_note, size: 50.0),
           errorWidget: (context, url, error) => const Icon(Icons.error),
         ));
-  }
-
-  Widget _buildIconButton(IconData icon, Function onPressed) {
-    return MaterialButton(
-      onPressed: () {
-        onPressed();
-      },
-      color: Theme.of(context).indicatorColor,
-      textColor: Theme.of(context).primaryColor,
-      padding: const EdgeInsets.all(8),
-      minWidth: 50,
-      shape: const CircleBorder(),
-      child: Icon(
-        icon,
-        size: 24,
-      ),
-    );
-  }
-
-  Widget _buildPlayIcon(BuildContext context) {
-    PlayerStateType? stateType =
-        context.watch<PlayerStateProvider>().state.state;
-    switch (stateType) {
-      case PlayerStateType.playing:
-        return _buildIconButton(
-          Icons.pause,
-          () {
-            RpiPlayerProxy().pause();
-          },
-        );
-      case PlayerStateType.paused:
-        return _buildIconButton(
-          Icons.play_arrow,
-          () {
-            RpiPlayerProxy().pause(paused: false);
-          },
-        );
-      case PlayerStateType.error:
-      case PlayerStateType.stopped:
-      case PlayerStateType.idle:
-        return _buildIconButton(
-          Icons.play_arrow,
-          () {
-            RpiPlayerProxy().play();
-          },
-        );
-      case PlayerStateType.buffering:
-        return const Icon(Icons.hourglass_empty);
-      default:
-        return const SizedBox(width: 50, height: 50);
-    }
   }
 
   Widget _buildCarousel(BuildContext context) {

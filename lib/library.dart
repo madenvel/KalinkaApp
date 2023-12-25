@@ -145,7 +145,7 @@ class _LibraryState extends State<Library> {
     PlayerState state = context.read<PlayerStateProvider>().state;
 
     bool needToAdd = true;
-    if (state.currentTrack != null && state.currentTrack?.id == trackId) {
+    if (state.currentTrack?.id == trackId) {
       needToAdd = false;
     }
 

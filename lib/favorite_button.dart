@@ -10,12 +10,11 @@ class FavoriteButton extends StatelessWidget {
   const FavoriteButton({
     Key? key,
     required this.item,
-    this.size = 40.0,
+    this.size = 32.0,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    print(SearchType.values[1].name);
     if (SearchType.values
             .indexWhere((element) => element.name == item.browseType) ==
         -1) {

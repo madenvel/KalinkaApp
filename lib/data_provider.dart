@@ -214,7 +214,6 @@ class UserFavoritesProvider with ChangeNotifier {
     int offset = 0;
     int total = 0;
     List<BrowseItem> items = [];
-    print('Getting favorites for $queryType');
     do {
       try {
         await RpiPlayerProxy()
