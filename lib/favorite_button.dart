@@ -35,14 +35,14 @@ class FavoriteButton extends StatelessWidget {
           favoritesProvider.add(item);
         }
       },
-      color: Theme.of(context).indicatorColor.withOpacity(0.7),
+      color: Theme.of(context).indicatorColor,
       splashColor: Colors.white,
       padding: const EdgeInsets.all(8),
       shape: const CircleBorder(),
       child: Padding(
           padding: EdgeInsets.all(size / 5),
           child: Icon(
-            Icons.favorite,
+            isFavorite ? Icons.favorite : Icons.favorite_outline,
             color: isFavorite
                 ? Colors.red
                 : Theme.of(context).scaffoldBackgroundColor,

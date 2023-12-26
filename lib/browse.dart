@@ -85,6 +85,53 @@ class _BrowsePage extends State<BrowsePage> {
     );
   }
 
+  void _showDrawer(BuildContext context, BrowseItem browseItem) {
+    showModalBottomSheet(
+        context: context,
+        showDragHandle: true,
+        builder: (context) {
+          return Consumer<UserFavoritesProvider>(
+              builder: (context, favoritesProvider, _) {
+            return ListView(
+              children: [
+                CustomListTile(
+                  browseItem: browseItem,
+                ),
+                const Divider(),
+                const ListTile(
+                    title: Text('Play'), leading: Icon(Icons.play_arrow)),
+                const ListTile(
+                    title: Text('Add to queue'),
+                    leading: Icon(Icons.queue_music)),
+                const ListTile(
+                    title: Text('Add to playlist'),
+                    leading: Icon(Icons.playlist_add)),
+                browseItem.canFavorite &&
+                        !favoritesProvider.isFavorite(browseItem)
+                    ? ListTile(
+                        title: const Text('Add to favorites'),
+                        leading: const Icon(Icons.favorite),
+                        onTap: () {
+                          favoritesProvider.add(browseItem);
+                          Navigator.pop(context);
+                        })
+                    : const SizedBox.shrink(),
+                browseItem.canFavorite &&
+                        favoritesProvider.isFavorite(browseItem)
+                    ? ListTile(
+                        title: const Text('Delete from favorites'),
+                        leading: const Icon(Icons.heart_broken),
+                        onTap: () {
+                          favoritesProvider.remove(browseItem);
+                          Navigator.pop(context);
+                        })
+                    : const SizedBox.shrink(),
+              ],
+            );
+          });
+        });
+  }
+
   Widget _buildBrowsePage(BuildContext context) {
     String browseType = widget.parentItem.browseType;
     switch (browseType) {
@@ -156,7 +203,12 @@ class _BrowsePage extends State<BrowsePage> {
                 } else if (browseItems[index - 1].canAdd) {
                   _replaceAndPlay(browseItems[index - 1].url, 0);
                 }
-              });
+              },
+              trailing: IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: () {
+                    _showDrawer(context, browseItems[index - 1]);
+                  }));
         }
       },
     );

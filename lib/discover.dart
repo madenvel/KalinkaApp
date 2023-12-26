@@ -21,7 +21,8 @@ class Discover extends StatelessWidget {
         title: const Text('Discover'),
       ),
       body: provider.hasLoaded
-          ? ListView.builder(
+          ? ListView.separated(
+              separatorBuilder: (context, index) => const SizedBox(height: 16),
               scrollDirection: Axis.vertical,
               itemCount: provider.sections.length,
               itemBuilder: (context, index) {
@@ -36,13 +37,27 @@ class Discover extends StatelessWidget {
     var section = provider.sections[index];
     final image = section.image?.large ?? section.image?.small;
     final bool hasImage = image != null && image.isNotEmpty;
-    return _buildSection(
-        context,
-        provider.sections[index],
-        hasImage
-            ? _buildWideImageWidget(context, section, image)
-            : _buildHorizontalList(context, provider.previews[index]),
-        seeAll: !hasImage);
+    return Padding(
+      padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+      child: Container(
+          decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 58, 58, 58),
+              borderRadius: const BorderRadius.all(Radius.circular(8)),
+              gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    const Color.fromARGB(255, 58, 58, 58),
+                    Theme.of(context).scaffoldBackgroundColor
+                  ])),
+          child: _buildSection(
+              context,
+              provider.sections[index],
+              hasImage
+                  ? _buildWideImageWidget(context, section, image)
+                  : _buildHorizontalList(context, provider.previews[index]),
+              seeAll: !hasImage)),
+    );
   }
 
   Widget _buildSection(

@@ -372,6 +372,19 @@ class BrowseItem {
     return null;
   }
 
+  int? get duration {
+    if (track != null) {
+      return track?.duration;
+    } else if (album != null) {
+      return album?.duration;
+    }
+    return null;
+  }
+
+  bool get canFavorite {
+    return album != null || track != null || artist != null;
+  }
+
   get browseType {
     if (album != null) {
       return 'album';

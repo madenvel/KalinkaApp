@@ -208,6 +208,12 @@ class UserFavoritesProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  bool isFavorite(BrowseItem item) {
+    SearchType searchType =
+        SearchTypeExtension.fromStringValue(item.browseType);
+    return _favorites[searchType]!.ids.contains(item.id);
+  }
+
   Future<List<BrowseItem>> getAll(SearchType queryType) async {
     _requestInProgress[queryType] = true;
     int limit = 100;
@@ -290,16 +296,19 @@ class DiscoverSectionProvider with ChangeNotifier {
   Future<void> _loadPreviews() async {
     _previews.clear();
     _previews.addAll(List.generate(_sections.length, (_) => []));
+    List<Future<void>> futures = [];
     for (int i = 0; i < _sections.length; ++i) {
       if (!(_sections[i].canBrowse)) {
         _previews.add([]);
         continue;
       }
       String url = _sections[i].url;
-      await RpiPlayerProxy()
-          .browse(url, offset: 0, limit: 12)
-          .then((value) => {_previews[i].addAll(value.items)});
+      futures
+          .add(RpiPlayerProxy().browse(url, offset: 0, limit: 12).then((value) {
+        _previews[i].addAll(value.items);
+      }));
     }
+    return Future.wait(futures).then((_) {});
   }
 
   Future<void> _init() async {
