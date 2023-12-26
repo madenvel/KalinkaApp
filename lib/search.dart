@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:provider/provider.dart';
+import 'package:rpi_music/bottom_menu.dart';
 import 'package:rpi_music/custom_list_tile.dart';
 import 'package:rpi_music/data_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -217,7 +218,19 @@ class _SearchState extends State<Search> {
                 } else if (item.canAdd) {
                   _playTrack(context, item.id);
                 }
-              });
+              },
+              trailing: IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: () {
+                    showModalBottomSheet(
+                        context: context,
+                        showDragHandle: true,
+                        useRootNavigator: true,
+                        scrollControlDisabledMaxHeightRatio: 0.4,
+                        builder: (context) {
+                          return BottomMenu(browseItem: item);
+                        });
+                  }));
         });
   }
 

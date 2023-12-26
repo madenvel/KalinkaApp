@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rpi_music/bottom_menu.dart';
 import 'package:rpi_music/data_provider.dart';
 import 'package:rpi_music/custom_list_tile.dart';
 
@@ -134,7 +135,19 @@ class _LibraryState extends State<Library> {
                     } else if (browseItems[index].canAdd) {
                       _playTrack(context, browseItems[index].id, index);
                     }
-                  });
+                  },
+                  trailing: IconButton(
+                      icon: const Icon(Icons.more_vert),
+                      onPressed: () {
+                        showModalBottomSheet(
+                            context: context,
+                            showDragHandle: true,
+                            useRootNavigator: true,
+                            scrollControlDisabledMaxHeightRatio: 0.4,
+                            builder: (context) {
+                              return BottomMenu(browseItem: browseItems[index]);
+                            });
+                      }));
             },
           )
         : const Align(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rpi_music/bottom_menu.dart';
 import 'package:rpi_music/custom_cache_manager.dart';
 import 'package:rpi_music/custom_list_tile.dart';
 import 'package:rpi_music/data_provider.dart';
@@ -89,46 +90,10 @@ class _BrowsePage extends State<BrowsePage> {
     showModalBottomSheet(
         context: context,
         showDragHandle: true,
+        useRootNavigator: true,
+        scrollControlDisabledMaxHeightRatio: 0.4,
         builder: (context) {
-          return Consumer<UserFavoritesProvider>(
-              builder: (context, favoritesProvider, _) {
-            return ListView(
-              children: [
-                CustomListTile(
-                  browseItem: browseItem,
-                ),
-                const Divider(),
-                const ListTile(
-                    title: Text('Play'), leading: Icon(Icons.play_arrow)),
-                const ListTile(
-                    title: Text('Add to queue'),
-                    leading: Icon(Icons.queue_music)),
-                const ListTile(
-                    title: Text('Add to playlist'),
-                    leading: Icon(Icons.playlist_add)),
-                browseItem.canFavorite &&
-                        !favoritesProvider.isFavorite(browseItem)
-                    ? ListTile(
-                        title: const Text('Add to favorites'),
-                        leading: const Icon(Icons.favorite),
-                        onTap: () {
-                          favoritesProvider.add(browseItem);
-                          Navigator.pop(context);
-                        })
-                    : const SizedBox.shrink(),
-                browseItem.canFavorite &&
-                        favoritesProvider.isFavorite(browseItem)
-                    ? ListTile(
-                        title: const Text('Delete from favorites'),
-                        leading: const Icon(Icons.heart_broken),
-                        onTap: () {
-                          favoritesProvider.remove(browseItem);
-                          Navigator.pop(context);
-                        })
-                    : const SizedBox.shrink(),
-              ],
-            );
-          });
+          return BottomMenu(browseItem: browseItem);
         });
   }
 
@@ -233,7 +198,12 @@ class _BrowsePage extends State<BrowsePage> {
                           builder: (context) =>
                               BrowsePage(parentItem: browseItems[index - 1])));
                 }
-              });
+              },
+              trailing: IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: () {
+                    _showDrawer(context, browseItems[index - 1]);
+                  }));
         }
       },
     );
