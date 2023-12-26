@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:rpi_music/browse.dart';
 import 'package:rpi_music/custom_cache_manager.dart';
@@ -47,7 +46,7 @@ class Discover extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    const Color.fromARGB(255, 58, 58, 58),
+                    const Color.fromARGB(255, 38, 38, 38),
                     Theme.of(context).scaffoldBackgroundColor
                   ])),
           child: _buildSection(
@@ -118,7 +117,7 @@ class Discover extends StatelessWidget {
             shrinkWrap: true,
             scrollDirection: Axis.horizontal,
             itemCount: browseItems.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 4),
+            separatorBuilder: (context, index) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               return _buildPreviewListItem(context, browseItems[index], size);
             }));
@@ -158,10 +157,5 @@ class Discover extends StatelessWidget {
                 fit: BoxFit.contain,
               )),
         ));
-  }
-
-  int getWeekOfYear(DateTime date) {
-    int dayOfYear = int.parse(DateFormat("D").format(date));
-    return ((dayOfYear - date.weekday + 10) / 7).floor();
   }
 }

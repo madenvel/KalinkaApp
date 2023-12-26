@@ -44,8 +44,6 @@ class _ListCardState extends State<ListCard> {
         subtitle: item.subname != null
             ? Text(item.subname!, overflow: TextOverflow.ellipsis)
             : null,
-        // trailing: trailing,
-        // onTap: onTap,
         visualDensity: VisualDensity.compact);
   }
 
