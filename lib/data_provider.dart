@@ -30,6 +30,9 @@ class TrackListProvider with ChangeNotifier {
         }
         notifyListeners();
       },
+      EventType.NetworkError: (_) {
+        _isLoading = true;
+      },
       EventType.NetworkRecover: (args) {
         getTracks();
         notifyListeners();
@@ -79,6 +82,14 @@ class PlayerStateProvider with ChangeNotifier {
           notifyListeners();
         }
       },
+      EventType.NetworkError: (_) {
+        _isLoading = true;
+        notifyListeners();
+      },
+      EventType.NetworkRecover: (_) {
+        getState();
+        notifyListeners();
+      }
     });
   }
 
@@ -163,16 +174,28 @@ class UserFavoritesProvider with ChangeNotifier {
   bool get idsLoaded => _idsLoaded;
 
   UserFavoritesProvider() {
-    // EventListener().registerCallback({
-    //   EventType.FavoriteAdded: (args) {
-    //     _favorites[SearchType.track]!.ids.addAll(args[0].cast<String>());
-    //     notifyListeners();
-    //   },
-    //   EventType.FavoriteRemoved: (args) {
-    //     _favorites[SearchType.track]!.ids.removeAll(args[0].cast<String>());
-    //     notifyListeners();
-    //   }
-    // });
+    EventListener().registerCallback({
+      // EventType.FavoriteAdded: (args) {
+      //   _favorites[SearchType.track]!.ids.addAll(args[0].cast<String>());
+      //   notifyListeners();
+      // },
+      // EventType.FavoriteRemoved: (args) {
+      //   _favorites[SearchType.track]!.ids.removeAll(args[0].cast<String>());
+      //   notifyListeners();
+      // }
+      EventType.NetworkError: (_) {
+        _idsLoaded = false;
+        _favorites[SearchType.album]?.isLoaded = false;
+        _favorites[SearchType.artist]?.isLoaded = false;
+        _favorites[SearchType.track]?.isLoaded = false;
+        _favorites[SearchType.playlist]?.isLoaded = false;
+        notifyListeners();
+      },
+      EventType.NetworkRecover: (_) {
+        _loadIds();
+        notifyListeners();
+      }
+    });
     _loadIds();
   }
 
