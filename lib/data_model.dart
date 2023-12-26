@@ -382,7 +382,7 @@ class BrowseItem {
   }
 
   bool get canFavorite {
-    return album != null || track != null || artist != null;
+    return album != null || track != null || artist != null || playlist != null;
   }
 
   get browseType {
