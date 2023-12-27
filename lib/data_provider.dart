@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data_model.dart';
 import 'event_listener.dart';
@@ -185,10 +186,10 @@ class UserFavoritesProvider with ChangeNotifier {
       // }
       EventType.NetworkError: (_) {
         _idsLoaded = false;
-        _favorites[SearchType.album]?.isLoaded = false;
-        _favorites[SearchType.artist]?.isLoaded = false;
-        _favorites[SearchType.track]?.isLoaded = false;
-        _favorites[SearchType.playlist]?.isLoaded = false;
+        _favorites[SearchType.album] = FavoriteInfo();
+        _favorites[SearchType.artist] = FavoriteInfo();
+        _favorites[SearchType.track] = FavoriteInfo();
+        _favorites[SearchType.playlist] = FavoriteInfo();
         notifyListeners();
       },
       EventType.NetworkRecover: (_) {
@@ -396,6 +397,36 @@ class VolumeControlProvider with ChangeNotifier {
       _realVolume = 0;
       _maxVolume = 0;
       _supported = false;
+      notifyListeners();
+    });
+  }
+}
+
+class ConnectionSettingsProvider with ChangeNotifier {
+  String _host = '';
+  int _port = 0;
+
+  get host => _host;
+  get port => _port;
+
+  ConnectionSettingsProvider() {
+    _init();
+  }
+
+  Future<void> _init() {
+    return SharedPreferences.getInstance().then((prefs) {
+      _host = prefs.getString('RpiMusic.host') ?? '';
+      _port = prefs.getInt('RpiMusic.port') ?? 0;
+      notifyListeners();
+    });
+  }
+
+  Future<void> setAddress(String host, int port) {
+    return SharedPreferences.getInstance().then((prefs) {
+      prefs.setString('RpiMusic.host', host);
+      prefs.setInt('RpiMusic.port', port);
+      _host = host;
+      _port = port;
       notifyListeners();
     });
   }
