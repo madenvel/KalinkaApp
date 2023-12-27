@@ -6,8 +6,9 @@ import 'package:rpi_music/data_model.dart';
 class ListCard extends StatefulWidget {
   final BrowseItem browseItem;
   final GestureTapCallback? onTap;
+  final int? index;
 
-  const ListCard({Key? key, required this.browseItem, this.onTap})
+  const ListCard({Key? key, required this.browseItem, this.onTap, this.index})
       : super(key: key);
 
   @override
@@ -29,7 +30,9 @@ class _ListCardState extends State<ListCard> {
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   _buildItemImage(_getFallbackIcon(), constraints),
-                  _buildText(),
+                  widget.browseItem.image != null
+                      ? _buildText()
+                      : const SizedBox.shrink()
                 ]),
           ));
     });
@@ -64,8 +67,9 @@ class _ListCardState extends State<ListCard> {
   }
 
   Widget _buildItemImage(IconData fallbackIcon, BoxConstraints constraints) {
-    String? image;
     BrowseItem item = widget.browseItem;
+    String? image;
+    print('image: $image');
     if (item.image != null) {
       image = item.image!.large ?? item.image!.small ?? item.image!.thumbnail;
     }
@@ -88,7 +92,8 @@ class _ListCardState extends State<ListCard> {
                         stops: const [0, 0.5, 1.0],
                         tileMode: TileMode.mirror)),
                 child: image == null
-                    ? FittedBox(child: Icon(fallbackIcon))
+                    ? _buildTextIcon(
+                        context, widget.browseItem.name ?? 'Unknown')
                     : CachedNetworkImage(
                         fit: BoxFit.contain,
                         cacheManager: RpiMusicCacheManager.instance,
@@ -98,5 +103,33 @@ class _ListCardState extends State<ListCard> {
                         errorWidget: (context, url, error) =>
                             const Icon(Icons.error, size: 50.0),
                       ))));
+  }
+
+  static List<Color> gradientColors = [
+    Colors.red,
+    Colors.orange,
+    Colors.yellow,
+    Colors.green,
+    Colors.blue,
+    Colors.indigo,
+    Colors.purple,
+  ];
+
+  Widget _buildTextIcon(BuildContext context, String text) {
+    return Container(
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: <Color>[
+                  gradientColors[(widget.index ?? 0) % 6],
+                  gradientColors[((widget.index ?? 0) % 6) + 1]
+                ],
+                tileMode: TileMode.mirror)),
+        child: Center(
+            child: Text(text,
+                style: const TextStyle(
+                    fontSize: 18.0, fontWeight: FontWeight.bold))));
   }
 }

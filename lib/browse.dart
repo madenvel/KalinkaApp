@@ -125,18 +125,20 @@ class _BrowsePage extends State<BrowsePage> {
       itemBuilder: (context, index) {
         final item = browseItems[index];
         return Padding(
-            padding: const EdgeInsets.all(8), child: _buildCard(context, item));
+            padding: const EdgeInsets.all(8),
+            child: _buildCard(context, item, index));
       },
     );
   }
 
-  Widget _buildCard(BuildContext context, BrowseItem? item) {
+  Widget _buildCard(BuildContext context, BrowseItem? item, int index) {
     if (item == null) {
       return const Spacer();
     }
 
     return ListCard(
         browseItem: item,
+        index: index,
         onTap: () {
           if (item.canBrowse) {
             Navigator.push(
@@ -144,9 +146,6 @@ class _BrowsePage extends State<BrowsePage> {
                 MaterialPageRoute(
                     builder: (context) => BrowsePage(parentItem: item)));
           }
-          // else if (item.canAdd ?? false) {
-          //   _replaceAndPlay(item.url!, 0);
-          // }
         });
   }
 

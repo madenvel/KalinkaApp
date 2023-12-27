@@ -119,16 +119,18 @@ class Discover extends StatelessWidget {
             itemCount: browseItems.length,
             separatorBuilder: (context, index) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
-              return _buildPreviewListItem(context, browseItems[index], size);
+              return _buildPreviewListItem(
+                  context, browseItems[index], size, index);
             }));
   }
 
   Widget _buildPreviewListItem(
-      BuildContext context, BrowseItem item, double itemSize) {
+      BuildContext context, BrowseItem item, double itemSize, int index) {
     return SizedBox(
         width: itemSize,
         child: ListCard(
           browseItem: item,
+          index: index,
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
