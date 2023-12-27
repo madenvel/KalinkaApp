@@ -69,7 +69,6 @@ class _ListCardState extends State<ListCard> {
   Widget _buildItemImage(IconData fallbackIcon, BoxConstraints constraints) {
     BrowseItem item = widget.browseItem;
     String? image;
-    print('image: $image');
     if (item.image != null) {
       image = item.image!.large ?? item.image!.small ?? item.image!.thumbnail;
     }
