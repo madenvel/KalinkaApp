@@ -22,7 +22,7 @@ class Discover extends StatelessWidget {
           icon: const Icon(Icons.tune),
           onPressed: () {
             Navigator.push(context,
-                MaterialPageRoute(builder: (context) => GenreSelector()));
+                MaterialPageRoute(builder: (context) => const GenreSelector()));
           },
         )
       ]),

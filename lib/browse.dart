@@ -23,40 +23,42 @@ class _BrowsePage extends State<BrowsePage> {
   _BrowsePage();
 
   List<BrowseItem> browseItems = [];
+  int total = 0;
   bool _loadInProgress = true;
 
   @override
   void initState() {
     super.initState();
-    _loadBrowseItems();
+    _loadMoreItems();
     context.read<GenreFilterProvider>().addListener(() {
       if (!mounted) {
         return;
       }
-      _loadInProgress = true;
-      _loadBrowseItems();
+      _loadMoreItems();
       setState(() {});
     });
   }
 
-  void _loadBrowseItems() async {
-    const int chunkSize = 50;
-    int offset = 0;
-    // int total = 0;
-    // do {
+  void _loadMoreItems() {
+    const int chunkSize = 30;
+    setState(() {
+      _loadInProgress = true;
+    });
+    int offset = browseItems.length;
+
     List<String> filter = context.read<GenreFilterProvider>().filter;
     bool canGenreFilter = widget.parentItem.catalog?.canGenreFilter ?? false;
-    BrowseItemsList result = await RpiPlayerProxy().browse(
-        widget.parentItem.url,
-        offset: offset,
-        limit: chunkSize,
-        genreIds: canGenreFilter ? filter : null);
-    browseItems.addAll(result.items);
-    offset += result.items.length;
-    // total = result.total;
-    // } while (offset < total);
-    setState(() {
-      _loadInProgress = false;
+    RpiPlayerProxy()
+        .browse(widget.parentItem.url,
+            offset: offset,
+            limit: chunkSize,
+            genreIds: canGenreFilter ? filter : null)
+        .then((BrowseItemsList result) {
+      browseItems.addAll(result.items);
+      total = result.total;
+      setState(() {
+        _loadInProgress = false;
+      });
     });
   }
 
@@ -188,7 +190,7 @@ class _BrowsePage extends State<BrowsePage> {
     return ListView.separated(
       itemCount: browseItems.length + 1,
       separatorBuilder: (context, index) =>
-          index == 0 ? const SizedBox.shrink() : const Divider(),
+          index == 0 ? const SizedBox.shrink() : const Divider(height: 1),
       itemBuilder: (context, index) {
         if (index == 0) {
           return _buildHeader(context);
@@ -217,7 +219,7 @@ class _BrowsePage extends State<BrowsePage> {
     return ListView.separated(
       itemCount: browseItems.length + 1,
       separatorBuilder: (context, index) =>
-          index == 0 ? const SizedBox.shrink() : const Divider(),
+          index == 0 ? const SizedBox.shrink() : const Divider(height: 1),
       itemBuilder: (context, index) {
         if (index == 0) {
           return _buildHeader(context);
@@ -243,19 +245,18 @@ class _BrowsePage extends State<BrowsePage> {
     );
   }
 
-  Widget _buildIconButton(IconData icon, double size, Function onPressed) {
+  Widget _buildIconButton(IconData icon, double size, VoidCallback? onPressed) {
     return MaterialButton(
-      onPressed: () {
-        onPressed();
-      },
-      color: Theme.of(context).indicatorColor,
-      textColor: Theme.of(context).primaryColor,
+      onPressed: onPressed,
+      color: Theme.of(context).indicatorColor.withOpacity(0.7),
+      splashColor: Colors.white,
       padding: const EdgeInsets.all(8),
       shape: const CircleBorder(),
       child: Padding(
           padding: EdgeInsets.all(size / 5),
           child: Icon(
             icon,
+            color: Theme.of(context).scaffoldBackgroundColor,
             size: size,
           )),
     );

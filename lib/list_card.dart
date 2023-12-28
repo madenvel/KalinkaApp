@@ -178,22 +178,26 @@ class _ListCardState extends State<ListCard> {
                 colors: generateGradientColors(text),
                 tileMode: TileMode.mirror)),
         child: Center(
-            child: Text(text,
-                style: const TextStyle(
-                  fontSize: 22.0,
-                  fontWeight: FontWeight.bold,
-                  shadows: <Shadow>[
-                    Shadow(
-                      offset: Offset(0.0, 0.0),
-                      blurRadius: 4.0,
-                      color: Color.fromARGB(255, 0, 0, 0),
-                    ),
-                    Shadow(
-                      offset: Offset(3.0, 3.0),
-                      blurRadius: 8.0,
-                      color: Color.fromARGB(125, 0, 0, 0),
-                    ),
-                  ],
-                ))));
+            child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 22.0,
+                fontWeight: FontWeight.bold,
+                shadows: <Shadow>[
+                  Shadow(
+                    offset: Offset(0.0, 0.0),
+                    blurRadius: 4.0,
+                    color: Color.fromARGB(255, 0, 0, 0),
+                  ),
+                  Shadow(
+                    offset: Offset(3.0, 3.0),
+                    blurRadius: 8.0,
+                    color: Color.fromARGB(125, 0, 0, 0),
+                  ),
+                ],
+              )),
+        )));
   }
 }

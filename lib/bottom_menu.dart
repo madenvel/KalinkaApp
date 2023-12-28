@@ -10,7 +10,7 @@ class BottomMenu extends StatelessWidget {
   final bool showPlay;
   final bool showAddToQueue;
 
-  BottomMenu(
+  const BottomMenu(
       {super.key,
       required this.browseItem,
       this.showPlay = true,

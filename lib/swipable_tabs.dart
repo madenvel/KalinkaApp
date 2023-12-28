@@ -11,7 +11,7 @@ class SwipableTabs extends StatefulWidget {
   const SwipableTabs({Key? key}) : super(key: key);
 
   @override
-  _SwipableTabsState createState() => _SwipableTabsState();
+  State<SwipableTabs> createState() => _SwipableTabsState();
 }
 
 class _SwipableTabsState extends State<SwipableTabs>
