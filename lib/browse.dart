@@ -147,6 +147,9 @@ class _BrowsePage extends State<BrowsePage> {
   }
 
   Widget _buildCatalog(BuildContext context) {
+    if (browseItems.isEmpty) {
+      return const Center(child: Text('No items'));
+    }
     double size = MediaQuery.of(context).size.width / 2;
     double aspectRatio = (size - 32) /
         ((size - 32) * imageRatioForBrowseType(browseItems[0]) + 64);
