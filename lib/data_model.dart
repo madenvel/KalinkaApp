@@ -273,10 +273,12 @@ class Catalog {
   final String title;
   final AlbumImage? image;
   final String? description;
+  final bool canGenreFilter;
 
   Catalog({
     required this.id,
     required this.title,
+    required this.canGenreFilter,
     this.image,
     this.description,
   });
@@ -287,6 +289,7 @@ class Catalog {
         image:
             json["image"] == null ? null : AlbumImage.fromJson(json["image"]),
         description: json["description"],
+        canGenreFilter: json["can_genre_filter"],
       );
 
   Map<String, dynamic> toJson() => {
@@ -529,6 +532,56 @@ class FavoriteIds {
         "tracks": List<dynamic>.from(tracks.map((x) => x)),
         "artists": List<dynamic>.from(artists.map((x) => x)),
         "playlists": List<dynamic>.from(playlists.map((x) => x)),
+      };
+}
+
+class GenreList {
+  final int offset;
+  final int limit;
+  final int total;
+  final List<Genre> items;
+
+  GenreList({
+    required this.offset,
+    required this.limit,
+    required this.total,
+    required this.items,
+  });
+
+  factory GenreList.fromJson(Map<String, dynamic> json) => GenreList(
+        offset: json["offset"],
+        limit: json["limit"],
+        total: json["total"],
+        items: json["items"] == null
+            ? []
+            : List<Genre>.from(json["items"]!.map((x) => Genre.fromJson(x))),
+      );
+
+  Map<String, dynamic> toJson() => {
+        "offset": offset,
+        "limit": limit,
+        "total": total,
+        "items": List<dynamic>.from(items.map((x) => x.toJson())),
+      };
+}
+
+class Genre {
+  final String id;
+  final String name;
+
+  Genre({
+    required this.id,
+    required this.name,
+  });
+
+  factory Genre.fromJson(Map<String, dynamic> json) => Genre(
+        id: json["id"],
+        name: json["name"],
+      );
+
+  Map<String, dynamic> toJson() => {
+        "id": id,
+        "name": name,
       };
 }
 

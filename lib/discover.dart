@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rpi_music/browse.dart';
 import 'package:rpi_music/custom_cache_manager.dart';
+import 'package:rpi_music/genre_selector.dart';
 
 import 'data_model.dart';
 import 'data_provider.dart';
@@ -16,9 +17,15 @@ class Discover extends StatelessWidget {
     DiscoverSectionProvider provider = context.watch<DiscoverSectionProvider>();
     MediaQuery.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Discover'),
-      ),
+      appBar: AppBar(title: const Text('Discover'), actions: <Widget>[
+        IconButton(
+          icon: const Icon(Icons.tune),
+          onPressed: () {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (context) => GenreSelector()));
+          },
+        )
+      ]),
       body: provider.hasLoaded
           ? ListView.separated(
               separatorBuilder: (context, index) => const SizedBox(height: 16),
@@ -54,7 +61,9 @@ class Discover extends StatelessWidget {
               provider.sections[index],
               hasImage
                   ? _buildWideImageWidget(context, section, image)
-                  : _buildHorizontalList(context, provider.previews[index]),
+                  : provider.previews[index].isNotEmpty
+                      ? _buildHorizontalList(context, provider.previews[index])
+                      : const SizedBox.shrink(),
               seeAll: !hasImage)),
     );
   }
@@ -98,9 +107,7 @@ class Discover extends StatelessWidget {
             item.description != null
                 ? Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                        contentPadding: const EdgeInsets.all(0),
-                        title: Text(item.description!)),
+                    child: Text(item.description!),
                   )
                 : const SizedBox.shrink(),
             horizontalList
@@ -110,7 +117,18 @@ class Discover extends StatelessWidget {
 
   Widget _buildHorizontalList(
       BuildContext context, List<BrowseItem> browseItems) {
-    var size = MediaQuery.of(context).size.width / 3;
+    double size;
+    switch (browseItems[0].browseType) {
+      case 'catalog':
+        if (browseItems[0].image != null) {
+          size = MediaQuery.of(context).size.width / 3;
+        } else {
+          size = MediaQuery.of(context).size.width / 12;
+        }
+      default:
+        size = MediaQuery.of(context).size.width / 3;
+        break;
+    }
     return SizedBox(
         height: size + 64,
         child: ListView.separated(
@@ -127,7 +145,7 @@ class Discover extends StatelessWidget {
   Widget _buildPreviewListItem(
       BuildContext context, BrowseItem item, double itemSize, int index) {
     return SizedBox(
-        width: itemSize,
+        height: itemSize,
         child: ListCard(
           browseItem: item,
           index: index,

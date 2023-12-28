@@ -32,7 +32,7 @@ class CustomListTile extends StatelessWidget {
     return InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(12.0),
           child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
             !noLeadingIcon
                 ? _buildLeadingIcon(context)

@@ -127,9 +127,12 @@ class RpiPlayerProxy {
   }
 
   Future<BrowseItemsList> browse(String query,
-      {int offset = 0, int limit = 10}) async {
-    final url = _buildUri('/browse$query',
-        {'offset': offset.toString(), 'limit': limit.toString()});
+      {int offset = 0, int limit = 10, List<String>? genreIds}) async {
+    final url = _buildUri('/browse$query', {
+      'offset': offset.toString(),
+      'limit': limit.toString(),
+      ...genreIds != null ? {'genre_ids': genreIds} : {}
+    });
     return client.get(url).then((response) {
       if (response.statusCode != 200) {
         throw Exception('Failed to browse $query, url=$url');
@@ -206,6 +209,16 @@ class RpiPlayerProxy {
         throw Exception('Failed to get volume, url=$url');
       }
       return Volume.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+    });
+  }
+
+  Future<GenreList> getGenres() async {
+    final url = _buildUri('/genre/list');
+    return client.get(url).then((response) {
+      if (response.statusCode != 200) {
+        throw Exception('Failed to get genres, url=$url');
+      }
+      return GenreList.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
     });
   }
 

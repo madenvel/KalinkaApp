@@ -7,8 +7,16 @@ class ListCard extends StatefulWidget {
   final BrowseItem browseItem;
   final GestureTapCallback? onTap;
   final int? index;
+  final double textLabelHeight;
+  final double textLabelHeightRatio;
 
-  const ListCard({Key? key, required this.browseItem, this.onTap, this.index})
+  const ListCard(
+      {Key? key,
+      required this.browseItem,
+      this.onTap,
+      this.index,
+      this.textLabelHeight = 64.0,
+      this.textLabelHeightRatio = 0.2})
       : super(key: key);
 
   @override
@@ -20,22 +28,59 @@ class _ListCardState extends State<ListCard> {
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
       return InkWell(
-          onTap: widget.onTap,
-          child: Container(
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-            width: constraints.maxWidth,
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  _buildItemImage(_getFallbackIcon(), constraints),
-                  widget.browseItem.image != null
-                      ? _buildText()
-                      : const SizedBox.shrink()
-                ]),
-          ));
+          onTap: widget.onTap, child: _buildCard(context, constraints));
     });
+  }
+
+  Widget _buildCard(BuildContext context, BoxConstraints constraints) {
+    switch (widget.browseItem.browseType) {
+      case 'album':
+        return _buildAlbumCard(context, constraints);
+      case 'playlist':
+        return _buildPlaylistCard(context, constraints);
+      case 'catalog':
+        return _buildCatalogCard(context, constraints);
+      // case 'track':
+      //   return _buildAlbumCard(context, constraints);
+    }
+
+    return Container();
+  }
+
+  Widget _buildAlbumCard(BuildContext context, BoxConstraints constraints) {
+    return Container(
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _buildItemImage(_getFallbackIcon(), constraints),
+        widget.browseItem.image != null
+            ? SizedBox(
+                height: widget.textLabelHeight,
+                width: (constraints.maxHeight - widget.textLabelHeight) /
+                    imageRatioForBrowseType(),
+                child: _buildText())
+            : const SizedBox.shrink()
+      ]),
+    );
+  }
+
+  Widget _buildPlaylistCard(BuildContext context, BoxConstraints constraints) {
+    return Container(
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _buildItemImage(_getFallbackIcon(), constraints),
+        widget.browseItem.image != null
+            ? SizedBox(
+                height: widget.textLabelHeight,
+                width: (constraints.maxHeight - widget.textLabelHeight) /
+                    imageRatioForBrowseType(),
+                child: _buildText())
+            : const SizedBox.shrink()
+      ]),
+    );
+  }
+
+  Widget _buildCatalogCard(BuildContext context, BoxConstraints constraints) {
+    return _buildItemImage(_getFallbackIcon(), constraints);
   }
 
   Widget _buildText() {
@@ -66,6 +111,24 @@ class _ListCardState extends State<ListCard> {
     }
   }
 
+  double imageRatioForBrowseType() {
+    switch (widget.browseItem.browseType) {
+      case 'playlist':
+        return 0.475;
+      case 'album':
+      case 'track':
+        return 1.0;
+      case 'catalog':
+        if (widget.browseItem.image != null) {
+          return 0.475;
+        } else {
+          return 0.2;
+        }
+    }
+
+    return 1.0;
+  }
+
   Widget _buildItemImage(IconData fallbackIcon, BoxConstraints constraints) {
     BrowseItem item = widget.browseItem;
     String? image;
@@ -73,46 +136,37 @@ class _ListCardState extends State<ListCard> {
       image = item.image!.large ?? item.image!.small ?? item.image!.thumbnail;
     }
 
-    return SizedBox(
-        width: constraints.maxWidth,
-        height: constraints.maxWidth,
-        child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-                decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: <Color>[
-                          Theme.of(context).primaryColor.withOpacity(0.0),
-                          Colors.grey.withOpacity(1),
-                          Theme.of(context).primaryColor.withOpacity(0.0),
-                        ],
-                        stops: const [0, 0.5, 1.0],
-                        tileMode: TileMode.mirror)),
-                child: image == null
-                    ? _buildTextIcon(
-                        context, widget.browseItem.name ?? 'Unknown')
-                    : CachedNetworkImage(
-                        fit: BoxFit.contain,
-                        cacheManager: RpiMusicCacheManager.instance,
-                        imageUrl: image,
-                        placeholder: (context, url) =>
-                            FittedBox(child: Icon(fallbackIcon)),
-                        errorWidget: (context, url, error) =>
-                            const Icon(Icons.error, size: 50.0),
-                      ))));
+    return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: SizedBox(
+            width: (constraints.maxHeight - widget.textLabelHeight) /
+                imageRatioForBrowseType(),
+            height: constraints.maxHeight - widget.textLabelHeight,
+            child: image == null
+                ? _buildTextIcon(context, widget.browseItem.name ?? 'Unknown')
+                : CachedNetworkImage(
+                    cacheManager: RpiMusicCacheManager.instance,
+                    fit: BoxFit.fill,
+                    imageUrl: image,
+                    placeholder: (context, url) =>
+                        FittedBox(child: Icon(fallbackIcon)),
+                    errorWidget: (context, url, error) =>
+                        const Icon(Icons.error, size: 50.0),
+                  )));
   }
 
-  static List<Color> gradientColors = [
-    Colors.red,
-    Colors.orange,
-    Colors.yellow,
-    Colors.green,
-    Colors.blue,
-    Colors.indigo,
-    Colors.purple,
-  ];
+  List<Color> generateGradientColors(String text) {
+    int hash = text.hashCode;
+
+    // Convert the hash to a value between 0 and 360
+    double hue = (hash % 360).toDouble();
+
+    // Generate two colors with milder tones based on the hue
+    Color color1 = HSLColor.fromAHSL(1.0, hue, 0.5, 0.4).toColor();
+    Color color2 = HSLColor.fromAHSL(1.0, hue, 0.5, 0.5).toColor();
+
+    return [color1, color2];
+  }
 
   Widget _buildTextIcon(BuildContext context, String text) {
     return Container(
@@ -121,14 +175,25 @@ class _ListCardState extends State<ListCard> {
             gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: <Color>[
-                  gradientColors[(widget.index ?? 0) % 6],
-                  gradientColors[((widget.index ?? 0) % 6) + 1]
-                ],
+                colors: generateGradientColors(text),
                 tileMode: TileMode.mirror)),
         child: Center(
             child: Text(text,
                 style: const TextStyle(
-                    fontSize: 18.0, fontWeight: FontWeight.bold))));
+                  fontSize: 22.0,
+                  fontWeight: FontWeight.bold,
+                  shadows: <Shadow>[
+                    Shadow(
+                      offset: Offset(0.0, 0.0),
+                      blurRadius: 4.0,
+                      color: Color.fromARGB(255, 0, 0, 0),
+                    ),
+                    Shadow(
+                      offset: Offset(3.0, 3.0),
+                      blurRadius: 8.0,
+                      color: Color.fromARGB(125, 0, 0, 0),
+                    ),
+                  ],
+                ))));
   }
 }

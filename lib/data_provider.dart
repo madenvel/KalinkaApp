@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data_model.dart';
@@ -304,8 +305,8 @@ class DiscoverSectionProvider with ChangeNotifier {
   List<List<BrowseItem>> get previews => _previews;
   bool get hasLoaded => _hasLoaded;
 
-  DiscoverSectionProvider() {
-    _init();
+  DiscoverSectionProvider({List<String>? genreIds}) {
+    _init(genreIds);
   }
 
   Future<void> _loadSections() async {
@@ -317,7 +318,7 @@ class DiscoverSectionProvider with ChangeNotifier {
     });
   }
 
-  Future<void> _loadPreviews() async {
+  Future<void> _loadPreviews(List<String>? genreIds) async {
     _previews.clear();
     _previews.addAll(List.generate(_sections.length, (_) => []));
     List<Future<void>> futures = [];
@@ -327,18 +328,30 @@ class DiscoverSectionProvider with ChangeNotifier {
         continue;
       }
       String url = _sections[i].url;
-      futures
-          .add(RpiPlayerProxy().browse(url, offset: 0, limit: 12).then((value) {
+      futures.add(RpiPlayerProxy()
+          .browse(url,
+              offset: 0,
+              limit: 12,
+              genreIds: _sections[i].catalog?.canGenreFilter ?? false
+                  ? genreIds
+                  : null)
+          .then((value) {
         _previews[i].addAll(value.items);
       }));
     }
     return Future.wait(futures).then((_) {});
   }
 
-  Future<void> _init() async {
+  void update(List<String> genreIds) {
+    _loadPreviews(genreIds).then((_) {
+      notifyListeners();
+    });
+  }
+
+  Future<void> _init(final List<String>? genreIds) async {
     _hasLoaded = false;
     await _loadSections();
-    await _loadPreviews();
+    await _loadPreviews(genreIds);
     _hasLoaded = true;
     notifyListeners();
   }
@@ -429,5 +442,32 @@ class ConnectionSettingsProvider with ChangeNotifier {
       _port = port;
       notifyListeners();
     });
+  }
+}
+
+class GenreFilterProvider with ChangeNotifier {
+  final List<Genre> _genres = [];
+  final List<String> _filter = [];
+  bool _isLoaded = false;
+
+  List<Genre> get genres => _genres;
+  List<String> get filter => _filter;
+  get isLoaded => _isLoaded;
+
+  GenreFilterProvider() {
+    _init();
+  }
+
+  void _init() async {
+    _isLoaded = false;
+    RpiPlayerProxy().getGenres().then((value) {
+      _genres.addAll(value.items);
+      _isLoaded = true;
+      notifyListeners();
+    });
+  }
+
+  void performFilterChange() {
+    notifyListeners();
   }
 }

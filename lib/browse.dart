@@ -29,6 +29,14 @@ class _BrowsePage extends State<BrowsePage> {
   void initState() {
     super.initState();
     _loadBrowseItems();
+    context.read<GenreFilterProvider>().addListener(() {
+      if (!mounted) {
+        return;
+      }
+      _loadInProgress = true;
+      _loadBrowseItems();
+      setState(() {});
+    });
   }
 
   void _loadBrowseItems() async {
@@ -36,8 +44,13 @@ class _BrowsePage extends State<BrowsePage> {
     int offset = 0;
     // int total = 0;
     // do {
-    BrowseItemsList result = await RpiPlayerProxy()
-        .browse(widget.parentItem.url, offset: offset, limit: chunkSize);
+    List<String> filter = context.read<GenreFilterProvider>().filter;
+    bool canGenreFilter = widget.parentItem.catalog?.canGenreFilter ?? false;
+    BrowseItemsList result = await RpiPlayerProxy().browse(
+        widget.parentItem.url,
+        offset: offset,
+        limit: chunkSize,
+        genreIds: canGenreFilter ? filter : null);
     browseItems.addAll(result.items);
     offset += result.items.length;
     // total = result.total;
@@ -115,9 +128,28 @@ class _BrowsePage extends State<BrowsePage> {
     }
   }
 
+  double imageRatioForBrowseType(BrowseItem item) {
+    switch (item.browseType) {
+      case 'playlist':
+        return 0.475;
+      case 'album':
+      case 'track':
+        return 1.0;
+      case 'catalog':
+        if (item.image != null) {
+          return 0.475;
+        } else {
+          return 0.2;
+        }
+    }
+
+    return 1.0;
+  }
+
   Widget _buildCatalog(BuildContext context) {
     double size = MediaQuery.of(context).size.width / 2;
-    double aspectRatio = size / (size + 64);
+    double aspectRatio = (size - 32) /
+        ((size - 32) * imageRatioForBrowseType(browseItems[0]) + 64);
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2, childAspectRatio: aspectRatio),

@@ -46,8 +46,20 @@ class RpiMusic extends StatelessWidget {
           ChangeNotifierProvider(create: (context) => TrackProgressProvider()),
           ChangeNotifierProvider(create: (context) => UserFavoritesProvider()),
           ChangeNotifierProvider(create: (context) => SearchResultsProvider()),
-          ChangeNotifierProvider(
-              create: (context) => DiscoverSectionProvider()),
+          ChangeNotifierProvider(create: (context) => GenreFilterProvider()),
+          ChangeNotifierProxyProvider<GenreFilterProvider,
+              DiscoverSectionProvider>(
+            create: (context) => DiscoverSectionProvider(),
+            update: (BuildContext context, GenreFilterProvider value,
+                DiscoverSectionProvider? previous) {
+              if (previous != null) {
+                previous.update(value.filter);
+                return previous;
+              } else {
+                return DiscoverSectionProvider(genreIds: value.filter);
+              }
+            },
+          ),
           ChangeNotifierProvider(create: (context) => VolumeControlProvider()),
         ],
         child: MaterialApp(
