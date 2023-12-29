@@ -8,6 +8,7 @@ import 'package:rpi_music/custom_cache_manager.dart';
 import 'package:rpi_music/custom_list_tile.dart';
 import 'package:rpi_music/data_provider.dart';
 import 'package:rpi_music/favorite_button.dart';
+import 'package:rpi_music/genre_select_filter.dart';
 import 'package:rpi_music/list_card.dart';
 import 'package:rpi_music/multilist.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
@@ -94,11 +95,14 @@ class _BrowsePage extends State<BrowsePage> {
       appBar: AppBar(
         title: Text(widget.parentItem.name ?? 'Unknown'),
         actions: <Widget>[
-          IconButton(
-              icon: const Icon(Icons.more_vert),
-              onPressed: () {
-                _showDrawer(context, widget.parentItem);
-              })
+          if (widget.parentItem.browseType == 'catalog')
+            const GenreFilterButton()
+          else
+            IconButton(
+                icon: const Icon(Icons.more_vert),
+                onPressed: () {
+                  _showDrawer(context, widget.parentItem);
+                })
         ],
       ),
       body: _loadInProgress

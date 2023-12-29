@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:rpi_music/browse.dart';
 import 'package:rpi_music/custom_cache_manager.dart';
-import 'package:rpi_music/genre_selector.dart';
+import 'package:rpi_music/genre_select_filter.dart';
 
 import 'data_model.dart';
 import 'data_provider.dart';
@@ -26,8 +26,6 @@ class _DiscoverState extends State<Discover> {
   @override
   Widget build(BuildContext context) {
     DiscoverSectionProvider provider = context.watch<DiscoverSectionProvider>();
-    GenreFilterProvider genreFilterProvider =
-        context.watch<GenreFilterProvider>();
     // Keep this one for dynamic resize of the content to work when screen size changes
     MediaQuery.of(context).size;
     return PopScope(
@@ -46,23 +44,9 @@ class _DiscoverState extends State<Discover> {
             key: navigatorKey,
             onGenerateRoute: (settings) => MaterialPageRoute(builder: (_) {
                   return Scaffold(
-                    appBar:
-                        AppBar(title: const Text('Discover'), actions: <Widget>[
-                      Badge.count(
-                          isLabelVisible: genreFilterProvider.filter.isNotEmpty,
-                          count: genreFilterProvider.filter.length,
-                          alignment: Alignment.bottomLeft,
-                          child: IconButton(
-                            icon: const Icon(Icons.tune),
-                            onPressed: () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          const GenreSelector()));
-                            },
-                          ))
-                    ]),
+                    appBar: AppBar(
+                        title: const Text('Discover'),
+                        actions: const <Widget>[GenreFilterButton()]),
                     body: provider.hasLoaded
                         ? ListView.separated(
                             separatorBuilder: (context, index) =>
