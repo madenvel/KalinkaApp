@@ -29,9 +29,10 @@ class GenreSelector extends StatelessWidget {
         itemBuilder: (context, index) {
           return CheckboxListTile(
             title: Text(provider.genres[index].name),
-            value: provider.filter.contains(provider.genres[index].id),
+            value: provider.filter.contains(provider.genres[index].id) ||
+                provider.filter.isEmpty,
             onChanged: (value) {
-              if (value == true) {
+              if (value == true || provider.filter.isEmpty) {
                 provider.filter.add(provider.genres[index].id);
               } else {
                 provider.filter.remove(provider.genres[index].id);

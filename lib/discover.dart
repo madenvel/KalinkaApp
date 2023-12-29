@@ -26,6 +26,8 @@ class _DiscoverState extends State<Discover> {
   @override
   Widget build(BuildContext context) {
     DiscoverSectionProvider provider = context.watch<DiscoverSectionProvider>();
+    GenreFilterProvider genreFilterProvider =
+        context.watch<GenreFilterProvider>();
     // Keep this one for dynamic resize of the content to work when screen size changes
     MediaQuery.of(context).size;
     return PopScope(
@@ -46,15 +48,20 @@ class _DiscoverState extends State<Discover> {
                   return Scaffold(
                     appBar:
                         AppBar(title: const Text('Discover'), actions: <Widget>[
-                      IconButton(
-                        icon: const Icon(Icons.tune),
-                        onPressed: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const GenreSelector()));
-                        },
-                      )
+                      Badge.count(
+                          isLabelVisible: genreFilterProvider.filter.isNotEmpty,
+                          count: genreFilterProvider.filter.length,
+                          alignment: Alignment.bottomLeft,
+                          child: IconButton(
+                            icon: const Icon(Icons.tune),
+                            onPressed: () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const GenreSelector()));
+                            },
+                          ))
                     ]),
                     body: provider.hasLoaded
                         ? ListView.separated(
