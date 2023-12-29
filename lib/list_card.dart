@@ -8,15 +8,13 @@ class ListCard extends StatefulWidget {
   final GestureTapCallback? onTap;
   final int? index;
   final double textLabelHeight;
-  final double textLabelHeightRatio;
 
   const ListCard(
       {Key? key,
       required this.browseItem,
       this.onTap,
       this.index,
-      this.textLabelHeight = 64.0,
-      this.textLabelHeightRatio = 0.2})
+      this.textLabelHeight = 64.0})
       : super(key: key);
 
   @override
@@ -35,9 +33,8 @@ class _ListCardState extends State<ListCard> {
   Widget _buildCard(BuildContext context, BoxConstraints constraints) {
     switch (widget.browseItem.browseType) {
       case 'album':
-        return _buildAlbumCard(context, constraints);
       case 'playlist':
-        return _buildPlaylistCard(context, constraints);
+        return _buildImageCard(context, constraints);
       case 'catalog':
         return _buildCatalogCard(context, constraints);
       // case 'track':
@@ -47,23 +44,7 @@ class _ListCardState extends State<ListCard> {
     return Container();
   }
 
-  Widget _buildAlbumCard(BuildContext context, BoxConstraints constraints) {
-    return Container(
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _buildItemImage(_getFallbackIcon(), constraints),
-        widget.browseItem.image != null
-            ? SizedBox(
-                height: widget.textLabelHeight,
-                width: (constraints.maxHeight - widget.textLabelHeight) /
-                    imageRatioForBrowseType(),
-                child: _buildText())
-            : const SizedBox.shrink()
-      ]),
-    );
-  }
-
-  Widget _buildPlaylistCard(BuildContext context, BoxConstraints constraints) {
+  Widget _buildImageCard(BuildContext context, BoxConstraints constraints) {
     return Container(
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
