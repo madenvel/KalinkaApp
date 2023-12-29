@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:rpi_music/bottom_menu.dart';
 import 'package:rpi_music/custom_list_tile.dart';
@@ -129,7 +130,7 @@ class _SearchState extends State<Search> {
           if (navigatorKey.currentState!.canPop()) {
             navigatorKey.currentState!.pop();
           } else {
-            Navigator.of(context).pop();
+            SystemNavigator.pop();
           }
         },
         child: Navigator(

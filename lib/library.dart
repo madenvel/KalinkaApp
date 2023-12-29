@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:rpi_music/bottom_menu.dart';
 import 'package:rpi_music/data_provider.dart';
@@ -39,7 +40,7 @@ class _LibraryState extends State<Library> {
           if (navigatorKey.currentState!.canPop()) {
             navigatorKey.currentState!.pop();
           } else {
-            Navigator.of(context).pop();
+            SystemNavigator.pop();
           }
         },
         child: Navigator(

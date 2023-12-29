@@ -113,17 +113,12 @@ class _ListCardState extends State<ListCard> {
 
   double imageRatioForBrowseType() {
     switch (widget.browseItem.browseType) {
+      case 'catalog':
       case 'playlist':
         return 0.475;
       case 'album':
       case 'track':
         return 1.0;
-      case 'catalog':
-        if (widget.browseItem.image != null) {
-          return 0.475;
-        } else {
-          return 0.2;
-        }
     }
 
     return 1.0;
@@ -136,12 +131,18 @@ class _ListCardState extends State<ListCard> {
       image = item.image!.large ?? item.image!.small ?? item.image!.thumbnail;
     }
 
+    var adjustToTextHeight = image != null ? widget.textLabelHeight : 0;
+
+    Size size = Size(
+        (constraints.maxHeight - adjustToTextHeight) /
+            imageRatioForBrowseType(),
+        constraints.maxHeight - adjustToTextHeight);
+
     return ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: SizedBox(
-            width: (constraints.maxHeight - widget.textLabelHeight) /
-                imageRatioForBrowseType(),
-            height: constraints.maxHeight - widget.textLabelHeight,
+            width: size.width,
+            height: size.height,
             child: image == null
                 ? _buildTextIcon(context, widget.browseItem.name ?? 'Unknown')
                 : CachedNetworkImage(

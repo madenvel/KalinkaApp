@@ -138,17 +138,12 @@ class _BrowsePage extends State<BrowsePage> {
 
   double imageRatioForBrowseType(BrowseItem item) {
     switch (item.browseType) {
+      case 'catalog':
       case 'playlist':
         return 0.475;
       case 'album':
       case 'track':
         return 1.0;
-      case 'catalog':
-        if (item.image != null) {
-          return 0.475;
-        } else {
-          return 0.2;
-        }
     }
 
     return 1.0;
@@ -164,7 +159,8 @@ class _BrowsePage extends State<BrowsePage> {
     double size = (MediaQuery.of(context).size.width -
             padding * (horizontalItemCount + 1)) /
         horizontalItemCount;
-    double height = (size * imageRatioForBrowseType(browseItems[0]) + 64);
+    double height = (size * imageRatioForBrowseType(browseItems[0]) +
+        (browseItems[0].image != null ? 64 : 0));
 
     return Padding(
       padding: const EdgeInsets.only(left: 8.0, right: 8),

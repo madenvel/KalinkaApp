@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:rpi_music/browse.dart';
 import 'package:rpi_music/custom_cache_manager.dart';
@@ -20,10 +21,13 @@ class _DiscoverState extends State<Discover> {
   _DiscoverState();
 
   final navigatorKey = GlobalKey<NavigatorState>();
+  final double textLabelHeight = 64;
 
   @override
   Widget build(BuildContext context) {
     DiscoverSectionProvider provider = context.watch<DiscoverSectionProvider>();
+    // Keep this one for dynamic resize of the content to work when screen size changes
+    MediaQuery.of(context).size;
     return PopScope(
         canPop: false,
         onPopInvoked: (bool didPop) {
@@ -33,7 +37,7 @@ class _DiscoverState extends State<Discover> {
           if (navigatorKey.currentState!.canPop()) {
             navigatorKey.currentState!.pop();
           } else {
-            Navigator.of(context).pop();
+            SystemNavigator.pop();
           }
         },
         child: Navigator(
@@ -145,20 +149,20 @@ class _DiscoverState extends State<Discover> {
 
   Widget _buildHorizontalList(
       BuildContext context, List<BrowseItem> browseItems) {
-    double size;
-    switch (browseItems[0].browseType) {
-      case 'catalog':
-        if (browseItems[0].image != null) {
-          size = MediaQuery.of(context).size.width / 3;
-        } else {
-          size = MediaQuery.of(context).size.width / 12;
-        }
-      default:
-        size = MediaQuery.of(context).size.width / 3;
-        break;
+    late double cardSize;
+    final size = MediaQuery.of(context).size;
+    if (browseItems[0].image != null) {
+      BoxConstraints constraints = BoxConstraints(
+          minHeight: 100 + textLabelHeight,
+          maxHeight: size.height / 4 + textLabelHeight);
+      cardSize = constraints
+          .constrain(Size(0, size.width / 2.5 + textLabelHeight))
+          .height;
+    } else {
+      cardSize = 100;
     }
     return SizedBox(
-        height: size + 64,
+        height: cardSize,
         child: ListView.separated(
             shrinkWrap: true,
             scrollDirection: Axis.horizontal,
@@ -166,7 +170,7 @@ class _DiscoverState extends State<Discover> {
             separatorBuilder: (context, index) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               return _buildPreviewListItem(
-                  context, browseItems[index], size, index);
+                  context, browseItems[index], cardSize, index);
             }));
   }
 
