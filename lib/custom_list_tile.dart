@@ -121,7 +121,7 @@ class CustomListTile extends StatelessWidget {
               opacity: showPlayIndicator && isCurrent ? 0.3 : 1.0,
               child: Center(
                   child: index != null
-                      ? _buildLeadingNumber()
+                      ? _buildLeadingNumber(context)
                       : _buildItemImage(browseItem, _getFallbackIcon()))),
           showPlayIndicator && isCurrent
               ? const Center(child: SoundwaveWidget())
@@ -129,14 +129,14 @@ class CustomListTile extends StatelessWidget {
         ]));
   }
 
-  Widget _buildLeadingNumber() {
-    return SizedBox(
-      width: size,
-      height: size,
+  Widget _buildLeadingNumber(BuildContext context) {
+    return FittedBox(
       child: Center(
-          child: Text("${index! + 1}",
-              style: TextStyle(
-                  fontSize: 20.0 * (size / 50.0), color: Colors.grey))),
+          child: Text((index! + 1).toString().padLeft(2, '0'),
+              style: Theme.of(context)
+                  .listTileTheme
+                  .subtitleTextStyle
+                  ?.copyWith(fontSize: 25))),
     );
   }
 
@@ -151,7 +151,7 @@ class CustomListTile extends StatelessWidget {
     }
 
     return ClipRRect(
-        borderRadius: BorderRadius.circular(rounded ? size / 2 : 0),
+        borderRadius: BorderRadius.circular(rounded ? size / 2 : 4),
         child: Container(
             width: size,
             height: size,

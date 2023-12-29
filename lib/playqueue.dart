@@ -70,23 +70,27 @@ class _PlayQueueState extends State<PlayQueue>
                           fontWeight: FontWeight.bold, fontSize: 15.0)))
               : const SizedBox.shrink(),
           ListTile(
-              leading: SizedBox(
-                  width: 50,
-                  height: 50,
-                  child: Stack(children: [
-                    Opacity(
-                        opacity: index == currentTrackIndex ? 0.3 : 1.0,
-                        child: CachedNetworkImage(
-                            cacheManager: RpiMusicCacheManager.instance,
-                            imageUrl: tracks[index].album?.image?.small ?? '',
-                            placeholder: (context, url) =>
-                                const Icon(Icons.music_note, size: 50.0),
-                            errorWidget: (context, url, error) =>
-                                const Icon(Icons.error, size: 50.0))),
-                    index == currentTrackIndex
-                        ? const Center(child: SoundwaveWidget())
-                        : const SizedBox.shrink()
-                  ])),
+              leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(4.0),
+                  child: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Stack(children: [
+                        Opacity(
+                            opacity: index == currentTrackIndex ? 0.3 : 1.0,
+                            child: CachedNetworkImage(
+                                fit: BoxFit.contain,
+                                cacheManager: RpiMusicCacheManager.instance,
+                                imageUrl:
+                                    tracks[index].album?.image?.small ?? '',
+                                placeholder: (context, url) =>
+                                    const Icon(Icons.music_note, size: 50.0),
+                                errorWidget: (context, url, error) =>
+                                    const Icon(Icons.error, size: 50.0))),
+                        index == currentTrackIndex
+                            ? const Center(child: SoundwaveWidget())
+                            : const SizedBox.shrink()
+                      ]))),
               title: Text(
                 tracks[index].title,
                 overflow: TextOverflow.ellipsis,

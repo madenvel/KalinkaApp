@@ -200,7 +200,7 @@ class _SearchState extends State<Search> {
         controller: _searchListScrollController,
         padding: EdgeInsets.zero,
         itemCount: searchResults.results.length,
-        separatorBuilder: (context, index) => const Divider(),
+        separatorBuilder: (context, index) => const Divider(height: 1),
         itemBuilder: (context, index) {
           BrowseItem? item = searchResults.results.elementAtOrNull(index);
           if (item == null) {
@@ -257,7 +257,7 @@ class _SearchState extends State<Search> {
           child: ListView.separated(
         padding: EdgeInsets.zero,
         itemCount: previousSearch.length,
-        separatorBuilder: (context, index) => const Divider(),
+        separatorBuilder: (context, index) => const Divider(height: 1),
         itemBuilder: (context, index) {
           return CustomListTile(
               browseItem: previousSearch[index],

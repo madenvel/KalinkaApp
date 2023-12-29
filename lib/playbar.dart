@@ -87,12 +87,13 @@ class _PlaybarState extends State<Playbar> {
         children: [
           Text(
             trackList[index].title,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: Theme.of(context).listTileTheme.titleTextStyle,
             overflow: TextOverflow.ellipsis,
           ),
           Text(
             trackList[index].performer?.name ?? 'Unknown artist',
             overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).listTileTheme.subtitleTextStyle,
           )
         ]);
   }
@@ -106,15 +107,18 @@ class _PlaybarState extends State<Playbar> {
       return const SizedBox.shrink();
     }
     return SizedBox(
-        width: 50,
-        height: 50,
-        child: CachedNetworkImage(
-          cacheManager: RpiMusicCacheManager.instance,
-          imageUrl: imgSource,
-          placeholder: (context, url) =>
-              const Icon(Icons.music_note, size: 50.0),
-          errorWidget: (context, url, error) => const Icon(Icons.error),
-        ));
+        width: 48,
+        height: 48,
+        child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: CachedNetworkImage(
+              fit: BoxFit.contain,
+              cacheManager: RpiMusicCacheManager.instance,
+              imageUrl: imgSource,
+              placeholder: (context, url) =>
+                  const Icon(Icons.music_note, size: 50.0),
+              errorWidget: (context, url, error) => const Icon(Icons.error),
+            )));
   }
 
   Widget _buildCarousel(BuildContext context) {

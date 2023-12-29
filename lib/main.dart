@@ -35,7 +35,7 @@ class RpiMusic extends StatelessWidget {
   Widget build(BuildContext context) {
     var listTileTheme = Theme.of(context).listTileTheme.copyWith(
         titleTextStyle:
-            const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         subtitleTextStyle: const TextStyle(
             fontSize: 14, fontWeight: FontWeight.w400, color: Colors.grey));
     return MultiProvider(

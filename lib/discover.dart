@@ -15,27 +15,33 @@ class Discover extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     DiscoverSectionProvider provider = context.watch<DiscoverSectionProvider>();
-    MediaQuery.of(context);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Discover'), actions: <Widget>[
-        IconButton(
-          icon: const Icon(Icons.tune),
-          onPressed: () {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (context) => const GenreSelector()));
-          },
-        )
-      ]),
-      body: provider.hasLoaded
-          ? ListView.separated(
-              separatorBuilder: (context, index) => const SizedBox(height: 16),
-              scrollDirection: Axis.vertical,
-              itemCount: provider.sections.length,
-              itemBuilder: (context, index) {
-                return _buildSectionList(context, index);
-              })
-          : const Center(child: CircularProgressIndicator()),
-    );
+    return Navigator(onGenerateRoute: (settings) {
+      return MaterialPageRoute(builder: (_) {
+        return Scaffold(
+          appBar: AppBar(title: const Text('Discover'), actions: <Widget>[
+            IconButton(
+              icon: const Icon(Icons.tune),
+              onPressed: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const GenreSelector()));
+              },
+            )
+          ]),
+          body: provider.hasLoaded
+              ? ListView.separated(
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 16),
+                  scrollDirection: Axis.vertical,
+                  itemCount: provider.sections.length,
+                  itemBuilder: (context, index) {
+                    return _buildSectionList(context, index);
+                  })
+              : const Center(child: CircularProgressIndicator()),
+        );
+      });
+    });
   }
 
   Widget _buildSectionList(BuildContext context, int index) {

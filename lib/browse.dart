@@ -1,3 +1,6 @@
+import 'dart:math';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:rpi_music/bottom_menu.dart';
@@ -6,6 +9,7 @@ import 'package:rpi_music/custom_list_tile.dart';
 import 'package:rpi_music/data_provider.dart';
 import 'package:rpi_music/favorite_button.dart';
 import 'package:rpi_music/list_card.dart';
+import 'package:rpi_music/multilist.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'data_model.dart';
@@ -88,13 +92,15 @@ class _BrowsePage extends State<BrowsePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: Text(widget.parentItem.name ?? 'Unknown'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          )),
+        title: Text(widget.parentItem.name ?? 'Unknown'),
+        actions: <Widget>[
+          IconButton(
+              icon: const Icon(Icons.more_vert),
+              onPressed: () {
+                _showDrawer(context, widget.parentItem);
+              })
+        ],
+      ),
       body: _loadInProgress
           ? const Center(child: CircularProgressIndicator())
           : _buildBrowsePage(context),
@@ -152,19 +158,28 @@ class _BrowsePage extends State<BrowsePage> {
     if (browseItems.isEmpty) {
       return const Center(child: Text('No items'));
     }
-    double size = MediaQuery.of(context).size.width / 2;
-    double aspectRatio = (size - 32) /
-        ((size - 32) * imageRatioForBrowseType(browseItems[0]) + 64);
-    return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2, childAspectRatio: aspectRatio),
-      itemCount: browseItems.length,
-      itemBuilder: (context, index) {
-        final item = browseItems[index];
-        return Padding(
-            padding: const EdgeInsets.all(8),
-            child: _buildCard(context, item, index));
-      },
+
+    const int horizontalItemCount = 2;
+    double padding = 8;
+    double size = (MediaQuery.of(context).size.width -
+            padding * (horizontalItemCount + 1)) /
+        horizontalItemCount;
+    double height = (size * imageRatioForBrowseType(browseItems[0]) + 64);
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 8.0, right: 8),
+      child: MultiList(
+        horizontalSeparatorBuilder: (context, index) =>
+            const SizedBox(width: 8),
+        verticalSeparatorBuilder: (context, index) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          final item = browseItems[index];
+          return SizedBox(
+              height: height, child: _buildCard(context, item, index));
+        },
+        itemCount: browseItems.length,
+        horizontalItemCount: horizontalItemCount,
+      ),
     );
   }
 
@@ -263,13 +278,9 @@ class _BrowsePage extends State<BrowsePage> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    var screenWidth = MediaQuery.of(context).size.width;
     return Stack(children: [
       Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Stack(children: [
-          SizedBox(width: screenWidth, height: 350),
-          Opacity(opacity: 0.2, child: _buildBackgroundImage(screenWidth)),
-        ]),
+        Opacity(opacity: 0.2, child: _buildBackgroundImage()),
         const SizedBox(height: 35.0)
       ]),
       _buildAlbumHeader(),
@@ -299,33 +310,27 @@ class _BrowsePage extends State<BrowsePage> {
         widget.parentItem.catalog?.image;
   }
 
-  Widget _buildBackgroundImage(double width) {
+  Widget _buildBackgroundImage() {
     var image = getParentImage();
-    String? imageUrl = image?.small ?? image?.thumbnail ?? image?.large;
+    String? imageUrl = image?.large ?? image?.small ?? image?.thumbnail;
 
-    return Stack(children: [
-      imageUrl != null
-          ? CachedNetworkImage(
-              cacheManager: RpiMusicCacheManager.instance,
-              imageUrl: imageUrl,
-              filterQuality: FilterQuality.low,
-              fit: BoxFit.cover,
-              width: width,
-              height: 350)
-          : const SizedBox.shrink(),
-      Container(
-          width: width,
-          height: 350,
-          decoration: BoxDecoration(
-              gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: <Color>[
-                    Colors.grey.withOpacity(0),
-                    Colors.grey,
-                  ],
-                  tileMode: TileMode.mirror))),
-    ]);
+    if (imageUrl == null) {
+      return Container(color: Colors.grey, height: 350);
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: CachedNetworkImageProvider(imageUrl),
+          fit: BoxFit.cover,
+        ),
+      ),
+      height: 350,
+      child: ClipRRect(
+          child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container())),
+    );
   }
 
   Widget _buildAlbumHeader() {
@@ -335,27 +340,32 @@ class _BrowsePage extends State<BrowsePage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
           const SizedBox(height: 48.0),
-          Container(
-              height: 200,
-              decoration: BoxDecoration(boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context).primaryColor,
-                  spreadRadius: 3,
-                  blurRadius: 3,
-                  offset: const Offset(1, 1), // changes position of shadow
-                ),
-              ]),
-              child: getParentImage()?.large != null
-                  ? CachedNetworkImage(
-                      cacheManager: RpiMusicCacheManager.instance,
-                      imageUrl: getParentImage()!.large!,
-                      filterQuality: FilterQuality.high,
-                      placeholder: (context, url) =>
-                          const Center(child: CircularProgressIndicator()),
-                      errorWidget: (context, url, error) =>
-                          const Icon(Icons.error),
-                    )
-                  : _buildImageReplacement()),
+          ConstrainedBox(
+              constraints: BoxConstraints(
+                  maxHeight: 200,
+                  maxWidth: min(MediaQuery.of(context).size.width - 32,
+                      200 / imageRatioForBrowseType(widget.parentItem)),
+                  minWidth: 0),
+              child: Container(
+                  decoration: BoxDecoration(boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).primaryColor,
+                      spreadRadius: 3,
+                      blurRadius: 3,
+                      offset: const Offset(0, 0), // changes position of shadow
+                    ),
+                  ]),
+                  child: getParentImage()?.large != null
+                      ? CachedNetworkImage(
+                          cacheManager: RpiMusicCacheManager.instance,
+                          imageUrl: getParentImage()!.large!,
+                          filterQuality: FilterQuality.high,
+                          placeholder: (context, url) =>
+                              const Center(child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) =>
+                              const Icon(Icons.error),
+                        )
+                      : _buildImageReplacement())),
           const SizedBox(height: 10.0),
           Text(
             widget.parentItem.name ?? 'Unknown Album',

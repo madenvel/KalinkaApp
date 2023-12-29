@@ -28,54 +28,58 @@ class _LibraryState extends State<Library> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Library'),
-      ),
-      body: Column(
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _textEditingController,
-              onChanged: (text) {
-                setState(() {});
-              },
-              decoration: const InputDecoration(
-                labelText: 'Type text to filter the list below',
-                border: OutlineInputBorder(),
-              ),
-            ),
+    return Navigator(onGenerateRoute: (settings) {
+      return MaterialPageRoute(builder: (_) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('My Library'),
           ),
-          SizedBox(
-              height: 36,
-              child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  scrollDirection: Axis.horizontal,
-                  children: List<Widget>.generate(4, (int index) {
-                    return Padding(
-                        padding: const EdgeInsets.only(left: 4, right: 4),
-                        child: ChoiceChip(
-                          label: Text([
-                            'Albums',
-                            'Artists',
-                            'Tracks',
-                            'Playlists'
-                          ][index]),
-                          selected: _selectedIndex == index,
-                          onSelected: (bool selected) {
-                            setState(() {
-                              _selectedIndex = selected ? index : 0;
-                            });
-                          },
-                        ));
-                  }))),
-          const SizedBox(height: 8.0),
-          Expanded(child: _buildItemList(context)),
-        ],
-      ),
-    );
+          body: Column(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextField(
+                  controller: _textEditingController,
+                  onChanged: (text) {
+                    setState(() {});
+                  },
+                  decoration: const InputDecoration(
+                    labelText: 'Type text to filter the list below',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              SizedBox(
+                  height: 36,
+                  child: ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      scrollDirection: Axis.horizontal,
+                      children: List<Widget>.generate(4, (int index) {
+                        return Padding(
+                            padding: const EdgeInsets.only(left: 4, right: 4),
+                            child: ChoiceChip(
+                              label: Text([
+                                'Albums',
+                                'Artists',
+                                'Tracks',
+                                'Playlists'
+                              ][index]),
+                              selected: _selectedIndex == index,
+                              onSelected: (bool selected) {
+                                setState(() {
+                                  _selectedIndex = selected ? index : 0;
+                                });
+                              },
+                            ));
+                      }))),
+              const SizedBox(height: 8.0),
+              Expanded(child: _buildItemList(context)),
+            ],
+          ),
+        );
+      });
+    });
   }
 
   List<BrowseItem> _filterItems(List<BrowseItem> browseItems) {
@@ -109,8 +113,9 @@ class _LibraryState extends State<Library> {
     List<BrowseItem> browseItems = _filterItems(favorite.items);
     return favorite.isLoaded
         ? ListView.separated(
+            padding: EdgeInsets.zero,
             itemCount: browseItems.length + 1,
-            separatorBuilder: (context, index) => const Divider(),
+            separatorBuilder: (context, index) => const Divider(height: 1),
             itemBuilder: (context, index) {
               if (index == browseItems.length) {
                 return Padding(
