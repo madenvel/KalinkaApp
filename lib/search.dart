@@ -26,6 +26,8 @@ class _SearchState extends State<Search> {
   late SharedPreferences persistentStorage;
   final ScrollController _searchListScrollController = ScrollController();
 
+  final navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   void dispose() {
     _textFieldController.dispose();
@@ -118,9 +120,23 @@ class _SearchState extends State<Search> {
 
   @override
   Widget build(BuildContext context) {
-    return Navigator(onGenerateRoute: (settings) {
-      return MaterialPageRoute(builder: (_) => _buildSearchPage());
-    });
+    return PopScope(
+        canPop: false,
+        onPopInvoked: (bool didPop) {
+          if (didPop) {
+            return;
+          }
+          if (navigatorKey.currentState!.canPop()) {
+            navigatorKey.currentState!.pop();
+          } else {
+            Navigator.of(context).pop();
+          }
+        },
+        child: Navigator(
+            key: navigatorKey,
+            onGenerateRoute: (settings) {
+              return MaterialPageRoute(builder: (_) => _buildSearchPage());
+            }));
   }
 
   Widget _buildSearchPage() {

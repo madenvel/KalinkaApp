@@ -21,6 +21,8 @@ class _LibraryState extends State<Library> {
   int _selectedIndex = 0;
   final TextEditingController _textEditingController = TextEditingController();
 
+  final navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   void initState() {
     super.initState();
@@ -28,58 +30,73 @@ class _LibraryState extends State<Library> {
 
   @override
   Widget build(BuildContext context) {
-    return Navigator(onGenerateRoute: (settings) {
-      return MaterialPageRoute(builder: (_) {
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('My Library'),
-          ),
-          body: Column(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: TextField(
-                  controller: _textEditingController,
-                  onChanged: (text) {
-                    setState(() {});
-                  },
-                  decoration: const InputDecoration(
-                    labelText: 'Type text to filter the list below',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              SizedBox(
-                  height: 36,
-                  child: ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      scrollDirection: Axis.horizontal,
-                      children: List<Widget>.generate(4, (int index) {
-                        return Padding(
-                            padding: const EdgeInsets.only(left: 4, right: 4),
-                            child: ChoiceChip(
-                              label: Text([
-                                'Albums',
-                                'Artists',
-                                'Tracks',
-                                'Playlists'
-                              ][index]),
-                              selected: _selectedIndex == index,
-                              onSelected: (bool selected) {
-                                setState(() {
-                                  _selectedIndex = selected ? index : 0;
-                                });
-                              },
-                            ));
-                      }))),
-              const SizedBox(height: 8.0),
-              Expanded(child: _buildItemList(context)),
-            ],
-          ),
-        );
-      });
-    });
+    return PopScope(
+        canPop: false,
+        onPopInvoked: (bool didPop) {
+          if (didPop) {
+            return;
+          }
+          if (navigatorKey.currentState!.canPop()) {
+            navigatorKey.currentState!.pop();
+          } else {
+            Navigator.of(context).pop();
+          }
+        },
+        child: Navigator(
+            key: navigatorKey,
+            onGenerateRoute: (settings) => MaterialPageRoute(builder: (_) {
+                  return Scaffold(
+                    appBar: AppBar(
+                      title: const Text('My Library'),
+                    ),
+                    body: Column(
+                      mainAxisSize: MainAxisSize.max,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: TextField(
+                            controller: _textEditingController,
+                            onChanged: (text) {
+                              setState(() {});
+                            },
+                            decoration: const InputDecoration(
+                              labelText: 'Type text to filter the list below',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                            height: 36,
+                            child: ListView(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8.0),
+                                scrollDirection: Axis.horizontal,
+                                children: List<Widget>.generate(4, (int index) {
+                                  return Padding(
+                                      padding: const EdgeInsets.only(
+                                          left: 4, right: 4),
+                                      child: ChoiceChip(
+                                        label: Text([
+                                          'Albums',
+                                          'Artists',
+                                          'Tracks',
+                                          'Playlists'
+                                        ][index]),
+                                        selected: _selectedIndex == index,
+                                        onSelected: (bool selected) {
+                                          setState(() {
+                                            _selectedIndex =
+                                                selected ? index : 0;
+                                          });
+                                        },
+                                      ));
+                                }))),
+                        const SizedBox(height: 8.0),
+                        Expanded(child: _buildItemList(context)),
+                      ],
+                    ),
+                  );
+                })));
   }
 
   List<BrowseItem> _filterItems(List<BrowseItem> browseItems) {

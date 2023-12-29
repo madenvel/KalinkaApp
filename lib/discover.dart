@@ -9,39 +9,61 @@ import 'data_model.dart';
 import 'data_provider.dart';
 import 'list_card.dart';
 
-class Discover extends StatelessWidget {
+class Discover extends StatefulWidget {
   const Discover({Key? key}) : super(key: key);
+
+  @override
+  State<Discover> createState() => _DiscoverState();
+}
+
+class _DiscoverState extends State<Discover> {
+  _DiscoverState();
+
+  final navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
     DiscoverSectionProvider provider = context.watch<DiscoverSectionProvider>();
-    return Navigator(onGenerateRoute: (settings) {
-      return MaterialPageRoute(builder: (_) {
-        return Scaffold(
-          appBar: AppBar(title: const Text('Discover'), actions: <Widget>[
-            IconButton(
-              icon: const Icon(Icons.tune),
-              onPressed: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const GenreSelector()));
-              },
-            )
-          ]),
-          body: provider.hasLoaded
-              ? ListView.separated(
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 16),
-                  scrollDirection: Axis.vertical,
-                  itemCount: provider.sections.length,
-                  itemBuilder: (context, index) {
-                    return _buildSectionList(context, index);
-                  })
-              : const Center(child: CircularProgressIndicator()),
-        );
-      });
-    });
+    return PopScope(
+        canPop: false,
+        onPopInvoked: (bool didPop) {
+          if (didPop) {
+            return;
+          }
+          if (navigatorKey.currentState!.canPop()) {
+            navigatorKey.currentState!.pop();
+          } else {
+            Navigator.of(context).pop();
+          }
+        },
+        child: Navigator(
+            key: navigatorKey,
+            onGenerateRoute: (settings) => MaterialPageRoute(builder: (_) {
+                  return Scaffold(
+                    appBar:
+                        AppBar(title: const Text('Discover'), actions: <Widget>[
+                      IconButton(
+                        icon: const Icon(Icons.tune),
+                        onPressed: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const GenreSelector()));
+                        },
+                      )
+                    ]),
+                    body: provider.hasLoaded
+                        ? ListView.separated(
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 16),
+                            scrollDirection: Axis.vertical,
+                            itemCount: provider.sections.length,
+                            itemBuilder: (context, index) {
+                              return _buildSectionList(context, index);
+                            })
+                        : const Center(child: CircularProgressIndicator()),
+                  );
+                })));
   }
 
   Widget _buildSectionList(BuildContext context, int index) {
