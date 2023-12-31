@@ -288,15 +288,20 @@ class _SearchState extends State<Search> {
                     });
                   }),
               onTap: () {
-                if (previousSearch[index].canBrowse) {
+                BrowseItem item = previousSearch[index];
+                if (item.canBrowse) {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                        builder: (context) =>
-                            BrowsePage(parentItem: previousSearch[index])),
+                        builder: (context) => BrowsePage(parentItem: item)),
                   );
-                } else if (previousSearch[index].canAdd) {
-                  _playTrack(context, previousSearch[index].id);
+                } else if (item.canAdd) {
+                  _playTrack(context, item.id);
                 }
+                previousSearch.removeAt(index);
+                previousSearch.insert(0, item);
+                persistentStorage.setStringList('previousSearches',
+                    previousSearch.map((e) => json.encode(e)).toList());
+                setState(() {});
               });
         },
       ))
