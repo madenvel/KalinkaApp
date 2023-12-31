@@ -39,8 +39,9 @@ class _BrowsePage extends State<BrowsePage> {
       if (!mounted) {
         return;
       }
+      browseItems.clear();
+      total = 0;
       _loadMoreItems();
-      setState(() {});
     });
   }
 
