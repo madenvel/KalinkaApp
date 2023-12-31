@@ -60,9 +60,18 @@ class _LibraryState extends State<Library> {
                             onChanged: (text) {
                               setState(() {});
                             },
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Type text to filter the list below',
-                              border: OutlineInputBorder(),
+                              border: const OutlineInputBorder(),
+                              suffixIcon: _textEditingController.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: () {
+                                        setState(() {
+                                          _textEditingController.clear();
+                                        });
+                                      })
+                                  : null,
                             ),
                           ),
                         ),
