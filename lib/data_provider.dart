@@ -90,7 +90,6 @@ class PlayerStateProvider with ChangeNotifier {
       },
       EventType.NetworkRecover: (_) {
         getState();
-        notifyListeners();
       }
     });
   }
