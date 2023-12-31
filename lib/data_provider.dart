@@ -32,10 +32,10 @@ class TrackListProvider with ChangeNotifier {
         }
         notifyListeners();
       },
-      EventType.NetworkError: (_) {
+      EventType.NetworkDisconnected: (_) {
         _isLoading = true;
       },
-      EventType.NetworkRecover: (args) {
+      EventType.NetworkConnected: (args) {
         getTracks();
         notifyListeners();
       }
@@ -84,11 +84,11 @@ class PlayerStateProvider with ChangeNotifier {
           notifyListeners();
         }
       },
-      EventType.NetworkError: (_) {
+      EventType.NetworkDisconnected: (_) {
         _isLoading = true;
         notifyListeners();
       },
-      EventType.NetworkRecover: (_) {
+      EventType.NetworkConnected: (_) {
         getState();
       }
     });
@@ -184,7 +184,7 @@ class UserFavoritesProvider with ChangeNotifier {
       //   _favorites[SearchType.track]!.ids.removeAll(args[0].cast<String>());
       //   notifyListeners();
       // }
-      EventType.NetworkError: (_) {
+      EventType.NetworkDisconnected: (_) {
         _idsLoaded = false;
         _favorites[SearchType.album] = FavoriteInfo();
         _favorites[SearchType.artist] = FavoriteInfo();
@@ -192,7 +192,7 @@ class UserFavoritesProvider with ChangeNotifier {
         _favorites[SearchType.playlist] = FavoriteInfo();
         notifyListeners();
       },
-      EventType.NetworkRecover: (_) {
+      EventType.NetworkConnected: (_) {
         _loadIds();
         notifyListeners();
       }

@@ -112,13 +112,13 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int currentPageIndex = 0;
+  bool _connected = false;
   final PageStorageBucket bucket = PageStorageBucket();
   final List<Widget> pages = const <Widget>[
     Discover(),
     Library(),
     Search(key: PageStorageKey<String>('search')),
   ];
-  Function? closeErrorDialogCb;
   late String subscriptionId;
 
   _MyHomePageState();
@@ -129,15 +129,15 @@ class _MyHomePageState extends State<MyHomePage> {
     Provider.of<TrackListProvider>(context, listen: false).getTracks();
     Provider.of<PlayerStateProvider>(context, listen: false).getState();
     subscriptionId = EventListener().registerCallback({
-      EventType.NetworkError: (args) {
-        closeErrorDialogCb =
-            showReconnectDialog(context, message: 'Reconnecting...');
+      EventType.NetworkDisconnected: (args) {
+        setState(() {
+          _connected = false;
+        });
       },
-      EventType.NetworkRecover: (args) {
-        if (closeErrorDialogCb != null) {
-          closeErrorDialogCb!();
-          closeErrorDialogCb = null;
-        }
+      EventType.NetworkConnected: (args) {
+        setState(() {
+          _connected = true;
+        });
       }
     });
   }
@@ -152,47 +152,57 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     bool isQueueNotEmpty =
         context.watch<TrackListProvider>().trackList.isNotEmpty;
-    return Scaffold(
-        bottomNavigationBar: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              isQueueNotEmpty
-                  ? Playbar(onTap: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const SwipableTabs()));
-                    })
-                  : const SizedBox.shrink(),
-              NavigationBar(
-                onDestinationSelected: (int index) {
-                  setState(() {
-                    currentPageIndex = index;
-                  });
-                },
-                selectedIndex: currentPageIndex,
-                destinations: const <Widget>[
-                  NavigationDestination(
-                    selectedIcon: Icon(Icons.compass_calibration),
-                    icon: Icon(Icons.compass_calibration_outlined),
-                    label: 'Discover',
-                  ),
-                  NavigationDestination(
-                    selectedIcon: Icon(Icons.library_music),
-                    icon: Icon(Icons.library_music_outlined),
-                    label: 'My Library',
-                  ),
-                  NavigationDestination(
-                      icon: Icon(Icons.search),
-                      selectedIcon: Icon(Icons.search_outlined),
-                      label: 'Search'),
-                ],
-              )
-            ]),
-        body: PageStorage(
-          bucket: bucket,
-          child: pages[currentPageIndex],
-        ));
+    return Stack(children: [
+      Scaffold(
+          bottomNavigationBar: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                isQueueNotEmpty
+                    ? Playbar(onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const SwipableTabs()));
+                      })
+                    : const SizedBox.shrink(),
+                NavigationBar(
+                  onDestinationSelected: (int index) {
+                    setState(() {
+                      currentPageIndex = index;
+                    });
+                  },
+                  selectedIndex: currentPageIndex,
+                  destinations: const <Widget>[
+                    NavigationDestination(
+                      selectedIcon: Icon(Icons.compass_calibration),
+                      icon: Icon(Icons.compass_calibration_outlined),
+                      label: 'Discover',
+                    ),
+                    NavigationDestination(
+                      selectedIcon: Icon(Icons.library_music),
+                      icon: Icon(Icons.library_music_outlined),
+                      label: 'My Library',
+                    ),
+                    NavigationDestination(
+                        icon: Icon(Icons.search),
+                        selectedIcon: Icon(Icons.search_outlined),
+                        label: 'Search'),
+                  ],
+                )
+              ]),
+          body: PageStorage(
+            bucket: bucket,
+            child: pages[currentPageIndex],
+          )),
+      _connected == false
+          ? Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            )
+          : const SizedBox.shrink(),
+    ]);
   }
 }

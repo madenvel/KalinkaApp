@@ -14,8 +14,8 @@ enum EventType {
   RequestMoreTracks,
   TracksAdded,
   TracksRemoved,
-  NetworkError,
-  NetworkRecover,
+  NetworkDisconnected,
+  NetworkConnected,
   VolumeChanged,
   FavoriteAdded,
   FavoriteRemoved,
@@ -34,10 +34,10 @@ extension EventTypeExtension on EventType {
         return "track_added";
       case EventType.TracksRemoved:
         return "track_removed";
-      case EventType.NetworkError:
-        return "network_error";
-      case EventType.NetworkRecover:
-        return "network_recover";
+      case EventType.NetworkDisconnected:
+        return "network_disconnect";
+      case EventType.NetworkConnected:
+        return "network_connected";
       case EventType.VolumeChanged:
         return "volume_changed";
       case EventType.FavoriteAdded:
@@ -97,20 +97,14 @@ class EventListener {
 
     while (true) {
       try {
-        if (connectionFailure) {
-          print('Trying to reconnect to $url');
-        }
         final response = await client.get(
           url,
           options: Options(
               responseType:
                   ResponseType.stream), // Set the response type to `stream`.
         );
-        if (connectionFailure) {
-          connectionFailure = false;
-          print('Reconnect success');
-          _invokeCallbacks(EventType.NetworkRecover, []);
-        }
+        connectionFailure = false;
+        _invokeCallbacks(EventType.NetworkConnected, []);
 
         // Read the chunks from the response stream
         await for (var chunk in response.data.stream
@@ -127,8 +121,7 @@ class EventListener {
       } catch (e) {
         if (connectionFailure == false) {
           connectionFailure = true;
-          print('Connection failure, $e');
-          _invokeCallbacks(EventType.NetworkError, []);
+          _invokeCallbacks(EventType.NetworkDisconnected, []);
         }
       }
       await Future.delayed(const Duration(seconds: 1));
