@@ -25,11 +25,6 @@ class _LibraryState extends State<Library> {
   final navigatorKey = GlobalKey<NavigatorState>();
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return PopScope(
         canPop: false,
@@ -159,10 +154,10 @@ class _LibraryState extends State<Library> {
                   browseItem: browseItems[index],
                   onTap: () {
                     if (browseItems[index].canBrowse) {
+                      var item = browseItems[index];
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                            builder: (context) =>
-                                BrowsePage(parentItem: browseItems[index])),
+                            builder: (context) => BrowsePage(parentItem: item)),
                       );
                     } else if (browseItems[index].canAdd) {
                       _playTrack(context, browseItems[index].id, index);
