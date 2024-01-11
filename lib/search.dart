@@ -92,6 +92,12 @@ class _SearchState extends State<Search> {
         searchResults.loadMoreItems(10);
       }
     });
+    context.read<SearchResultsProvider>().addListener(() {
+      if (!mounted) {
+        return;
+      }
+      setState(() {});
+    });
   }
 
   void _initPersistentState() async {
