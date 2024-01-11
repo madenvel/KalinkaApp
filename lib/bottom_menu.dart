@@ -21,6 +21,7 @@ class BottomMenu extends StatelessWidget {
     return Consumer<UserFavoritesProvider>(
         builder: (context, favoritesProvider, _) {
       return ListView(
+        padding: const EdgeInsets.all(0),
         children: [
           CustomListTile(
             browseItem: browseItem,
