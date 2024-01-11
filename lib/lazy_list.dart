@@ -31,6 +31,12 @@ class LazyLoadingList {
     });
   }
 
+  void reset() {
+    _results.clear();
+    _totalItems = 0;
+    _hasLoaded = false;
+  }
+
   void onLoading() {}
   void onLoaded() {}
 }

@@ -41,9 +41,7 @@ class _SearchState extends State<Search> {
       return;
     }
     SearchResultsProvider searchResults = context.read<SearchResultsProvider>();
-    setState(() {
-      searchResults.search(_textFieldController.text, searchType, 50);
-    });
+    searchResults.search(_textFieldController.text, searchType, 50);
   }
 
   void _clearSearchText() {

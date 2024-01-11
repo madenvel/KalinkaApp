@@ -290,7 +290,7 @@ class SearchResultsProvider extends LazyLoadingList with ChangeNotifier {
       String query, SearchType searchType, int chunkSize) async {
     _query = query;
     _searchType = searchType;
-    results.clear();
+    reset();
     return loadMoreItems(chunkSize);
   }
 }
