@@ -90,7 +90,7 @@ class RpiMusic extends StatelessWidget {
             ),
             /* dark theme settings */
           ),
-          themeMode: ThemeMode.system,
+          themeMode: ThemeMode.dark,
           /* ThemeMode.system to follow system theme, 
          ThemeMode.light for light theme, 
          ThemeMode.dark for dark theme
@@ -190,10 +190,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   ],
                 )
               ]),
-          body: PageStorage(
+          body: _withTransparentGradient(PageStorage(
             bucket: bucket,
             child: pages[currentPageIndex],
-          )),
+          ))),
       _connected == false
           ? Container(
               color: Colors.black.withOpacity(0.5),
@@ -203,5 +203,27 @@ class _MyHomePageState extends State<MyHomePage> {
             )
           : const SizedBox.shrink(),
     ]);
+  }
+
+  Widget _withTransparentGradient(Widget widget) {
+    return Stack(children: [
+      widget,
+      IgnorePointer(
+          child: Positioned.fill(
+              bottom: 0,
+              child: Align(
+                  alignment: Alignment.bottomCenter, child: _buildGradient()))),
+    ]);
+  }
+
+  Widget _buildGradient() {
+    var color = Theme.of(context).primaryColor;
+    return Container(
+        height: 30,
+        decoration: BoxDecoration(
+            gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [color.withOpacity(0), color])));
   }
 }
