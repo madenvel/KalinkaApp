@@ -10,14 +10,12 @@ class BottomMenu extends StatelessWidget {
   final BrowseItem browseItem;
   final bool showPlay;
   final bool showAddToQueue;
-  final bool showBrowseArtist;
 
   const BottomMenu(
       {super.key,
       required this.browseItem,
       this.showPlay = true,
-      this.showAddToQueue = true,
-      this.showBrowseArtist = false});
+      this.showAddToQueue = true});
 
   @override
   Widget build(BuildContext context) {
