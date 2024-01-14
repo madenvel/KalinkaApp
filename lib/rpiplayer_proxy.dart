@@ -31,35 +31,35 @@ class RpiPlayerProxy {
   Future<StatusMessage> play([int? index]) async {
     final url = _buildUri(
         '/queue/play', index != null ? {'index': index.toString()} : null);
-    return client.get(url).then((response) {
+    return client.put(url).then((response) {
       return statusMessageFromResponse(response);
     });
   }
 
   Future<StatusMessage> next() async {
     final url = _buildUri('/queue/next');
-    return client.get(url).then((response) {
+    return client.put(url).then((response) {
       return statusMessageFromResponse(response);
     });
   }
 
   Future<StatusMessage> previous() async {
     final url = _buildUri('/queue/prev');
-    return client.get(url).then((response) {
+    return client.put(url).then((response) {
       return statusMessageFromResponse(response);
     });
   }
 
   Future<StatusMessage> add(String item) async {
     final url = _buildUri('/queue/add$item');
-    return client.get(url).then((response) {
+    return client.post(url).then((response) {
       return statusMessageFromResponse(response);
     });
   }
 
   Future<StatusMessage> remove(int index) async {
     final url = _buildUri('/queue/remove', {'index': index.toString()});
-    return client.get(url).then((response) {
+    return client.post(url).then((response) {
       return statusMessageFromResponse(response);
     });
   }
@@ -77,14 +77,14 @@ class RpiPlayerProxy {
 
   Future<StatusMessage> pause({bool paused = true}) async {
     final url = _buildUri('/queue/pause', {'paused': paused.toString()});
-    return client.get(url).then((response) {
+    return client.put(url).then((response) {
       return statusMessageFromResponse(response);
     });
   }
 
   Future<StatusMessage> stop() async {
     final url = _buildUri('/queue/stop');
-    return client.get(url).then((response) {
+    return client.put(url).then((response) {
       return statusMessageFromResponse(response);
     });
   }
@@ -143,6 +143,17 @@ class RpiPlayerProxy {
     });
   }
 
+  Future<BrowseItem> getMetadata(String query) async {
+    final url = _buildUri('/get$query');
+    return client.get(url).then((response) {
+      if (response.statusCode != 200) {
+        throw Exception('Failed to get metadata for $query, url=$url');
+      }
+
+      return BrowseItem.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));
+    });
+  }
+
   Future<BrowseItemsList> getFavorite(SearchType queryType,
       {int offset = 0, int limit = 10}) async {
     final url = _buildUri('/favorite/list/${queryType.toStringValue()}',
@@ -160,14 +171,14 @@ class RpiPlayerProxy {
 
   Future<StatusMessage> addFavorite(SearchType queryType, String id) async {
     final url = _buildUri('/favorite/add/${queryType.toStringValue()}/$id');
-    return client.get(url).then((response) {
+    return client.put(url).then((response) {
       return statusMessageFromResponse(response);
     });
   }
 
   Future<StatusMessage> removeFavorite(SearchType queryType, String id) async {
     final url = _buildUri('/favorite/remove/${queryType.toStringValue()}/$id');
-    return client.get(url).then((response) {
+    return client.delete(url).then((response) {
       return statusMessageFromResponse(response);
     });
   }
@@ -185,7 +196,7 @@ class RpiPlayerProxy {
 
   Future<void> clear() async {
     final url = _buildUri('/queue/clear');
-    return client.get(url).then((response) {
+    return client.put(url).then((response) {
       if (response.statusCode != 200) {
         throw Exception('Failed to clear queue, url=$url');
       }
@@ -195,7 +206,7 @@ class RpiPlayerProxy {
   Future<void> setVolume(int volume) async {
     final url = _buildUri('/device/set_volume',
         {'device_id': 'musiccast', 'volume': volume.toString()});
-    return client.get(url).then((response) {
+    return client.put(url).then((response) {
       if (response.statusCode != 200) {
         throw Exception('Failed to set volume to $volume, url=$url');
       }
