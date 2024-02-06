@@ -5,6 +5,7 @@ class MultiList extends StatelessWidget {
   final IndexedWidgetBuilder itemBuilder;
   final IndexedWidgetBuilder? horizontalSeparatorBuilder;
   final IndexedWidgetBuilder? verticalSeparatorBuilder;
+  final WidgetBuilder? footerBuilder;
   final int itemCount;
   final int horizontalItemCount;
 
@@ -14,14 +15,17 @@ class MultiList extends StatelessWidget {
       required this.itemCount,
       required this.horizontalItemCount,
       this.horizontalSeparatorBuilder,
-      this.verticalSeparatorBuilder})
+      this.verticalSeparatorBuilder,
+      this.footerBuilder})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final int totalItemCount = (itemCount / horizontalItemCount).ceil() +
+        (footerBuilder != null ? 1 : 0);
     return ListView.separated(
         padding: const EdgeInsets.all(0),
-        itemCount: (itemCount / horizontalItemCount).ceil(),
+        itemCount: totalItemCount,
         separatorBuilder: (context, index) {
           if (verticalSeparatorBuilder == null) {
             return const SizedBox.shrink();
@@ -29,6 +33,9 @@ class MultiList extends StatelessWidget {
           return verticalSeparatorBuilder!(context, index);
         },
         itemBuilder: (context, index) {
+          if (index == totalItemCount - 1) {
+            return footerBuilder!(context);
+          }
           List<Widget> children = [];
           int count =
               min(index * horizontalItemCount + horizontalItemCount, itemCount);

@@ -93,23 +93,20 @@ class _BrowsePage extends State<BrowsePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.parentItem.name ?? 'Unknown'),
-        actions: <Widget>[
-          if (widget.parentItem.browseType == 'catalog')
-            const GenreFilterButton()
-          else
-            IconButton(
-                icon: const Icon(Icons.more_vert),
-                onPressed: () {
-                  _showDrawer(context, widget.parentItem);
-                })
-        ],
-      ),
-      body: _loadInProgress
-          ? const Center(child: CircularProgressIndicator())
-          : _buildBrowsePage(context),
-    );
+        appBar: AppBar(
+          title: Text(widget.parentItem.name ?? 'Unknown'),
+          actions: <Widget>[
+            if (widget.parentItem.browseType == 'catalog')
+              const GenreFilterButton()
+            else
+              IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: () {
+                    _showDrawer(context, widget.parentItem);
+                  })
+          ],
+        ),
+        body: _buildBrowsePage(context));
   }
 
   void _showDrawer(BuildContext context, BrowseItem browseItem) {
@@ -180,6 +177,7 @@ class _BrowsePage extends State<BrowsePage> {
         },
         itemCount: browseItems.length,
         horizontalItemCount: horizontalItemCount,
+        footerBuilder: (context) => _buildFooter(context),
       ),
     );
   }
@@ -202,15 +200,48 @@ class _BrowsePage extends State<BrowsePage> {
         });
   }
 
+  Widget _buildFooterText(BuildContext context) {
+    if (browseItems.length == total) {
+      return Padding(
+          padding: const EdgeInsets.only(bottom: 16, top: 8),
+          child: Row(children: [
+            const Spacer(),
+            Text('Total: $total item(s)',
+                style: const TextStyle(fontSize: 16.0, color: Colors.grey)),
+            const SizedBox(width: 8)
+          ]));
+    }
+    return Row(children: [
+      const Spacer(),
+      TextButton(
+          child: const Text('Load more items',
+              style: TextStyle(color: Colors.grey, fontSize: 16.0)),
+          onPressed: () {
+            _loadMoreItems();
+          }),
+      const SizedBox(width: 8)
+    ]);
+  }
+
+  Widget _buildFooter(BuildContext context) {
+    return Column(children: [
+      const SizedBox(height: 8),
+      _loadInProgress
+          ? const Center(child: CircularProgressIndicator())
+          : _buildFooterText(context),
+      const SizedBox(height: 8)
+    ]);
+  }
+
   Widget _buildTrackList(BuildContext context, {bool displayIndex = false}) {
     return ListView.separated(
-      itemCount: browseItems.length + 1,
+      itemCount: browseItems.length + 2,
       separatorBuilder: (context, index) =>
           index == 0 ? const SizedBox.shrink() : const Divider(height: 1),
       itemBuilder: (context, index) {
         if (index == 0) {
           return _buildHeader(context);
-        } else {
+        } else if (index < browseItems.length + 1) {
           return CustomListTile(
               browseItem: browseItems[index - 1],
               index: displayIndex ? index - 1 : null,
@@ -226,6 +257,10 @@ class _BrowsePage extends State<BrowsePage> {
                   onPressed: () {
                     _showDrawer(context, browseItems[index - 1]);
                   }));
+        } else {
+          return _loadInProgress
+              ? const Center(child: CircularProgressIndicator())
+              : _buildFooter(context);
         }
       },
     );
@@ -233,13 +268,13 @@ class _BrowsePage extends State<BrowsePage> {
 
   Widget _buildArtist(BuildContext context) {
     return ListView.separated(
-      itemCount: browseItems.length + 1,
+      itemCount: browseItems.length + 2,
       separatorBuilder: (context, index) =>
           index == 0 ? const SizedBox.shrink() : const Divider(height: 1),
       itemBuilder: (context, index) {
         if (index == 0) {
           return _buildHeader(context);
-        } else {
+        } else if (index < browseItems.length) {
           return CustomListTile(
               browseItem: browseItems[index - 1],
               onTap: () {
@@ -256,6 +291,8 @@ class _BrowsePage extends State<BrowsePage> {
                   onPressed: () {
                     _showDrawer(context, browseItems[index - 1]);
                   }));
+        } else {
+          return _buildFooter(context);
         }
       },
     );
