@@ -274,7 +274,7 @@ class _BrowsePage extends State<BrowsePage> {
       itemBuilder: (context, index) {
         if (index == 0) {
           return _buildHeader(context);
-        } else if (index < browseItems.length) {
+        } else if (index < browseItems.length + 1) {
           return CustomListTile(
               browseItem: browseItems[index - 1],
               onTap: () {
