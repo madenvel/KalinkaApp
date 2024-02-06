@@ -83,13 +83,13 @@ class BottomMenu extends StatelessWidget {
                   RpiPlayerProxy()
                       .getMetadata('/album/${browseItem.track!.album!.id}')
                       .then((BrowseItem item) {
+                    Navigator.pop(context);
                     Navigator.push(
                         context,
                         MaterialPageRoute(
                             builder: (context) =>
                                 BrowsePage(parentItem: item)));
                   });
-                  Navigator.pop(context);
                 })
             : const SizedBox.shrink(),
         browseItem.browseType == 'album' && browseItem.album!.artist != null
@@ -100,13 +100,13 @@ class BottomMenu extends StatelessWidget {
                   RpiPlayerProxy()
                       .getMetadata('/artist/${browseItem.album!.artist!.id}')
                       .then((BrowseItem item) {
+                    Navigator.pop(context);
                     Navigator.push(
                         context,
                         MaterialPageRoute(
                             builder: (context) =>
                                 BrowsePage(parentItem: item)));
                   });
-                  Navigator.pop(context);
                 })
             : const SizedBox.shrink(),
       ]);
