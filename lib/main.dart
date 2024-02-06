@@ -190,10 +190,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   ],
                 )
               ]),
-          body: _withTransparentGradient(PageStorage(
+          body: PageStorage(
             bucket: bucket,
             child: pages[currentPageIndex],
-          ))),
+          )),
       _connected == false
           ? Container(
               color: Colors.black.withOpacity(0.5),
@@ -205,21 +205,10 @@ class _MyHomePageState extends State<MyHomePage> {
     ]);
   }
 
-  Widget _withTransparentGradient(Widget widget) {
-    return Stack(children: [
-      widget,
-      IgnorePointer(
-          child: Positioned.fill(
-              bottom: 0,
-              child: Align(
-                  alignment: Alignment.bottomCenter, child: _buildGradient()))),
-    ]);
-  }
-
   Widget _buildGradient() {
     var color = Theme.of(context).primaryColor;
     return Container(
-        height: 30,
+        height: 120,
         decoration: BoxDecoration(
             gradient: LinearGradient(
                 begin: Alignment.topCenter,
