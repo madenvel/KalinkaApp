@@ -124,7 +124,7 @@ class EventListener {
           _invokeCallbacks(EventType.NetworkDisconnected, []);
         }
       }
-      await Future.delayed(const Duration(seconds: 1));
+      await Future.delayed(const Duration(seconds: 3));
     }
   }
 

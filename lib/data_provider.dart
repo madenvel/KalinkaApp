@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -295,14 +297,20 @@ class SearchResultsProvider extends LazyLoadingList with ChangeNotifier {
   }
 }
 
+enum LoadStatus {
+  notLoaded,
+  loaded,
+  error,
+}
+
 class DiscoverSectionProvider with ChangeNotifier {
   final List<BrowseItem> _sections = [];
   final List<List<BrowseItem>> _previews = [];
-  bool _hasLoaded = false;
+  LoadStatus _loadStatus = LoadStatus.notLoaded;
 
   List<BrowseItem> get sections => _sections;
   List<List<BrowseItem>> get previews => _previews;
-  bool get hasLoaded => _hasLoaded;
+  LoadStatus get loadStatus => _loadStatus;
 
   DiscoverSectionProvider({List<String>? genreIds}) {
     _init(genreIds);
@@ -310,7 +318,7 @@ class DiscoverSectionProvider with ChangeNotifier {
 
   Future<void> _loadSections() async {
     _sections.clear();
-    await RpiPlayerProxy()
+    return RpiPlayerProxy()
         .browse('/catalog', offset: 0, limit: 10)
         .then((value) {
       _sections.addAll(value.items);
@@ -338,7 +346,9 @@ class DiscoverSectionProvider with ChangeNotifier {
         _previews[i].addAll(value.items);
       }));
     }
-    return Future.wait(futures).then((_) {});
+    return Future.wait(futures).then((_) {}).catchError((obj) {
+      throw obj;
+    });
   }
 
   void update(List<String> genreIds) {
@@ -348,10 +358,14 @@ class DiscoverSectionProvider with ChangeNotifier {
   }
 
   Future<void> _init(final List<String>? genreIds) async {
-    _hasLoaded = false;
-    await _loadSections();
-    await _loadPreviews(genreIds);
-    _hasLoaded = true;
+    _loadStatus = LoadStatus.notLoaded;
+    try {
+      await _loadSections();
+      await _loadPreviews(genreIds);
+      _loadStatus = LoadStatus.loaded;
+    } catch (e) {
+      _loadStatus = LoadStatus.error;
+    }
     notifyListeners();
   }
 }

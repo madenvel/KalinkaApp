@@ -47,18 +47,31 @@ class _DiscoverState extends State<Discover> {
                     appBar: AppBar(
                         title: const Text('Discover'),
                         actions: const <Widget>[GenreFilterButton()]),
-                    body: provider.hasLoaded
-                        ? ListView.separated(
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(height: 16),
-                            scrollDirection: Axis.vertical,
-                            itemCount: provider.sections.length,
-                            itemBuilder: (context, index) {
-                              return _buildSectionList(context, index);
-                            })
-                        : const Center(child: CircularProgressIndicator()),
+                    body: _buildBody(context, provider),
                   );
                 })));
+  }
+
+  Widget _buildBody(BuildContext context, DiscoverSectionProvider provider) {
+    switch (provider.loadStatus) {
+      case LoadStatus.notLoaded:
+        return const SizedBox.shrink();
+      case LoadStatus.error:
+        return const Center(
+          child: Text('Failed to update the page',
+              style: TextStyle(fontSize: 16.0)),
+        );
+      case LoadStatus.loaded:
+        return ListView.separated(
+            separatorBuilder: (context, index) => const SizedBox(height: 16),
+            scrollDirection: Axis.vertical,
+            itemCount: provider.sections.length,
+            itemBuilder: (context, index) {
+              return _buildSectionList(context, index);
+            });
+      default:
+        return const SizedBox.shrink();
+    }
   }
 
   Widget _buildSectionList(BuildContext context, int index) {
