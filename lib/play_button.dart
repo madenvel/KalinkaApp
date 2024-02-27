@@ -32,9 +32,11 @@ class PlayButton extends StatelessWidget {
             break;
           case PlayerStateType.error:
             icon = Icons.error;
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text("Error while playing track."),
-            ));
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text("Error while playing track."),
+              ));
+            });
             break;
           default:
             icon = Icons.play_arrow;
