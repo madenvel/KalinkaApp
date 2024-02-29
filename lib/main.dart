@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:rpi_music/event_listener.dart';
 import 'package:provider/provider.dart';
+import 'package:rpi_music/fg_service.dart';
 import 'data_provider.dart';
 import 'discover.dart';
 import 'library.dart';
@@ -153,6 +154,8 @@ class _MyHomePageState extends State<MyHomePage> {
         });
       }
     });
+    AudioPlayerService().init();
+    // PlaybackControlPanel().init();
   }
 
   @override

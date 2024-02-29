@@ -62,9 +62,11 @@ class _BrowsePage extends State<BrowsePage> {
         .then((BrowseItemsList result) {
       browseItems.addAll(result.items);
       total = result.total;
-      setState(() {
-        _loadInProgress = false;
-      });
+      if (mounted) {
+        setState(() {
+          _loadInProgress = false;
+        });
+      }
     }).catchError((obj) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text("Error while sending request to server"),
