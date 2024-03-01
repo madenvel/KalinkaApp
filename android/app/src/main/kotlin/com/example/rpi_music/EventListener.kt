@@ -1,8 +1,7 @@
 package com.example.rpi_music
 
-import com.google.gson.Gson
-import com.google.gson.JsonParser
 import io.flutter.Log
+import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.URL
@@ -18,22 +17,22 @@ class EventListener(private val baseUrl: String, private val eventCallback: Even
 
     override fun run() {
         try {
-            val gson = Gson()
             while (!isInterrupted) {
                 val url = URL(baseUrl).toURI().resolve("/queue/events").toURL()
                 val connection = url.openConnection()
                 val inputStream = connection.getInputStream()
                 val reader = BufferedReader(InputStreamReader(inputStream))
-                var line: String?
+                var line: String
                 while (reader.readLine().also { line = it } != null) {
                     try {
-                        val jsonObject = JsonParser.parseString(line).asJsonObject
-                        if (jsonObject.get("event_type").asString == "state_changed") {
-                            val state = gson.fromJson(
-                                jsonObject.get("args").asJsonArray[0],
-                                PlayerState::class.java
+                        val jsonObject = JSONObject(line)
+                        if (jsonObject.getString("event_type") == "state_changed") {
+                            val state = PlayerState.fromJson(
+                                jsonObject.getJSONArray("args").getJSONObject(0)
                             )
-                            eventCallback?.onStateChanged(state)
+                            if (state != null) {
+                                eventCallback?.onStateChanged(state)
+                            }
                         }
                     } catch (e: Exception) {
                         Log.w(LOGTAG, "Error parsing JSON: $e, $line")
@@ -42,7 +41,7 @@ class EventListener(private val baseUrl: String, private val eventCallback: Even
                 reader.close()
             }
         } catch (e: Exception) {
-            Log.e(LOGTAG, "Error: $e")
+            Log.w(LOGTAG, "Error: $e")
             eventCallback?.onDisconnected()
         }
     }

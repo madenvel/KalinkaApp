@@ -1,5 +1,7 @@
 package com.example.rpi_music
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -10,11 +12,24 @@ import java.net.HttpURLConnection
 import java.net.URL
 import com.google.gson.Gson
 import io.flutter.Log
+import org.json.JSONObject
 import java.net.URI
 
-data class Response(
-    @SerializedName("message") var message: String? = null,
-)
+class Response(
+    var message: String? = null
+) {
+    companion object Factory {
+        fun fromJson(json: JSONObject?): Response? {
+            if (json == null) {
+                return null
+            }
+            val obj = Response()
+            obj.message = "message".let { if (json.has(it)) json.getString(it) else null }
+
+            return obj
+        }
+    }
+}
 
 class RpiPlayerProxy(
     private val baseUrl: String,
@@ -27,7 +42,8 @@ class RpiPlayerProxy(
         asyncGetHttpRequest<Response>(
             "PUT",
             URI(baseUrl).resolve("/queue/play").toURL(),
-            onSuccess
+            onSuccess,
+            converter = { Response.fromJson(it) }
         )
 
     }
@@ -36,7 +52,8 @@ class RpiPlayerProxy(
         asyncGetHttpRequest<Response>(
             "PUT",
             URI(baseUrl).resolve("/queue/pause?paused=$paused").toURL(),
-            onSuccess
+            onSuccess,
+            converter = { Response.fromJson(it) }
         )
     }
 
@@ -44,7 +61,8 @@ class RpiPlayerProxy(
         asyncGetHttpRequest<Response>(
             "PUT",
             URI(baseUrl).resolve("/queue/next").toURL(),
-            onSuccess
+            onSuccess,
+            converter = { Response.fromJson(it) }
         )
     }
 
@@ -52,7 +70,8 @@ class RpiPlayerProxy(
         asyncGetHttpRequest<Response>(
             "PUT",
             URI(baseUrl).resolve("/queue/prev").toURL(),
-            onSuccess
+            onSuccess,
+            converter = { Response.fromJson(it) }
         )
     }
 
@@ -60,14 +79,17 @@ class RpiPlayerProxy(
         asyncGetHttpRequest<PlayerState>(
             "GET",
             URI(baseUrl).resolve("/queue/state").toURL(),
-            onSuccess
+            onSuccess,
+            converter = { PlayerState.fromJson(it) }
         )
     }
 
+    @RequiresApi(Build.VERSION_CODES.N)
     private inline fun <reified T> asyncGetHttpRequest(
         requestMethod: String,
         url: URL,
-        crossinline onSuccess: (res: T) -> Unit
+        crossinline onSuccess: (res: T) -> Unit,
+        crossinline converter: (JSONObject) -> T?
     ) {
         CoroutineScope(Dispatchers.IO).launch {
             val openedConnection = url.openConnection() as HttpURLConnection
@@ -76,11 +98,14 @@ class RpiPlayerProxy(
             val responseCode = openedConnection.responseCode
             try {
                 val reader = BufferedReader(InputStreamReader(openedConnection.inputStream))
-                val response = gson.fromJson(reader, T::class.java)
-                reader.close()
-                launch(Dispatchers.Main) {
-                    onSuccess(response)
+                val line = reader.readLine()
+                val response: T? = converter(JSONObject(line))
+                if (response != null) {
+                    launch(Dispatchers.Main) {
+                        onSuccess(response)
+                    }
                 }
+                reader.close()
             } catch (e: Exception) {
                 Log.d(LOGTAG, e.message.toString())
                 // Handle error cases and call the error callback on the main thread

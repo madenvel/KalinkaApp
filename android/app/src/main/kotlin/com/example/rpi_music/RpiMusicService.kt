@@ -11,17 +11,13 @@ import android.media.MediaMetadata
 import android.media.Rating
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
-import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
 import androidx.annotation.RequiresApi
 import io.flutter.Log
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.net.URL
 
 
@@ -37,14 +33,9 @@ class RpiMusicService : Service(), EventCallback {
 
     private var mediaSession: MediaSession? = null
 
-    inner class LocalBinder : Binder() {
-        fun getService(): RpiMusicService {
-            return this@RpiMusicService
-        }
-    }
-
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate() {
+        Log.i(LOGTAG, "onCreate called")
         mNM = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         mNM.createNotificationChannel(
             NotificationChannel(
@@ -53,26 +44,34 @@ class RpiMusicService : Service(), EventCallback {
                 NotificationManager.IMPORTANCE_HIGH
             )
         )
+        Log.i(LOGTAG, "Notification channel created")
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        Log.i("LocalService", "Received start id $startId: $intent")
+        Log.i(LOGTAG, "Received start id $startId: $intent")
         setupMediaSession()
         startForeground(NOTIFICATION, createNotification())
         eventListener = EventListener("http://192.168.3.28:8000/", this)
-        eventListener.start()
         rpiPlayerProxy = RpiPlayerProxy("http://192.168.3.28:8000/", onError = {
             this.onDisconnected()
         })
+        Log.i(LOGTAG, "Requesting initial state")
         rpiPlayerProxy.requestState { state ->
-            this.onStateChanged(state)
+            GlobalScope.launch {
+                Log.i(LOGTAG, "Initial state received")
+                this@RpiMusicService.onStateChanged(state)
+                Log.i(LOGTAG, "State update callback invoked, $state")
+                eventListener.start()
+                Log.i(LOGTAG, "Event listener started")
+            }
         }
         return START_NOT_STICKY
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
     private fun setupMediaSession() {
+        Log.i(LOGTAG, "setupMediaSession called")
         mediaSession = MediaSession(this, "RpiMusicMediaSession")
         mediaSession!!.setCallback(object : MediaSession.Callback() {
             override fun onPlay() {
@@ -102,13 +101,13 @@ class RpiMusicService : Service(), EventCallback {
             }
         })
         mediaSession!!.setRatingType(Rating.RATING_HEART)
+        Log.i(LOGTAG, "setupMediaSession complete")
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotification(): Notification {
         return Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setStyle(
                 Notification.MediaStyle()
                     .setMediaSession(mediaSession!!.sessionToken)
@@ -119,14 +118,13 @@ class RpiMusicService : Service(), EventCallback {
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onDestroy() {
         mNM.cancel(NOTIFICATION)
-        mediaSession!!.release()
+        mediaSession?.release()
     }
 
-    override fun onBind(p0: Intent?): IBinder {
-        return mBinder
+    override fun onBind(p0: Intent?): IBinder? {
+        return null
     }
 
-    private val mBinder: IBinder = LocalBinder()
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onStateChanged(newState: PlayerState) {
@@ -140,8 +138,10 @@ class RpiMusicService : Service(), EventCallback {
                 newState.currentTrack!!.album!!.title!!
             )
             updateMetadata(metadata)
+            if (newState.state == null) {
+                updatePlaybackState(PlaybackInfo("IDLE", 0))
+            }
             dirty = true
-            updatePlaybackState(PlaybackInfo("IDLE", 0))
         }
         if (newState.state != null && newState.state != "READY") {
             val progressMs =
@@ -177,15 +177,7 @@ class RpiMusicService : Service(), EventCallback {
                 )
             }"
         )
-        val notification = Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setVisibility(Notification.VISIBILITY_PUBLIC)
-            .setStyle(
-                Notification.MediaStyle()
-                    .setMediaSession(mediaSession!!.sessionToken)
-//                    .setShowActionsInCompactView(0, 1, 2)
-            )
-            .build()
+        val notification = createNotification()
         mNM.notify(1001, notification)
     }
 
@@ -204,7 +196,6 @@ class RpiMusicService : Service(), EventCallback {
         }
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun updatePlaybackState(info: PlaybackInfo) {
         Log.i(LOGTAG, "updatePlaybackState called, $info")
@@ -231,49 +222,44 @@ class RpiMusicService : Service(), EventCallback {
         mediaSession!!.setPlaybackState(playbackState)
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
     private fun updateMetadata(metadata: Metadata) {
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) {
             return
         }
 
-        GlobalScope.launch {
-            Log.i(LOGTAG, "updateMetadata called, $metadata")
-            val bitmap: Bitmap = try {
-                loadBitmap(metadata.albumArtworkUri)
-            } catch (e: Exception) {
-                Log.e(LOGTAG, "Failed to load album artwork", e)
-                BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
-            }
-            Log.i(LOGTAG, "finshed loading bitmap")
-            mediaSession!!.setMetadata(
-                MediaMetadata.Builder()
-                    .putString(MediaMetadata.METADATA_KEY_TITLE, metadata.title)
-                    .putString(MediaMetadata.METADATA_KEY_ARTIST, metadata.artist)
-                    .putString(MediaMetadata.METADATA_KEY_ALBUM, metadata.album)
-                    .putRating(
-                        MediaMetadata.METADATA_KEY_USER_RATING,
-                        Rating.newHeartRating(false)
-                    )
-                    .putLong(MediaMetadata.METADATA_KEY_DURATION, metadata.durationMs)
-                    .putBitmap(
-                        MediaMetadata.METADATA_KEY_ALBUM_ART,
-                        bitmap
-                    )
-                    .build()
-            )
-            Log.i(LOGTAG, "finished setting metadata")
+        Log.i(LOGTAG, "updateMetadata called, $metadata")
+        val bitmap: Bitmap = try {
+            loadBitmap(metadata.albumArtworkUri)
+        } catch (e: Exception) {
+            Log.e(LOGTAG, "Failed to load album artwork", e)
+            BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
         }
+        Log.i(LOGTAG, "finshed loading bitmap")
+        mediaSession!!.setMetadata(
+            MediaMetadata.Builder()
+                .putString(MediaMetadata.METADATA_KEY_TITLE, metadata.title)
+                .putString(MediaMetadata.METADATA_KEY_ARTIST, metadata.artist)
+                .putString(MediaMetadata.METADATA_KEY_ALBUM, metadata.album)
+                .putRating(
+                    MediaMetadata.METADATA_KEY_USER_RATING,
+                    Rating.newHeartRating(false)
+                )
+                .putLong(MediaMetadata.METADATA_KEY_DURATION, metadata.durationMs)
+                .putBitmap(
+                    MediaMetadata.METADATA_KEY_ALBUM_ART,
+                    bitmap
+                )
+                .build()
+        )
+        Log.i(LOGTAG, "finished setting metadata")
     }
 
-    private suspend fun loadBitmap(uri: String): Bitmap {
-        return withContext(Dispatchers.IO) {
-            val url = URL(uri)
-            val connection = url.openConnection()
-            connection.connect()
-            val input = connection.inputStream
-            BitmapFactory.decodeStream(input)
-        }
+    private fun loadBitmap(uri: String): Bitmap {
+        val url = URL(uri)
+        val connection = url.openConnection()
+        connection.connect()
+        val input = connection.inputStream
+        return BitmapFactory.decodeStream(input)
     }
 
 }
