@@ -3,6 +3,7 @@ package com.example.rpi_music
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.graphics.Bitmap
@@ -106,12 +107,20 @@ class RpiMusicService : Service(), EventCallback {
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotification(): Notification {
+        val mediaStyle =
+            Notification.MediaStyle()
+                .setMediaSession(mediaSession!!.sessionToken)
+
+        val notificationIntent = Intent(this, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0,
+            notificationIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        );
+
         return Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setStyle(
-                Notification.MediaStyle()
-                    .setMediaSession(mediaSession!!.sessionToken)
-            )
+            .setStyle(mediaStyle)
+            .setContentIntent(pendingIntent)
             .build()
     }
 
