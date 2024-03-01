@@ -41,7 +41,7 @@ class RpiMusicService : Service(), EventCallback {
             NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
                 "RpiMusic Playback Controls",
-                NotificationManager.IMPORTANCE_HIGH
+                NotificationManager.IMPORTANCE_LOW
             )
         )
         Log.i(LOGTAG, "Notification channel created")
