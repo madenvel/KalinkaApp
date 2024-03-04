@@ -113,9 +113,14 @@ class _ConnectionManagerState extends State<ConnectionManager> {
   Widget buildFailedToConnectScreen(BuildContext context) {
     return Center(
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      const Text(
-          'Failed to connect to server. Please check your settings and try again.'),
-      TextButton(
+      const Center(
+        child: Padding(
+          padding: EdgeInsets.all(8.0),
+          child: Text(
+              'Failed to connect to server. Please check your settings and try again.'),
+        ),
+      ),
+      ElevatedButton(
         onPressed: () {
           setState(() {
             _manualSettingsOverride = true;
