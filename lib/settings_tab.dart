@@ -23,10 +23,19 @@ class _SettingsTabState extends State<SettingsTab> {
   @override
   void initState() {
     super.initState();
+    context.read<ServiceDiscoveryDataProvider>().start();
     _addressController.text = context.read<ConnectionSettingsProvider>().host;
     final port = context.read<ConnectionSettingsProvider>().port;
     _portController.text = port == 0 ? '' : port.toString();
     expandedSection = widget.expandSection;
+  }
+
+  @override
+  void dispose() {
+    context.read<ServiceDiscoveryDataProvider>().stop();
+    _addressController.dispose();
+    _portController.dispose();
+    super.dispose();
   }
 
   @override
@@ -42,16 +51,6 @@ class _SettingsTabState extends State<SettingsTab> {
   Widget buildBody(BuildContext context) {
     return ExpansionPanelList.radio(
       initialOpenPanelValue: expandedSection,
-      expansionCallback: (int index, bool isExpanded) {
-        print('Expansion callback');
-        if (index == 0) {
-          if (isExpanded) {
-            context.read<ServiceDiscoveryDataProvider>().start();
-          } else {
-            context.read<ServiceDiscoveryDataProvider>().stop();
-          }
-        }
-      },
       children: [
         ExpansionPanelRadio(
             value: 0,
@@ -61,7 +60,15 @@ class _SettingsTabState extends State<SettingsTab> {
               );
             },
             body: Column(children: [
+              const Divider(),
+              const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: EdgeInsets.only(left: 16),
+                    child: Text('Pick a service to connect to:'),
+                  )),
               buildDiscoverySection(context),
+              const Divider(),
               buildManualOptionSection(context)
             ]),
             canTapOnHeader: true),
@@ -84,9 +91,11 @@ class _SettingsTabState extends State<SettingsTab> {
                           services[index].host!.isNotEmpty &&
                           services[index].port != 0
                       ? () {
-                          _addressController.text = services[index].host!;
-                          _portController.text =
-                              services[index].port.toString();
+                          setState(() {
+                            _addressController.text = services[index].host!;
+                            _portController.text =
+                                services[index].port.toString();
+                          });
                         }
                       : null);
             } else {
@@ -119,6 +128,7 @@ class _SettingsTabState extends State<SettingsTab> {
           SizedBox(
               width: 100,
               child: TextField(
+                keyboardType: TextInputType.number,
                 controller: _portController,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
@@ -134,7 +144,7 @@ class _SettingsTabState extends State<SettingsTab> {
             child: Align(
                 alignment: Alignment.centerRight,
                 child: ElevatedButton(
-                    onPressed: _portController.text.isEmpty &&
+                    onPressed: _portController.text.isEmpty ||
                             _addressController.text.isEmpty
                         ? null
                         : () {

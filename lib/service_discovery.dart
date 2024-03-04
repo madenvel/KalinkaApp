@@ -7,6 +7,7 @@ class ServiceDiscoveryDataProvider with ChangeNotifier {
   late BonsoirDiscovery _discovery;
 
   final List<ResolvedBonsoirService> _services = [];
+  final List<BonsoirService> _unresolvedServices = [];
   List<ResolvedBonsoirService> get services => _services;
 
   Future<void> start() async {
@@ -18,12 +19,22 @@ class ServiceDiscoveryDataProvider with ChangeNotifier {
     _discovery.eventStream!.listen((event) {
       if (event.type == BonsoirDiscoveryEventType.discoveryServiceFound) {
         event.service!.resolve(_discovery.serviceResolver);
+        _unresolvedServices.add(event.service!);
       } else if (event.type ==
           BonsoirDiscoveryEventType.discoveryServiceResolved) {
-        _services.add(event.service! as ResolvedBonsoirService);
-        notifyListeners();
+        var index = _unresolvedServices.indexWhere((element) =>
+            element.name == event.service!.name &&
+            element.type == event.service!.type);
+        if (index != -1) {
+          _unresolvedServices.removeAt(index);
+          _services.add(event.service! as ResolvedBonsoirService);
+          notifyListeners();
+        }
       } else if (event.type == BonsoirDiscoveryEventType.discoveryServiceLost) {
-        _services.remove(event.service! as ResolvedBonsoirService);
+        _unresolvedServices.remove(event.service!);
+        _services.removeWhere((element) =>
+            element.name == event.service!.name &&
+            element.type == event.service!.type);
         notifyListeners();
       }
     });
