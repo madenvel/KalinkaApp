@@ -1,16 +1,6 @@
 package com.example.rpi_music
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.media.MediaMetadata
-import android.media.Rating
-import android.media.session.MediaSession
-import android.media.session.PlaybackState
-import android.os.Build
 import android.os.SystemClock
 import androidx.annotation.RequiresApi
 import io.flutter.Log
@@ -47,7 +37,12 @@ class MainActivity : FlutterActivity() {
         methodChannel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "showNotificationControls" -> {
-                    val res = showNotificationControls()
+                    val host = call.argument<String>("host") ?: ""
+                    val port = call.argument<Int>("port") ?: 0
+                    val res = showNotificationControls(
+                        host,
+                        port,
+                    )
                     if (res) {
                         result.success(true)
                     } else {
@@ -76,11 +71,13 @@ class MainActivity : FlutterActivity() {
         super.onDestroy()
     }
 
-    private fun showNotificationControls(): Boolean {
+    private fun showNotificationControls(host: String, port: Int): Boolean {
         Log.i(LOGTAG, "showNotificationControls called")
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             Log.i(LOGTAG, "Starting RpiMusicService")
             val intent = Intent(this, RpiMusicService::class.java)
+            intent.putExtra("host", host)
+            intent.putExtra("port", port)
             startForegroundService(intent)
 
             return true

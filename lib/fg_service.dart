@@ -1,7 +1,4 @@
 import 'package:flutter/services.dart';
-import 'package:rpi_music/data_model.dart';
-import 'package:rpi_music/event_listener.dart';
-import 'package:rpi_music/rpiplayer_proxy.dart';
 
 class AudioPlayerService {
   final MethodChannel _channel =
@@ -15,25 +12,10 @@ class AudioPlayerService {
 
   AudioPlayerService._internal();
 
-  PlayerState _state = PlayerState(state: PlayerStateType.idle);
-
-  final RpiPlayerProxy _service = RpiPlayerProxy();
-  final EventListener _listener = EventListener();
-
-  void init() {
-    _listener.registerCallback({
-      EventType.NetworkDisconnected: (_) {
-        hideNotificationControls();
-      },
-      EventType.NetworkConnected: (_) {
-        showNotificationControls();
-      }
-    });
-  }
-
-  Future<void> showNotificationControls() async {
+  Future<void> showNotificationControls(String host, int port) async {
     try {
-      _channel.invokeMethod('showNotificationControls').then((_) {});
+      _channel.invokeMethod('showNotificationControls',
+          {'host': host, 'port': port}).then((_) {});
     } on PlatformException catch (e) {
       print('Failed to start foreground service: ${e.message}');
     } on MissingPluginException catch (e) {

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:rpi_music/browse.dart';
 import 'package:rpi_music/custom_cache_manager.dart';
 import 'package:rpi_music/genre_select_filter.dart';
+import 'package:rpi_music/settings_tab.dart';
 
 import 'data_model.dart';
 import 'data_provider.dart';
@@ -44,9 +45,22 @@ class _DiscoverState extends State<Discover> {
             key: navigatorKey,
             onGenerateRoute: (settings) => MaterialPageRoute(builder: (_) {
                   return Scaffold(
-                    appBar: AppBar(
-                        title: const Text('Discover'),
-                        actions: const <Widget>[GenreFilterButton()]),
+                    appBar:
+                        AppBar(title: const Text('Discover'), actions: <Widget>[
+                      const GenreFilterButton(),
+                      IconButton(
+                          icon: const Icon(Icons.settings),
+                          onPressed: () {
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => SettingsTab(
+                                          onCloseRequested: () {
+                                            Navigator.pop(context);
+                                          },
+                                        )));
+                          })
+                    ]),
                     body: _buildBody(context, provider),
                   );
                 })));

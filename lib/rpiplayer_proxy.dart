@@ -15,8 +15,13 @@ class RpiPlayerProxy {
   late List<Track> tracks = [];
 
   http.Client client = http.Client();
-  final String host = '192.168.3.28';
-  int port = 8000;
+  String host = '';
+  int port = 0;
+
+  void connect(String host, int port) {
+    this.host = host;
+    this.port = port;
+  }
 
   Uri _buildUri(String endpoint, [Map<String, dynamic>? queryParameters]) {
     return Uri(

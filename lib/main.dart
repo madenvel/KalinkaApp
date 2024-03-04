@@ -1,10 +1,8 @@
-import 'dart:async';
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:rpi_music/event_listener.dart';
+import 'package:rpi_music/connection_manager.dart';
 import 'package:provider/provider.dart';
-import 'package:rpi_music/fg_service.dart';
+import 'package:rpi_music/service_discovery.dart';
 import 'data_provider.dart';
 import 'discover.dart';
 import 'library.dart';
@@ -13,7 +11,7 @@ import 'search.dart';
 import 'swipable_tabs.dart';
 
 void main() {
-  runApp(RpiMusic());
+  runApp(const RpiMusic());
 }
 
 class MyCustomScrollBehavior extends MaterialScrollBehavior {
@@ -26,11 +24,7 @@ class MyCustomScrollBehavior extends MaterialScrollBehavior {
 }
 
 class RpiMusic extends StatelessWidget {
-  RpiMusic({super.key}) {
-    var host = '192.168.3.28';
-    var port = 8000;
-    EventListener().startListening('http://$host:$port/queue/events');
-  }
+  const RpiMusic({super.key});
 
   // This widget is the root of your application.
   @override
@@ -63,6 +57,10 @@ class RpiMusic extends StatelessWidget {
             },
           ),
           ChangeNotifierProvider(create: (context) => VolumeControlProvider()),
+          ChangeNotifierProvider(
+              create: (context) => ServiceDiscoveryDataProvider()),
+          ChangeNotifierProvider(
+              create: (context) => ConnectionSettingsProvider()),
         ],
         child: MaterialApp(
           scrollBehavior: MyCustomScrollBehavior(),
@@ -114,117 +112,61 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int currentPageIndex = 0;
-  bool _connected = false;
-  bool _failedToConnect = false;
   final PageStorageBucket bucket = PageStorageBucket();
   final List<Widget> pages = const <Widget>[
     Discover(),
     Library(),
     Search(key: PageStorageKey<String>('search')),
   ];
-  late String subscriptionId;
 
   _MyHomePageState();
-
-  @override
-  void initState() {
-    super.initState();
-    Provider.of<TrackListProvider>(context, listen: false).getTracks();
-    Provider.of<PlayerStateProvider>(context, listen: false).getState();
-    subscriptionId = EventListener().registerCallback({
-      EventType.NetworkDisconnected: (args) {
-        setState(() {
-          if (!_connected) {
-            _failedToConnect = true;
-          }
-          _connected = false;
-        });
-        Timer(const Duration(seconds: 3), () {
-          if (!_connected) {
-            setState(() {
-              _failedToConnect = true;
-            });
-          }
-        });
-      },
-      EventType.NetworkConnected: (args) {
-        setState(() {
-          _connected = true;
-          _failedToConnect = false;
-        });
-      }
-    });
-    AudioPlayerService().init();
-    // PlaybackControlPanel().init();
-  }
-
-  @override
-  void dispose() {
-    EventListener().unregisterCallback(subscriptionId);
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     bool isQueueNotEmpty =
         context.watch<TrackListProvider>().trackList.isNotEmpty;
     return Scaffold(
-      bottomNavigationBar: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            isQueueNotEmpty && _connected
-                ? Playbar(onTap: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const SwipableTabs()));
-                  })
-                : const SizedBox.shrink(),
-            NavigationBar(
-              onDestinationSelected: (int index) {
-                setState(() {
-                  currentPageIndex = index;
-                });
-              },
-              selectedIndex: currentPageIndex,
-              destinations: const <Widget>[
-                NavigationDestination(
-                  selectedIcon: Icon(Icons.compass_calibration),
-                  icon: Icon(Icons.compass_calibration_outlined),
-                  label: 'Discover',
-                ),
-                NavigationDestination(
-                  selectedIcon: Icon(Icons.library_music),
-                  icon: Icon(Icons.library_music_outlined),
-                  label: 'My Library',
-                ),
-                NavigationDestination(
-                    icon: Icon(Icons.search),
-                    selectedIcon: Icon(Icons.search_outlined),
-                    label: 'Search'),
-              ],
-            )
-          ]),
-      body: _connected
-          ? PageStorage(
-              bucket: bucket,
-              child: pages[currentPageIndex],
-            )
-          : _buildConnectionScreen(context),
-    );
-  }
-
-  Widget _buildConnectionScreen(BuildContext context) {
-    if (_failedToConnect) {
-      return const Center(
-          child: Text("Failed to connect to server",
-              style: TextStyle(
-                fontSize: 24.0,
-                color: Colors.grey,
-              )));
-    } else {
-      return const Center(child: CircularProgressIndicator());
-    }
+        bottomNavigationBar: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              isQueueNotEmpty
+                  ? Playbar(onTap: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const SwipableTabs()));
+                    })
+                  : const SizedBox.shrink(),
+              NavigationBar(
+                onDestinationSelected: (int index) {
+                  setState(() {
+                    currentPageIndex = index;
+                  });
+                },
+                selectedIndex: currentPageIndex,
+                destinations: const <Widget>[
+                  NavigationDestination(
+                    selectedIcon: Icon(Icons.compass_calibration),
+                    icon: Icon(Icons.compass_calibration_outlined),
+                    label: 'Discover',
+                  ),
+                  NavigationDestination(
+                    selectedIcon: Icon(Icons.library_music),
+                    icon: Icon(Icons.library_music_outlined),
+                    label: 'My Library',
+                  ),
+                  NavigationDestination(
+                      icon: Icon(Icons.search),
+                      selectedIcon: Icon(Icons.search_outlined),
+                      label: 'Search'),
+                ],
+              )
+            ]),
+        body: ConnectionManager(
+            child: PageStorage(
+          bucket: bucket,
+          child: pages[currentPageIndex],
+        )));
   }
 }

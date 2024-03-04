@@ -16,7 +16,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'data_model.dart';
 
 class BrowsePage extends StatefulWidget {
-  const BrowsePage({Key? key, required this.parentItem}) : super(key: key);
+  const BrowsePage({super.key, required this.parentItem});
 
   final BrowseItem parentItem;
 

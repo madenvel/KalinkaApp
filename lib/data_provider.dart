@@ -36,6 +36,7 @@ class TrackListProvider with ChangeNotifier {
       },
       EventType.NetworkDisconnected: (_) {
         _isLoading = true;
+        _trackList.clear();
       },
       EventType.NetworkConnected: (args) {
         getTracks();
@@ -314,6 +315,15 @@ class DiscoverSectionProvider with ChangeNotifier {
 
   DiscoverSectionProvider({List<String>? genreIds}) {
     _init(genreIds);
+    _setEventCallbacks();
+  }
+
+  void _setEventCallbacks() {
+    EventListener().registerCallback({
+      EventType.NetworkDisconnected: (_) {
+        _sections.clear();
+      }
+    });
   }
 
   Future<void> _loadSections() async {
@@ -326,6 +336,9 @@ class DiscoverSectionProvider with ChangeNotifier {
   }
 
   Future<void> _loadPreviews(List<String>? genreIds) async {
+    if (_sections.isEmpty) {
+      await _loadSections();
+    }
     _previews.clear();
     _previews.addAll(List.generate(_sections.length, (_) => []));
     List<Future<void>> futures = [];
@@ -434,6 +447,7 @@ class ConnectionSettingsProvider with ChangeNotifier {
 
   get host => _host;
   get port => _port;
+  get isSet => _host.isNotEmpty && _port > 0;
 
   ConnectionSettingsProvider() {
     _init();
@@ -469,6 +483,7 @@ class GenreFilterProvider with ChangeNotifier {
 
   GenreFilterProvider() {
     _init();
+    _setupEventCallbacks();
   }
 
   void _init() async {
@@ -477,6 +492,17 @@ class GenreFilterProvider with ChangeNotifier {
       _genres.addAll(value.items);
       _isLoaded = true;
       notifyListeners();
+    });
+  }
+
+  void _setupEventCallbacks() {
+    EventListener().registerCallback({
+      EventType.NetworkDisconnected: (_) {
+        _isLoaded = false;
+      },
+      EventType.NetworkConnected: (_) {
+        _init();
+      }
     });
   }
 

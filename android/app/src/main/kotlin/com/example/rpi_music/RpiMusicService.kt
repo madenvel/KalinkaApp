@@ -53,8 +53,11 @@ class RpiMusicService : Service(), EventCallback {
         Log.i(LOGTAG, "Received start id $startId: $intent")
         setupMediaSession()
         startForeground(NOTIFICATION, createNotification())
-        eventListener = EventListener("http://192.168.3.28:8000/", this)
-        rpiPlayerProxy = RpiPlayerProxy("http://192.168.3.28:8000/", onError = {
+        val host = intent.getStringExtra("host") ?: ""
+        val port = intent.getIntExtra("port", 0)
+        val baseUrl = "http://$host:$port"
+        eventListener = EventListener(baseUrl, this)
+        rpiPlayerProxy = RpiPlayerProxy(baseUrl, onError = {
             this.onDisconnected()
         })
         Log.i(LOGTAG, "Requesting initial state")

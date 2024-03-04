@@ -61,6 +61,11 @@ class EventListener {
 
   final Map<EventType, Map<String, Function(List<dynamic>)>> _callbacks = {};
 
+  late CancelToken _cancelToken;
+  bool _isRunning = false;
+
+  bool get isRunning => _isRunning;
+
   String registerCallback(Map<EventType, Function(List<dynamic>)> callbacks) {
     var uuid = const Uuid().v4();
     for (var eventType in callbacks.keys) {
@@ -81,12 +86,24 @@ class EventListener {
     }
   }
 
-  void startListening(String url) async {
+  void stopListening() {
+    if (_isRunning && _cancelToken.isCancelled == false) {
+      _cancelToken.cancel();
+    }
+  }
+
+  void startListening(String host, int port) async {
+    if (_isRunning) {
+      return;
+    }
+    final String url = 'http://$host:$port/queue/events';
+    print('Connecting to stream: $url');
+    _isRunning = true;
+    _cancelToken = CancelToken();
     final client = Dio(BaseOptions(
         persistentConnection: true,
         connectTimeout: const Duration(seconds: 2),
         receiveTimeout: Duration.zero));
-    bool connectionFailure = false;
 
     StreamTransformer<Uint8List, List<int>> unit8Transformer =
         StreamTransformer.fromHandlers(
@@ -95,15 +112,11 @@ class EventListener {
       },
     );
 
-    while (true) {
-      try {
-        final response = await client.get(
-          url,
-          options: Options(
-              responseType:
-                  ResponseType.stream), // Set the response type to `stream`.
-        );
-        connectionFailure = false;
+    try {
+      final response = await client.get(url,
+          options: Options(responseType: ResponseType.stream),
+          cancelToken: _cancelToken);
+      if (!_cancelToken.isCancelled) {
         _invokeCallbacks(EventType.NetworkConnected, []);
 
         // Read the chunks from the response stream
@@ -118,14 +131,12 @@ class EventListener {
             print("Error parsing stream event: $e, event: $chunk");
           }
         }
-      } catch (e) {
-        if (connectionFailure == false) {
-          connectionFailure = true;
-          _invokeCallbacks(EventType.NetworkDisconnected, []);
-        }
       }
-      await Future.delayed(const Duration(seconds: 3));
+    } catch (e) {
+      print('Stream connection failure: $e');
     }
+    _invokeCallbacks(EventType.NetworkDisconnected, []);
+    _isRunning = false;
   }
 
   (EventType, List<dynamic>) _parseEvent(String data) {

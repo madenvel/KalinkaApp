@@ -4,7 +4,7 @@ import 'package:rpi_music/data_provider.dart';
 import 'package:rpi_music/genre_selector.dart';
 
 class GenreFilterButton extends StatelessWidget {
-  const GenreFilterButton({Key? key}) : super(key: key);
+  const GenreFilterButton({super.key});
 
   @override
   Widget build(BuildContext context) {
