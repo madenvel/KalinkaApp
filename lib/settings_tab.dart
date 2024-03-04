@@ -31,8 +31,13 @@ class _SettingsTabState extends State<SettingsTab> {
   }
 
   @override
-  void dispose() {
+  void deactivate() {
     context.read<ServiceDiscoveryDataProvider>().stop();
+    super.deactivate();
+  }
+
+  @override
+  void dispose() {
     _addressController.dispose();
     _portController.dispose();
     super.dispose();
