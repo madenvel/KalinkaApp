@@ -314,7 +314,9 @@ class DiscoverSectionProvider with ChangeNotifier {
   LoadStatus get loadStatus => _loadStatus;
 
   DiscoverSectionProvider({List<String>? genreIds}) {
-    _init(genreIds);
+    if (genreIds != null) {
+      _init(genreIds);
+    }
     _setEventCallbacks();
   }
 
@@ -332,6 +334,8 @@ class DiscoverSectionProvider with ChangeNotifier {
         .browse('/catalog', offset: 0, limit: 10)
         .then((value) {
       _sections.addAll(value.items);
+    }).catchError((error, stackTrace) {
+      _loadStatus = LoadStatus.error;
     });
   }
 
@@ -360,14 +364,12 @@ class DiscoverSectionProvider with ChangeNotifier {
       }));
     }
     return Future.wait(futures).then((_) {}).catchError((obj) {
-      throw obj;
+      _loadStatus = LoadStatus.error;
     });
   }
 
   void update(List<String> genreIds) {
-    _loadPreviews(genreIds).then((_) {
-      notifyListeners();
-    });
+    _init(genreIds);
   }
 
   Future<void> _init(final List<String>? genreIds) async {

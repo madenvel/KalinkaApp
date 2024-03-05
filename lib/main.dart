@@ -49,7 +49,9 @@ class RpiMusic extends StatelessWidget {
             update: (BuildContext context, GenreFilterProvider value,
                 DiscoverSectionProvider? previous) {
               if (previous != null) {
-                previous.update(value.filter);
+                if (value.isLoaded) {
+                  previous.update(value.filter);
+                }
                 return previous;
               } else {
                 return DiscoverSectionProvider(genreIds: value.filter);
