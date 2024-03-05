@@ -34,15 +34,8 @@ class TrackListProvider with ChangeNotifier {
         }
         notifyListeners();
       },
-      EventType.NetworkDisconnected: (_) {
-        _isLoading = true;
-        _trackList.clear();
-      },
-      EventType.NetworkConnected: (args) {
-        getTracks();
-        notifyListeners();
-      }
     });
+    getTracks();
   }
 
   Future<void> getTracks() async {
@@ -86,15 +79,9 @@ class PlayerStateProvider with ChangeNotifier {
             newState.index != null) {
           notifyListeners();
         }
-      },
-      EventType.NetworkDisconnected: (_) {
-        _isLoading = true;
-        notifyListeners();
-      },
-      EventType.NetworkConnected: (_) {
-        getState();
       }
     });
+    getState();
   }
 
   PlayerState get state => _state;
