@@ -88,7 +88,7 @@ class RpiMusicService : Service(), EventCallback {
 
             override fun onPause() {
                 Log.i(LOGTAG, "onPause called")
-                rpiPlayerProxy.pause(true, {})
+                rpiPlayerProxy.pause(true) {}
             }
 
             override fun onSkipToNext() {
@@ -117,7 +117,7 @@ class RpiMusicService : Service(), EventCallback {
         val pendingIntent = PendingIntent.getActivity(
             this, 0,
             notificationIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        );
+        )
 
         return Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
@@ -130,6 +130,7 @@ class RpiMusicService : Service(), EventCallback {
     override fun onDestroy() {
         mNM.cancel(NOTIFICATION)
         mediaSession?.release()
+        stopSelf()
     }
 
     override fun onBind(p0: Intent?): IBinder? {
@@ -218,8 +219,8 @@ class RpiMusicService : Service(), EventCallback {
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun updatePlaybackState(info: PlaybackInfo) {
         Log.i(LOGTAG, "updatePlaybackState called, $info")
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) {
-            return;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return
         }
         val state = convertToPlaybackState(info.playerStateType)
         mediaSession!!.isActive = state != PlaybackState.STATE_STOPPED
@@ -242,7 +243,7 @@ class RpiMusicService : Service(), EventCallback {
     }
 
     private fun updateMetadata(metadata: Metadata) {
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             return
         }
 
@@ -253,7 +254,7 @@ class RpiMusicService : Service(), EventCallback {
             Log.e(LOGTAG, "Failed to load album artwork", e)
             BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
         }
-        Log.i(LOGTAG, "finshed loading bitmap")
+        Log.i(LOGTAG, "Finished loading bitmap")
         mediaSession!!.setMetadata(
             MediaMetadata.Builder()
                 .putString(MediaMetadata.METADATA_KEY_TITLE, metadata.title)
