@@ -39,7 +39,6 @@
             android:value="2" />
         <service
             android:name=".RpiMusicService"
-            android:foregroundServiceType="mediaPlayback"
             android:exported="false" />
     </application>
 

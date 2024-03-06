@@ -31,7 +31,6 @@ class RpiMusicService : Service(), EventCallback {
     private lateinit var mNM: NotificationManager
     private lateinit var eventListener: EventListener
     private lateinit var rpiPlayerProxy: RpiPlayerProxy
-    private var foregroundStarted = false
 
     private var mediaSession: MediaSession? = null
 
@@ -193,17 +192,11 @@ class RpiMusicService : Service(), EventCallback {
             mediaSession!!.controller.playbackState == null ||
             mediaSession!!.controller.playbackState!!.state == PlaybackState.STATE_STOPPED
         ) {
-            stopForeground(STOP_FOREGROUND_REMOVE);
-            foregroundStarted = false;
+            mNM.cancel(NOTIFICATION)
             return
         }
         val notification = createNotification()
-        if (foregroundStarted) {
-            mNM.notify(NOTIFICATION, notification)
-        } else {
-            startForeground(NOTIFICATION, notification)
-            foregroundStarted = true
-        }
+        mNM.notify(NOTIFICATION, notification)
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)

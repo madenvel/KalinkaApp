@@ -78,7 +78,7 @@ class MainActivity : FlutterActivity() {
             val intent = Intent(this, RpiMusicService::class.java)
             intent.putExtra("host", host)
             intent.putExtra("port", port)
-            startForegroundService(intent)
+            startService(intent)
 
             return true
         }
