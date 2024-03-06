@@ -131,9 +131,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Consumer<PlayerStateProvider>(
-                      builder: (context, provider, _) {
-                    if (provider.state.currentTrack != null) {
+                  Consumer<TrackListProvider>(builder: (context, provider, _) {
+                    if (provider.trackList.isNotEmpty) {
                       return Playbar(onTap: () {
                         Navigator.push(
                             context,

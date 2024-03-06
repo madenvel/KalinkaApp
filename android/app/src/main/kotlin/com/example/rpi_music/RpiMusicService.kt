@@ -31,6 +31,7 @@ class RpiMusicService : Service(), EventCallback {
     private lateinit var mNM: NotificationManager
     private lateinit var eventListener: EventListener
     private lateinit var rpiPlayerProxy: RpiPlayerProxy
+    private var foregroundStarted = false
 
     private var mediaSession: MediaSession? = null
 
@@ -52,7 +53,6 @@ class RpiMusicService : Service(), EventCallback {
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         Log.i(LOGTAG, "Received start id $startId: $intent")
         setupMediaSession()
-        startForeground(NOTIFICATION, createNotification())
         val host = intent.getStringExtra("host") ?: ""
         val port = intent.getIntExtra("port", 0)
         val baseUrl = "http://$host:$port"
@@ -189,8 +189,21 @@ class RpiMusicService : Service(), EventCallback {
                 )
             }"
         )
+        if (mediaSession!!.controller.metadata == null ||
+            mediaSession!!.controller.playbackState == null ||
+            mediaSession!!.controller.playbackState!!.state == PlaybackState.STATE_STOPPED
+        ) {
+            stopForeground(STOP_FOREGROUND_REMOVE);
+            foregroundStarted = false;
+            return
+        }
         val notification = createNotification()
-        mNM.notify(1001, notification)
+        if (foregroundStarted) {
+            mNM.notify(NOTIFICATION, notification)
+        } else {
+            startForeground(NOTIFICATION, notification)
+            foregroundStarted = true
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
@@ -202,6 +215,7 @@ class RpiMusicService : Service(), EventCallback {
             "BUFFERING" -> PlaybackState.STATE_BUFFERING
             "READY" -> PlaybackState.STATE_PLAYING
             "ERROR" -> PlaybackState.STATE_ERROR
+            "STOPPED" -> PlaybackState.STATE_STOPPED
             "SKIP_TO_NEXT" -> PlaybackState.STATE_SKIPPING_TO_NEXT
             "SKIP_TO_PREV" -> PlaybackState.STATE_SKIPPING_TO_PREVIOUS
             else -> PlaybackState.STATE_NONE

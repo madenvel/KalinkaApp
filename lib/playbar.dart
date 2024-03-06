@@ -37,7 +37,9 @@ class _PlaybarState extends State<Playbar> {
     context.read<PlayerStateProvider>().addListener(() {
       if (mounted) {
         int? index = context.read<PlayerStateProvider>().state.index;
-        if (index != null && index != _currentPageIndex) {
+        if (index != null &&
+            index != _currentPageIndex &&
+            _carouselController.ready) {
           _carouselController.animateToPage(index);
         }
       }
