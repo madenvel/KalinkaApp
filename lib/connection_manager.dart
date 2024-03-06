@@ -59,6 +59,7 @@ class _ConnectionManagerState extends State<ConnectionManager> {
       EventType.NetworkConnected: (args) {
         setState(() {
           _connected = true;
+          _manualSettingsOverride = false;
           _connectionAttempts = 0;
           widget.onConnected?.call();
           final provider = context.read<ConnectionSettingsProvider>();
@@ -69,6 +70,9 @@ class _ConnectionManagerState extends State<ConnectionManager> {
       }
     });
     context.read<ConnectionSettingsProvider>().addListener(() {
+      if (!mounted) {
+        return;
+      }
       _connected = false;
       _manualSettingsOverride = false;
       _connectionAttempts = 0;
@@ -92,7 +96,13 @@ class _ConnectionManagerState extends State<ConnectionManager> {
 
   @override
   Widget build(BuildContext context) {
-    final isHostPortSet = context.watch<ConnectionSettingsProvider>().isSet;
+    return Scaffold(
+        body: Consumer<ConnectionSettingsProvider>(
+            builder: (context, provider, _) => _buildBody(context, provider)));
+  }
+
+  Widget _buildBody(BuildContext context, ConnectionSettingsProvider provider) {
+    final isHostPortSet = provider.isSet;
     if (!isHostPortSet || _manualSettingsOverride) {
       return SettingsTab(expandSection: 0, onCloseRequested: () {});
     } else {
@@ -117,7 +127,8 @@ class _ConnectionManagerState extends State<ConnectionManager> {
         child: Padding(
           padding: EdgeInsets.all(8.0),
           child: Text(
-              'Failed to connect to server. Please check your settings and try again.'),
+              'Failed to connect to server. Please check your settings and try again.',
+              textAlign: TextAlign.center),
         ),
       ),
       ElevatedButton(

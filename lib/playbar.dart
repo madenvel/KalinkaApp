@@ -10,7 +10,7 @@ import 'data_model.dart';
 import 'data_provider.dart';
 
 class Playbar extends StatefulWidget {
-  const Playbar({Key? key, this.onTap}) : super(key: key);
+  const Playbar({super.key, this.onTap});
 
   final Function? onTap;
 
@@ -68,14 +68,26 @@ class _PlaybarState extends State<Playbar> {
   }
 
   Widget _buildTile(BuildContext context) {
-    return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-      const SizedBox(width: 8),
-      _buildImage(context),
-      const SizedBox(width: 8),
-      Expanded(child: _buildCarousel(context)),
-      const PlayButton(size: 36),
-      const SizedBox(width: 8),
-    ]);
+    return Consumer<PlayerStateProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return const SizedBox.shrink();
+          }
+          return child!;
+        },
+        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          const SizedBox(width: 8),
+          Consumer<PlayerStateProvider>(
+              builder: (context, provider, _) =>
+                  _buildImage(context, provider)),
+          const SizedBox(width: 8),
+          Expanded(
+              child: Consumer<TrackListProvider>(
+                  builder: (context, provider, _) =>
+                      _buildCarousel(context, provider))),
+          const PlayButton(size: 36),
+          const SizedBox(width: 8),
+        ]));
   }
 
   Widget _buildInfoText(BuildContext context, int index) {
@@ -98,8 +110,11 @@ class _PlaybarState extends State<Playbar> {
         ]);
   }
 
-  Widget _buildImage(BuildContext context) {
-    PlayerStateProvider provider = context.watch<PlayerStateProvider>();
+  Widget _buildImage(BuildContext context, PlayerStateProvider provider) {
+    if (provider.isLoading) {
+      return const SizedBox(
+          width: 48, height: 48, child: Icon(Icons.music_note, size: 48));
+    }
     String? imgSource = provider.state.currentTrack?.album?.image?.small ??
         provider.state.currentTrack?.album?.image?.thumbnail ??
         provider.state.currentTrack?.album?.image?.large;
@@ -116,12 +131,17 @@ class _PlaybarState extends State<Playbar> {
               cacheManager: RpiMusicCacheManager.instance,
               imageUrl: imgSource,
               placeholder: (context, url) =>
-                  const Icon(Icons.music_note, size: 50.0),
+                  const Icon(Icons.music_note, size: 48.0),
               errorWidget: (context, url, error) => const Icon(Icons.error),
             )));
   }
 
-  Widget _buildCarousel(BuildContext context) {
+  Widget _buildCarousel(BuildContext context, TrackListProvider provider) {
+    final index = context.read<PlayerStateProvider>().state.index;
+    if (provider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return CarouselSlider.builder(
         carouselController: _carouselController,
         options: CarouselOptions(
@@ -129,14 +149,14 @@ class _PlaybarState extends State<Playbar> {
             viewportFraction: 1.0,
             height: 50,
             enableInfiniteScroll: false,
-            initialPage: context.read<PlayerStateProvider>().state.index ?? 0,
+            initialPage: index ?? 0,
             onPageChanged: (index, reason) {
               if (reason == CarouselPageChangedReason.manual) {
                 _currentPageIndex = index;
                 RpiPlayerProxy().play(index);
               }
             }),
-        itemCount: context.watch<TrackListProvider>().trackList.length,
+        itemCount: provider.trackList.length,
         itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) =>
             _buildInfoText(context, itemIndex));
   }

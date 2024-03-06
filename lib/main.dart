@@ -125,50 +125,53 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    bool isQueueNotEmpty =
-        context.watch<TrackListProvider>().trackList.isNotEmpty;
-    return Scaffold(
-        bottomNavigationBar: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              isQueueNotEmpty
-                  ? Playbar(onTap: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const SwipableTabs()));
-                    })
-                  : const SizedBox.shrink(),
-              NavigationBar(
-                onDestinationSelected: (int index) {
-                  setState(() {
-                    currentPageIndex = index;
-                  });
-                },
-                selectedIndex: currentPageIndex,
-                destinations: const <Widget>[
-                  NavigationDestination(
-                    selectedIcon: Icon(Icons.compass_calibration),
-                    icon: Icon(Icons.compass_calibration_outlined),
-                    label: 'Discover',
-                  ),
-                  NavigationDestination(
-                    selectedIcon: Icon(Icons.library_music),
-                    icon: Icon(Icons.library_music_outlined),
-                    label: 'My Library',
-                  ),
-                  NavigationDestination(
-                      icon: Icon(Icons.search),
-                      selectedIcon: Icon(Icons.search_outlined),
-                      label: 'Search'),
-                ],
-              )
-            ]),
-        body: ConnectionManager(
-            child: PageStorage(
-          bucket: bucket,
-          child: pages[currentPageIndex],
-        )));
+    return ConnectionManager(
+        child: Scaffold(
+            bottomNavigationBar: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Consumer<PlayerStateProvider>(
+                      builder: (context, provider, _) {
+                    if (provider.state.currentTrack != null) {
+                      return Playbar(onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const SwipableTabs()));
+                      });
+                    } else {
+                      return const SizedBox.shrink();
+                    }
+                  }),
+                  NavigationBar(
+                    onDestinationSelected: (int index) {
+                      setState(() {
+                        currentPageIndex = index;
+                      });
+                    },
+                    selectedIndex: currentPageIndex,
+                    destinations: const <Widget>[
+                      NavigationDestination(
+                        selectedIcon: Icon(Icons.compass_calibration),
+                        icon: Icon(Icons.compass_calibration_outlined),
+                        label: 'Discover',
+                      ),
+                      NavigationDestination(
+                        selectedIcon: Icon(Icons.library_music),
+                        icon: Icon(Icons.library_music_outlined),
+                        label: 'My Library',
+                      ),
+                      NavigationDestination(
+                          icon: Icon(Icons.search),
+                          selectedIcon: Icon(Icons.search_outlined),
+                          label: 'Search'),
+                    ],
+                  )
+                ]),
+            body: PageStorage(
+              bucket: bucket,
+              child: pages[currentPageIndex],
+            )));
   }
 }
