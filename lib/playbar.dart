@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:rpi_music/fg_service.dart';
 import 'package:rpi_music/play_button.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -34,16 +35,25 @@ class _PlaybarState extends State<Playbar> {
   @override
   void initState() {
     super.initState();
-    context.read<PlayerStateProvider>().addListener(() {
-      if (mounted) {
-        int? index = context.read<PlayerStateProvider>().state.index;
-        if (index != null &&
-            index != _currentPageIndex &&
-            _carouselController.ready) {
-          _carouselController.animateToPage(index);
-        }
+    AudioPlayerService().showNotificationControls();
+    context.read<PlayerStateProvider>().addListener(playerStateChanged);
+  }
+
+  @override
+  void deactivate() {
+    super.deactivate();
+    context.read<PlayerStateProvider>().removeListener(playerStateChanged);
+  }
+
+  void playerStateChanged() {
+    if (mounted) {
+      int? index = context.read<PlayerStateProvider>().state.index;
+      if (index != null &&
+          index != _currentPageIndex &&
+          _carouselController.ready) {
+        _carouselController.animateToPage(index);
       }
-    });
+    }
   }
 
   @override

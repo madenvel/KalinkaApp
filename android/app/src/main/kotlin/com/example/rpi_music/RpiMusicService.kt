@@ -33,6 +33,7 @@ class RpiMusicService : Service(), EventCallback {
     private lateinit var rpiPlayerProxy: RpiPlayerProxy
 
     private var mediaSession: MediaSession? = null
+    private var isRunning = false
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate() {
@@ -50,25 +51,21 @@ class RpiMusicService : Service(), EventCallback {
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        if (isRunning) {
+            return START_NOT_STICKY
+        }
+        isRunning = true
         Log.i(LOGTAG, "Received start id $startId: $intent")
         setupMediaSession()
+        startForeground(NOTIFICATION, createNotification())
         val host = intent.getStringExtra("host") ?: ""
         val port = intent.getIntExtra("port", 0)
         val baseUrl = "http://$host:$port"
-        eventListener = EventListener(baseUrl, this)
+        eventListener = EventListener(baseUrl, this);
         rpiPlayerProxy = RpiPlayerProxy(baseUrl, onError = {
             this.onDisconnected()
         })
-        Log.i(LOGTAG, "Requesting initial state")
-        rpiPlayerProxy.requestState { state ->
-            GlobalScope.launch {
-                Log.i(LOGTAG, "Initial state received")
-                this@RpiMusicService.onStateChanged(state)
-                Log.i(LOGTAG, "State update callback invoked, $state")
-                eventListener.start()
-                Log.i(LOGTAG, "Event listener started")
-            }
-        }
+        eventListener.start()
         return START_NOT_STICKY
     }
 
@@ -126,11 +123,11 @@ class RpiMusicService : Service(), EventCallback {
             .build()
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+
+    @RequiresApi(Build.VERSION_CODES.N)
     override fun onDestroy() {
-        mNM.cancel(NOTIFICATION)
+        eventListener.interrupt()
         mediaSession?.release()
-        stopSelf()
     }
 
     override fun onBind(p0: Intent?): IBinder? {
@@ -140,6 +137,11 @@ class RpiMusicService : Service(), EventCallback {
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onStateChanged(newState: PlayerState) {
+        onStateChangedImpl(newState, false)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun onStateChangedImpl(newState: PlayerState, doNotRemoveNotification: Boolean) {
         var dirty = false
         if (newState.currentTrack != null) {
             val metadata = Metadata(
@@ -167,20 +169,20 @@ class RpiMusicService : Service(), EventCallback {
             dirty = true
         }
         if (dirty) {
-            updateNotification()
+            updateNotification(doNotRemoveNotification)
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    @RequiresApi(Build.VERSION_CODES.N)
     override fun onDisconnected() {
+        stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
         mediaSession!!.release()
         mediaSession = null
-        mNM.cancel(NOTIFICATION)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun updateNotification() {
+    private fun updateNotification(firstStart: Boolean) {
         Log.i(
             LOGTAG,
             "updateNotification called, ${mediaSession!!.controller.playbackState}, ${
@@ -189,15 +191,8 @@ class RpiMusicService : Service(), EventCallback {
                 )
             }"
         )
-        if (mediaSession!!.controller.metadata == null ||
-            mediaSession!!.controller.playbackState == null ||
-            mediaSession!!.controller.playbackState!!.state == PlaybackState.STATE_STOPPED
-        ) {
-            mNM.cancel(NOTIFICATION)
-            return
-        }
-        val notification = createNotification()
-        mNM.notify(NOTIFICATION, notification)
+
+        mNM.notify(NOTIFICATION, createNotification())
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)

@@ -92,12 +92,22 @@ class _SearchState extends State<Search> {
         searchResults.loadMoreItems(10);
       }
     });
-    context.read<SearchResultsProvider>().addListener(() {
-      if (!mounted) {
-        return;
-      }
-      setState(() {});
-    });
+    context.read<SearchResultsProvider>().addListener(onSearchResultsChanged);
+  }
+
+  @override
+  void deactivate() {
+    super.deactivate();
+    context
+        .read<SearchResultsProvider>()
+        .removeListener(onSearchResultsChanged);
+  }
+
+  void onSearchResultsChanged() {
+    if (!mounted) {
+      return;
+    }
+    setState(() {});
   }
 
   void _initPersistentState() async {

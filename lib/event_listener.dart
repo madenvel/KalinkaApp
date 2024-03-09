@@ -19,6 +19,7 @@ enum EventType {
   VolumeChanged,
   FavoriteAdded,
   FavoriteRemoved,
+  StateReplay,
 }
 
 extension EventTypeExtension on EventType {
@@ -44,6 +45,8 @@ extension EventTypeExtension on EventType {
         return "favorite_added";
       case EventType.FavoriteRemoved:
         return "favorite_removed";
+      case EventType.StateReplay:
+        return "state_replay";
       default:
         throw Exception("Invalid event type = $this");
     }
@@ -60,10 +63,8 @@ class EventListener {
   EventListener._internal();
 
   final Map<EventType, Map<String, Function(List<dynamic>)>> _callbacks = {};
-
   late CancelToken _cancelToken;
   bool _isRunning = false;
-
   bool get isRunning => _isRunning;
 
   String registerCallback(Map<EventType, Function(List<dynamic>)> callbacks) {
@@ -140,7 +141,6 @@ class EventListener {
   }
 
   (EventType, List<dynamic>) _parseEvent(String data) {
-    // print('Received event data: $data');
     final json = jsonDecode(data);
     final eventType = EventType.values.firstWhere(
         (element) => element.value == json["event_type"],
@@ -168,6 +168,8 @@ class EventListener {
         return [FavoriteAdded.fromJson(args[0])];
       case EventType.FavoriteRemoved:
         return [FavoriteRemoved.fromJson(args[0])];
+      case EventType.StateReplay:
+        return [PlayerState.fromJson(args[0]), TrackList.fromJson(args[1])];
       default:
         throw Exception("Invalid event arguments");
     }

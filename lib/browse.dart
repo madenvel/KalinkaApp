@@ -35,14 +35,22 @@ class _BrowsePage extends State<BrowsePage> {
   void initState() {
     super.initState();
     _loadMoreItems();
-    context.read<GenreFilterProvider>().addListener(() {
-      if (!mounted) {
-        return;
-      }
-      browseItems.clear();
-      total = 0;
-      _loadMoreItems();
-    });
+    context.read<GenreFilterProvider>().addListener(genreFilterChanged);
+  }
+
+  void genreFilterChanged() {
+    if (!mounted) {
+      return;
+    }
+    browseItems.clear();
+    total = 0;
+    _loadMoreItems();
+  }
+
+  @override
+  void deactivate() {
+    super.deactivate();
+    context.read<GenreFilterProvider>().removeListener(genreFilterChanged);
   }
 
   void _loadMoreItems() {

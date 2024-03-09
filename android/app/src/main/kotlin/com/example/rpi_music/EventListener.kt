@@ -26,7 +26,15 @@ class EventListener(private val baseUrl: String, private val eventCallback: Even
                 while (reader.readLine().also { line = it } != null) {
                     try {
                         val jsonObject = JSONObject(line)
-                        if (jsonObject.getString("event_type") == "state_changed") {
+                        val eventType = jsonObject.getString("event_type")
+                        if (eventType == "state_changed") {
+                            val state = PlayerState.fromJson(
+                                jsonObject.getJSONArray("args").getJSONObject(0)
+                            )
+                            if (state != null) {
+                                eventCallback?.onStateChanged(state)
+                            }
+                        } else if (eventType == "state_replay") {
                             val state = PlayerState.fromJson(
                                 jsonObject.getJSONArray("args").getJSONObject(0)
                             )
@@ -44,5 +52,6 @@ class EventListener(private val baseUrl: String, private val eventCallback: Even
             Log.w(LOGTAG, "Error: $e")
             eventCallback?.onDisconnected()
         }
+        Log.i(LOGTAG, "Thread interrupted");
     }
 }

@@ -34,6 +34,11 @@ class _ConnectionManagerState extends State<ConnectionManager> {
   @override
   void initState() {
     super.initState();
+    // Make sure providers register their listeners before we start listening
+    // So that they receive state replay message
+    context.read<TrackListProvider>();
+    context.read<PlayerStateProvider>();
+    context.read<TrackProgressProvider>();
     subscriptionId = EventListener().registerCallback({
       EventType.NetworkDisconnected: (args) {
         print('Disconnected!!!');
@@ -65,27 +70,37 @@ class _ConnectionManagerState extends State<ConnectionManager> {
           final provider = context.read<ConnectionSettingsProvider>();
           final host = provider.host;
           final port = provider.port;
-          _audioPlayerService.showNotificationControls(host, port);
+          _audioPlayerService.init(host, port);
         });
       }
     });
-    context.read<ConnectionSettingsProvider>().addListener(() {
-      if (!mounted) {
-        return;
-      }
-      _connected = false;
-      _manualSettingsOverride = false;
-      _connectionAttempts = 0;
-      final provider = context.read<ConnectionSettingsProvider>();
-      final host = provider.host;
-      final port = provider.port;
-      _audioPlayerService.hideNotificationControls();
-      _eventListener.stopListening();
-      if (host.isNotEmpty && port != 0) {
-        _eventListener.startListening(host, port);
-        _rpiPlayerProxy.connect(host, port);
-      }
-    });
+    context.read<ConnectionSettingsProvider>().addListener(onSettingsChanged);
+  }
+
+  void onSettingsChanged() {
+    if (!mounted) {
+      return;
+    }
+    _connected = false;
+    _manualSettingsOverride = false;
+    _connectionAttempts = 0;
+    final provider = context.read<ConnectionSettingsProvider>();
+    final host = provider.host;
+    final port = provider.port;
+    _audioPlayerService.hideNotificationControls();
+    _eventListener.stopListening();
+    if (host.isNotEmpty && port != 0) {
+      _eventListener.startListening(host, port);
+      _rpiPlayerProxy.connect(host, port);
+    }
+  }
+
+  @override
+  void deactivate() {
+    super.deactivate();
+    context
+        .read<ConnectionSettingsProvider>()
+        .removeListener(onSettingsChanged);
   }
 
   @override

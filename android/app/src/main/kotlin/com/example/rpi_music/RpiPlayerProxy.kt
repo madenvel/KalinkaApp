@@ -75,15 +75,6 @@ class RpiPlayerProxy(
         )
     }
 
-    fun requestState(onSuccess: (PlayerState) -> Unit) {
-        asyncGetHttpRequest<PlayerState>(
-            "GET",
-            URI(baseUrl).resolve("/queue/state").toURL(),
-            onSuccess,
-            converter = { PlayerState.fromJson(it) }
-        )
-    }
-
     @RequiresApi(Build.VERSION_CODES.N)
     private inline fun <reified T> asyncGetHttpRequest(
         requestMethod: String,

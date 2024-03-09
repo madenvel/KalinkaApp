@@ -10,17 +10,22 @@ import 'rpiplayer_proxy.dart';
 import 'lazy_list.dart';
 
 class TrackListProvider with ChangeNotifier {
-  List<Track> _trackList = [];
-  bool _isLoading = false;
+  final List<Track> _trackList = [];
+  bool _isLoading = true;
+  late String subscriptionId;
 
-  final RpiPlayerProxy _service = RpiPlayerProxy();
-  final EventListener _listener = EventListener();
+  final EventListener _eventListener = EventListener();
 
   List<Track> get trackList => _trackList;
   bool get isLoading => _isLoading;
 
   TrackListProvider() {
-    _listener.registerCallback({
+    _isLoading = true;
+    subscriptionId = _eventListener.registerCallback({
+      EventType.NetworkDisconnected: (_) {
+        _isLoading = true;
+        notifyListeners();
+      },
       EventType.TracksAdded: (args) {
         if (!isLoading) {
           _trackList.addAll(args[0].cast<Track>());
@@ -34,43 +39,36 @@ class TrackListProvider with ChangeNotifier {
         }
         notifyListeners();
       },
+      EventType.StateReplay: (args) {
+        _trackList.clear();
+        _trackList.addAll((args[1] as TrackList).items);
+        _isLoading = false;
+        notifyListeners();
+      }
     });
-    getTracks();
   }
 
-  Future<void> getTracks() async {
-    _isLoading = true;
-    List<Track> tracks = [];
-    const int chunkSize = 50;
-    int totalSize = 0;
-    int offs = 0;
-    do {
-      try {
-        var chunk = await _service.listTracks(offset: offs, limit: chunkSize);
-        totalSize = chunk.total;
-        tracks.addAll(chunk.items);
-        offs += chunkSize;
-      } catch (e) {
-        print('Error listing tracks: $e');
-        return;
-      }
-    } while (tracks.length != totalSize);
-    _trackList = tracks;
-    _isLoading = false;
-
-    notifyListeners();
+  @override
+  void dispose() {
+    _eventListener.unregisterCallback(subscriptionId);
+    super.dispose();
   }
 }
 
 class PlayerStateProvider with ChangeNotifier {
   PlayerState _state = PlayerState(state: PlayerStateType.idle);
-  bool _isLoading = false;
+  bool _isLoading = true;
+  late String subscriptionId;
 
-  final RpiPlayerProxy _service = RpiPlayerProxy();
-  final EventListener _listener = EventListener();
+  final EventListener _eventListener = EventListener();
 
   PlayerStateProvider() {
-    _listener.registerCallback({
+    _eventListener.registerCallback({
+      EventType.NetworkDisconnected: (_) {
+        _state = PlayerState(state: PlayerStateType.idle);
+        _isLoading = true;
+        notifyListeners();
+      },
       EventType.StateChanged: (args) {
         PlayerState newState = args[0];
         _state.copyFrom(newState);
@@ -79,35 +77,35 @@ class PlayerStateProvider with ChangeNotifier {
             newState.index != null) {
           notifyListeners();
         }
+      },
+      EventType.StateReplay: (args) {
+        PlayerState newState = args[0];
+        _state.copyFrom(newState);
+        _isLoading = false;
+        notifyListeners();
       }
     });
-    getState();
+  }
+
+  @override
+  void dispose() {
+    _eventListener.unregisterCallback(subscriptionId);
+    super.dispose();
   }
 
   PlayerState get state => _state;
   bool get isLoading => _isLoading;
-
-  Future<void> getState() async {
-    _isLoading = true;
-    try {
-      _state = await _service.getState();
-    } catch (e) {
-      print('Error getting state: $e');
-      return;
-    }
-    _isLoading = false;
-    notifyListeners();
-  }
 }
 
 class TrackProgressProvider with ChangeNotifier {
   double _progress = 0;
+  late String subscriptionId;
 
   double get progress => _progress;
-  final EventListener _listener = EventListener();
+  final EventListener _eventListener = EventListener();
 
   TrackProgressProvider() {
-    _listener.registerCallback({
+    subscriptionId = _eventListener.registerCallback({
       EventType.StateChanged: (args) {
         PlayerState newState = args[0];
         if (newState.progress != null) {
@@ -115,7 +113,18 @@ class TrackProgressProvider with ChangeNotifier {
           notifyListeners();
         }
       },
+      EventType.StateReplay: (args) {
+        PlayerState newState = args[0];
+        _progress = newState.progress!;
+        notifyListeners();
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    _eventListener.unregisterCallback(subscriptionId);
+    super.dispose();
   }
 }
 
@@ -150,6 +159,8 @@ class UserFavoritesProvider with ChangeNotifier {
     SearchType.playlist: false,
   };
 
+  late String subscriptionId;
+
   FavoriteInfo favorite(SearchType searchType) {
     if (!(_favorites[searchType]?.isLoaded ?? false) &&
         !(_requestInProgress[searchType] ?? false)) {
@@ -165,7 +176,7 @@ class UserFavoritesProvider with ChangeNotifier {
   bool get idsLoaded => _idsLoaded;
 
   UserFavoritesProvider() {
-    EventListener().registerCallback({
+    subscriptionId = EventListener().registerCallback({
       // EventType.FavoriteAdded: (args) {
       //   _favorites[SearchType.track]!.ids.addAll(args[0].cast<String>());
       //   notifyListeners();
@@ -251,6 +262,12 @@ class UserFavoritesProvider with ChangeNotifier {
     _requestInProgress[queryType] = false;
     return items;
   }
+
+  @override
+  void dispose() {
+    EventListener().unregisterCallback(subscriptionId);
+    super.dispose();
+  }
 }
 
 class SearchResultsProvider extends LazyLoadingList with ChangeNotifier {
@@ -295,6 +312,7 @@ class DiscoverSectionProvider with ChangeNotifier {
   final List<BrowseItem> _sections = [];
   final List<List<BrowseItem>> _previews = [];
   LoadStatus _loadStatus = LoadStatus.notLoaded;
+  late String subscriptionId;
 
   List<BrowseItem> get sections => _sections;
   List<List<BrowseItem>> get previews => _previews;
@@ -308,7 +326,7 @@ class DiscoverSectionProvider with ChangeNotifier {
   }
 
   void _setEventCallbacks() {
-    EventListener().registerCallback({
+    subscriptionId = EventListener().registerCallback({
       EventType.NetworkDisconnected: (_) {
         _sections.clear();
       }
@@ -370,6 +388,12 @@ class DiscoverSectionProvider with ChangeNotifier {
     }
     notifyListeners();
   }
+
+  @override
+  void dispose() {
+    EventListener().unregisterCallback(subscriptionId);
+    super.dispose();
+  }
 }
 
 class VolumeControlProvider with ChangeNotifier {
@@ -378,6 +402,7 @@ class VolumeControlProvider with ChangeNotifier {
   int _maxVolume = 0;
   bool _supported = false;
   bool _blockNotifications = false;
+  late String subscriptionId;
 
   double get volume => _currentVolume;
   int get maxVolume => _maxVolume;
@@ -403,7 +428,7 @@ class VolumeControlProvider with ChangeNotifier {
   }
 
   Future<void> _init() async {
-    EventListener().registerCallback({
+    subscriptionId = EventListener().registerCallback({
       EventType.VolumeChanged: (args) {
         if (!_blockNotifications && _currentVolume != args[0]) {
           _realVolume = args[0];
@@ -427,6 +452,12 @@ class VolumeControlProvider with ChangeNotifier {
       _supported = false;
       notifyListeners();
     });
+  }
+
+  @override
+  void dispose() {
+    EventListener().unregisterCallback(subscriptionId);
+    super.dispose();
   }
 }
 
@@ -465,6 +496,7 @@ class GenreFilterProvider with ChangeNotifier {
   final List<Genre> _genres = [];
   final List<String> _filter = [];
   bool _isLoaded = false;
+  late String subscriptionId;
 
   List<Genre> get genres => _genres;
   List<String> get filter => _filter;
@@ -485,7 +517,7 @@ class GenreFilterProvider with ChangeNotifier {
   }
 
   void _setupEventCallbacks() {
-    EventListener().registerCallback({
+    subscriptionId = EventListener().registerCallback({
       EventType.NetworkDisconnected: (_) {
         _isLoaded = false;
       },
@@ -497,5 +529,11 @@ class GenreFilterProvider with ChangeNotifier {
 
   void performFilterChange() {
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    EventListener().unregisterCallback(subscriptionId);
+    super.dispose();
   }
 }

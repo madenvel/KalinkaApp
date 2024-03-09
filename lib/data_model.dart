@@ -78,13 +78,8 @@ class PlayerState {
   void copyFrom(PlayerState other) {
     currentTrack = other.currentTrack ?? currentTrack;
     index = other.index ?? index;
-    if (other.currentTrack == null) {
-      state = other.state ?? state;
-      progress = other.progress ?? progress;
-    } else {
-      state = PlayerStateType.idle;
-      progress = 0.0;
-    }
+    state = other.state ?? state;
+    progress = other.progress ?? progress;
   }
 }
 

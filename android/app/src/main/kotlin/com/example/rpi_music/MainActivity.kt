@@ -74,11 +74,10 @@ class MainActivity : FlutterActivity() {
     private fun showNotificationControls(host: String, port: Int): Boolean {
         Log.i(LOGTAG, "showNotificationControls called")
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            Log.i(LOGTAG, "Starting RpiMusicService")
             val intent = Intent(this, RpiMusicService::class.java)
             intent.putExtra("host", host)
             intent.putExtra("port", port)
-            startService(intent)
+            startForegroundService(intent)
 
             return true
         }

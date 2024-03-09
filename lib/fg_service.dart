@@ -10,12 +10,23 @@ class AudioPlayerService {
     return _instance;
   }
 
+  late String _host;
+  late int _port;
+
+  void init(String host, int port) {
+    _host = host;
+    _port = port;
+  }
+
   AudioPlayerService._internal();
 
-  Future<void> showNotificationControls(String host, int port) async {
+  Future<void> showNotificationControls() async {
     try {
+      if (_host.isEmpty || _port == 0) {
+        return;
+      }
       _channel.invokeMethod('showNotificationControls',
-          {'host': host, 'port': port}).then((_) {});
+          {'host': _host, 'port': _port}).then((_) {});
     } on PlatformException catch (e) {
       print('Failed to start foreground service: ${e.message}');
     } on MissingPluginException catch (e) {
