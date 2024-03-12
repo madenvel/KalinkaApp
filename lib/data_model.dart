@@ -48,13 +48,13 @@ class PlayerState {
   PlayerStateType? state;
   Track? currentTrack;
   int? index;
-  double? progress;
+  int? position;
 
   PlayerState({
     this.state,
     this.currentTrack,
     this.index = 0,
-    this.progress = 0.0,
+    this.position = 0,
   });
 
   factory PlayerState.fromJson(Map<String, dynamic> json) => PlayerState(
@@ -65,21 +65,21 @@ class PlayerState {
             ? null
             : Track.fromJson(json["current_track"]),
         index: json["index"],
-        progress: json["progress"],
+        position: json["position"],
       );
 
   Map<String, dynamic> toJson() => {
         "state": state?.toValue(),
         "current_track": currentTrack?.toJson(),
         "index": index,
-        "progress": progress
+        "position": position
       };
 
   void copyFrom(PlayerState other) {
     currentTrack = other.currentTrack ?? currentTrack;
     index = other.index ?? index;
     state = other.state ?? state;
-    progress = other.progress ?? progress;
+    position = other.position ?? position;
   }
 }
 

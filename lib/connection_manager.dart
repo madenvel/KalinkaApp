@@ -38,7 +38,7 @@ class _ConnectionManagerState extends State<ConnectionManager> {
     // So that they receive state replay message
     context.read<TrackListProvider>();
     context.read<PlayerStateProvider>();
-    context.read<TrackProgressProvider>();
+    context.read<TrackPositionProvider>();
     subscriptionId = EventListener().registerCallback({
       EventType.NetworkDisconnected: (args) {
         print('Disconnected!!!');

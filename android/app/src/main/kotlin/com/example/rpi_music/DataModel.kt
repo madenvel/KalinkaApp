@@ -1,13 +1,12 @@
 package com.example.rpi_music
 
-import io.flutter.Log
 import org.json.JSONObject
 
 data class PlayerState(
     var state: String? = null,
     var currentTrack: CurrentTrack? = null,
     var index: Int? = null,
-    var progress: Float? = null
+    var position: Long? = null
 ) {
     companion object Factory {
         fun fromJson(jsonObj: JSONObject?): PlayerState? {
@@ -18,8 +17,8 @@ data class PlayerState(
             obj.state = "state".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
             obj.currentTrack = CurrentTrack.fromJson(jsonObj.optJSONObject("current_track"))
             obj.index = "index".let { if (!jsonObj.isNull(it)) jsonObj.getInt(it) else null }
-            obj.progress = "progress".let {
-                if (!jsonObj.isNull(it)) jsonObj.getDouble(it).toFloat() else null
+            obj.position = "position".let {
+                if (!jsonObj.isNull(it)) jsonObj.getLong(it) else null
             }
 
             return obj

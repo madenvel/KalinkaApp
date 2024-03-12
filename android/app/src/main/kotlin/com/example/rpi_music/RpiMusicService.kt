@@ -17,8 +17,6 @@ import android.os.IBinder
 import android.os.SystemClock
 import androidx.annotation.RequiresApi
 import io.flutter.Log
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import java.net.URL
 
 
@@ -142,6 +140,7 @@ class RpiMusicService : Service(), EventCallback {
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun onStateChangedImpl(newState: PlayerState, doNotRemoveNotification: Boolean) {
+        Log.i(LOGTAG, "onStateChanged called, $newState")
         var dirty = false
         if (newState.currentTrack != null) {
             val metadata = Metadata(
@@ -152,18 +151,15 @@ class RpiMusicService : Service(), EventCallback {
                 newState.currentTrack!!.album!!.title!!
             )
             updateMetadata(metadata)
-            if (newState.state == null) {
-                updatePlaybackState(PlaybackInfo("IDLE", 0))
-            }
             dirty = true
         }
-        if (newState.state != null && newState.state != "READY") {
+        if (newState.state != null) {
             val progressMs =
-                if (newState.progress != null) newState.progress!! * 1000.0 else mediaSession!!.controller.playbackState?.position
-                    ?: 0.0
+                if (newState.position != null) newState.position!! else mediaSession!!.controller.playbackState?.position
+                    ?: 0L
             val playbackInfo = PlaybackInfo(
                 newState.state!!,
-                progressMs.toLong()
+                progressMs
             )
             updatePlaybackState(playbackInfo)
             dirty = true
@@ -202,7 +198,7 @@ class RpiMusicService : Service(), EventCallback {
             "PLAYING" -> PlaybackState.STATE_PLAYING
             "PAUSED" -> PlaybackState.STATE_PAUSED
             "BUFFERING" -> PlaybackState.STATE_BUFFERING
-            "READY" -> PlaybackState.STATE_PLAYING
+            "READY" -> PlaybackState.STATE_BUFFERING
             "ERROR" -> PlaybackState.STATE_ERROR
             "STOPPED" -> PlaybackState.STATE_STOPPED
             "SKIP_TO_NEXT" -> PlaybackState.STATE_SKIPPING_TO_NEXT

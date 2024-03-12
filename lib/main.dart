@@ -39,7 +39,7 @@ class RpiMusic extends StatelessWidget {
           Provider<DateTimeProvider>(create: (context) => DateTimeProvider()),
           ChangeNotifierProvider(create: (context) => TrackListProvider()),
           ChangeNotifierProvider(create: (context) => PlayerStateProvider()),
-          ChangeNotifierProvider(create: (context) => TrackProgressProvider()),
+          ChangeNotifierProvider(create: (context) => TrackPositionProvider()),
           ChangeNotifierProvider(create: (context) => UserFavoritesProvider()),
           ChangeNotifierProvider(create: (context) => SearchResultsProvider()),
           ChangeNotifierProvider(create: (context) => GenreFilterProvider()),

@@ -97,28 +97,59 @@ class PlayerStateProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
 }
 
-class TrackProgressProvider with ChangeNotifier {
-  double _progress = 0;
+class TrackPositionProvider with ChangeNotifier {
+  int _position = 0;
   late String subscriptionId;
+  Timer? _progressTimer;
+  final Stopwatch _stopwatch = Stopwatch();
 
-  double get progress => _progress;
+  int get position => _position + _stopwatch.elapsedMilliseconds;
   final EventListener _eventListener = EventListener();
 
-  TrackProgressProvider() {
+  TrackPositionProvider() {
     subscriptionId = _eventListener.registerCallback({
       EventType.StateChanged: (args) {
         PlayerState newState = args[0];
-        if (newState.progress != null) {
-          _progress = newState.progress!;
+        if (newState.state != null) {
+          if (newState.position != null) {
+            _position = newState.position!;
+          }
+          if (newState.state == PlayerStateType.playing) {
+            _setProgressTimer();
+          } else {
+            _clearProgressTimer();
+          }
+
           notifyListeners();
         }
       },
       EventType.StateReplay: (args) {
         PlayerState newState = args[0];
-        _progress = newState.progress!;
+        _position = newState.position!;
+        if (newState.state == PlayerStateType.playing) {
+          _setProgressTimer();
+        } else {
+          _clearProgressTimer();
+        }
         notifyListeners();
       }
     });
+  }
+
+  void _setProgressTimer() {
+    if (_progressTimer != null && _progressTimer!.isActive) {
+      return;
+    }
+    _progressTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      notifyListeners();
+    });
+    _stopwatch.start();
+  }
+
+  void _clearProgressTimer() {
+    _progressTimer?.cancel();
+    _stopwatch.stop();
+    _stopwatch.reset();
   }
 
   @override

@@ -89,23 +89,23 @@ class _NowPlayingState extends State<NowPlaying> {
     ]);
   }
 
-  String _formatDuration(double duration) {
+  String _formatDuration(int duration) {
     int minutes = (duration / 60).floor();
-    int seconds = (duration % 60).floor();
+    int seconds = duration % 60;
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
   Widget _buildProgressBarWidget(BuildContext context) {
-    double duration =
-        context.select<PlayerStateProvider, double>((stateProvider) {
-      return stateProvider.state.currentTrack?.duration.toDouble() ?? 0.0;
+    int duration = context.select<PlayerStateProvider, int>((stateProvider) {
+      return stateProvider.state.currentTrack?.duration ?? 0;
     });
-    double progress = context.watch<TrackProgressProvider>().progress;
+    int position = context.watch<TrackPositionProvider>().position;
     return Column(children: [
-      LinearProgressIndicator(value: duration != 0 ? progress / duration : 0),
+      LinearProgressIndicator(
+          value: duration != 0 ? position / (1000 * duration) : 0.0),
       const SizedBox(height: 8),
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text(_formatDuration(progress)),
+        Text(_formatDuration((position / 1000).floor())),
         Text(_formatDuration(duration))
       ]),
     ]);
