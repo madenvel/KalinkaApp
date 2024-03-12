@@ -8,7 +8,7 @@ import 'package:rpi_music/data_provider.dart';
 import 'data_model.dart';
 
 class SoundwaveWidget extends StatefulWidget {
-  const SoundwaveWidget({Key? key}) : super(key: key);
+  const SoundwaveWidget({super.key});
   @override
   State<SoundwaveWidget> createState() => _SoundwaveWidgetState();
 }
@@ -47,7 +47,7 @@ class _SoundwaveWidgetState extends State<SoundwaveWidget> {
 }
 
 class SoundBarsPainter extends CustomPainter {
-  SoundBarsPainter({Listenable? repaint}) : super(repaint: repaint);
+  SoundBarsPainter({super.repaint});
 
   final List<double> bars = [0.0, 0.0, 0.0, 0.0];
 

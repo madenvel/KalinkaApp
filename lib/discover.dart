@@ -12,7 +12,7 @@ import 'data_provider.dart';
 import 'list_card.dart';
 
 class Discover extends StatefulWidget {
-  const Discover({Key? key}) : super(key: key);
+  const Discover({super.key});
 
   @override
   State<Discover> createState() => _DiscoverState();

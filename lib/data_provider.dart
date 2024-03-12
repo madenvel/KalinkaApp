@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data_model.dart';
@@ -205,6 +206,7 @@ class FavoriteInfo {
 }
 
 class UserFavoritesProvider with ChangeNotifier {
+  final logger = Logger();
   final Map<SearchType, FavoriteInfo> _favorites = {
     SearchType.track: FavoriteInfo(),
     SearchType.album: FavoriteInfo(),
@@ -317,7 +319,7 @@ class UserFavoritesProvider with ChangeNotifier {
           offset += value.items.length;
         });
       } catch (e) {
-        print('Error getting favorites: $e');
+        logger.e('Error getting favorites: $e');
         break;
       }
     } while (offset < total);

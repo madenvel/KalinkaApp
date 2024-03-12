@@ -8,7 +8,7 @@ import 'nowplaying.dart';
 import 'playqueue.dart';
 
 class SwipableTabs extends StatefulWidget {
-  const SwipableTabs({Key? key}) : super(key: key);
+  const SwipableTabs({super.key});
 
   @override
   State<SwipableTabs> createState() => _SwipableTabsState();

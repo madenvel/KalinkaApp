@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'package:logger/logger.dart';
 import 'package:uuid/uuid.dart';
 
 import 'data_model.dart';
@@ -62,6 +63,7 @@ class EventListener {
 
   EventListener._internal();
 
+  final logger = Logger();
   final Map<EventType, Map<String, Function(List<dynamic>)>> _callbacks = {};
   late CancelToken _cancelToken;
   bool _isRunning = false;
@@ -98,7 +100,7 @@ class EventListener {
       return;
     }
     final String url = 'http://$host:$port/queue/events';
-    print('Connecting to stream: $url');
+    logger.i('Connecting to stream: $url');
     _isRunning = true;
     _cancelToken = CancelToken();
     final client = Dio(BaseOptions(
@@ -129,12 +131,12 @@ class EventListener {
             var (eventType, args) = _parseEvent(chunk);
             _invokeCallbacks(eventType, args);
           } catch (e) {
-            print("Error parsing stream event: $e, event: $chunk");
+            logger.w("Error parsing stream event: $e, event: $chunk");
           }
         }
       }
     } catch (e) {
-      print('Stream connection failure: $e');
+      logger.e('Stream connection failure: $e');
     }
     _invokeCallbacks(EventType.NetworkDisconnected, []);
     _isRunning = false;

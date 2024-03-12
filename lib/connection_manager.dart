@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:rpi_music/data_provider.dart';
 import 'package:rpi_music/event_listener.dart';
@@ -30,6 +31,7 @@ class _ConnectionManagerState extends State<ConnectionManager> {
   final EventListener _eventListener = EventListener();
   final RpiPlayerProxy _rpiPlayerProxy = RpiPlayerProxy();
   final AudioPlayerService _audioPlayerService = AudioPlayerService();
+  final logger = Logger();
 
   @override
   void initState() {
@@ -41,7 +43,7 @@ class _ConnectionManagerState extends State<ConnectionManager> {
     context.read<TrackPositionProvider>();
     subscriptionId = EventListener().registerCallback({
       EventType.NetworkDisconnected: (args) {
-        print('Disconnected!!!');
+        logger.d('Disconnected!!!');
         setState(() {
           _connected = false;
         });
@@ -50,7 +52,7 @@ class _ConnectionManagerState extends State<ConnectionManager> {
                 seconds: _connectionAttempts >= _maxConnectionAttempts ? 3 : 1),
             () {
           if (!_connected) {
-            print('Attempting to reconnect, $_connectionAttempts');
+            logger.i('Attempting to reconnect, $_connectionAttempts');
             setState(() {
               _connectionAttempts++;
             });

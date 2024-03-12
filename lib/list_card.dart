@@ -10,12 +10,11 @@ class ListCard extends StatefulWidget {
   final double textLabelHeight;
 
   const ListCard(
-      {Key? key,
+      {super.key,
       required this.browseItem,
       this.onTap,
       this.index,
-      this.textLabelHeight = 64.0})
-      : super(key: key);
+      this.textLabelHeight = 64.0});
 
   @override
   State<ListCard> createState() => _ListCardState();

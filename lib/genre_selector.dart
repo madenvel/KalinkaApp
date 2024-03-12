@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:rpi_music/data_provider.dart';
 
 class GenreSelector extends StatelessWidget {
-  const GenreSelector({Key? key}) : super(key: key);
+  const GenreSelector({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -10,14 +10,13 @@ class MultiList extends StatelessWidget {
   final int horizontalItemCount;
 
   const MultiList(
-      {Key? key,
+      {super.key,
       required this.itemBuilder,
       required this.itemCount,
       required this.horizontalItemCount,
       this.horizontalSeparatorBuilder,
       this.verticalSeparatorBuilder,
-      this.footerBuilder})
-      : super(key: key);
+      this.footerBuilder});
 
   @override
   Widget build(BuildContext context) {

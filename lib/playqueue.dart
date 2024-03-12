@@ -9,7 +9,7 @@ import 'data_model.dart';
 import 'soundwave.dart';
 
 class PlayQueue extends StatefulWidget {
-  const PlayQueue({Key? key}) : super(key: key);
+  const PlayQueue({super.key});
 
   @override
   State<PlayQueue> createState() => _PlayQueueState();

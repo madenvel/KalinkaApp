@@ -9,7 +9,7 @@ import 'data_model.dart';
 import 'data_provider.dart';
 
 class NowPlaying extends StatefulWidget {
-  const NowPlaying({Key? key}) : super(key: key);
+  const NowPlaying({super.key});
 
   @override
   State<NowPlaying> createState() => _NowPlayingState();

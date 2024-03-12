@@ -11,7 +11,7 @@ class SettingsTab extends StatefulWidget {
       {super.key, this.expandSection = -1, this.onCloseRequested});
 
   @override
-  _SettingsTabState createState() => _SettingsTabState();
+  State<SettingsTab> createState() => _SettingsTabState();
 }
 
 class _SettingsTabState extends State<SettingsTab> {

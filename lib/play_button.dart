@@ -8,9 +8,9 @@ class PlayButton extends StatelessWidget {
   final double size;
 
   const PlayButton({
-    Key? key,
+    super.key,
     this.size = 36.0,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
