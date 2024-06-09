@@ -56,7 +56,6 @@ class PlayButton extends StatelessWidget {
               case PlayerStateType.error:
                 RpiPlayerProxy().play();
                 break;
-              case PlayerStateType.buffering:
               default:
                 break;
             }

@@ -44,18 +44,49 @@ extension PlayerStateTypeExtension on PlayerStateType {
   }
 }
 
+class AudioInfo {
+  int sampleRate;
+  int bitsPerSample;
+  int channels;
+  int durationMs;
+
+  AudioInfo({
+    this.sampleRate = 0,
+    this.bitsPerSample = 0,
+    this.channels = 0,
+    this.durationMs = 0,
+  });
+
+  factory AudioInfo.fromJson(Map<String, dynamic> json) => AudioInfo(
+        sampleRate: json["sample_rate"],
+        bitsPerSample: json["bits_per_sample"],
+        channels: json["channels"],
+        durationMs: json["duration_ms"],
+      );
+
+  Map<String, dynamic> toJson() => {
+        "sample_rate": sampleRate,
+        "bits_per_sample": bitsPerSample,
+        "channels": channels,
+        "duration_ms": durationMs,
+      };
+}
+
 class PlayerState {
   PlayerStateType? state;
   Track? currentTrack;
   int? index;
   int? position;
+  String? message;
+  AudioInfo? audioInfo;
 
-  PlayerState({
-    this.state,
-    this.currentTrack,
-    this.index = 0,
-    this.position = 0,
-  });
+  PlayerState(
+      {this.state,
+      this.currentTrack,
+      this.index = 0,
+      this.position = 0,
+      this.message,
+      this.audioInfo});
 
   factory PlayerState.fromJson(Map<String, dynamic> json) => PlayerState(
         state: json.containsKey('state')
@@ -66,13 +97,19 @@ class PlayerState {
             : Track.fromJson(json["current_track"]),
         index: json["index"],
         position: json["position"],
+        message: json["message"],
+        audioInfo: json["audio_info"] == null
+            ? null
+            : AudioInfo.fromJson(json["audio_info"]),
       );
 
   Map<String, dynamic> toJson() => {
         "state": state?.toValue(),
         "current_track": currentTrack?.toJson(),
         "index": index,
-        "position": position
+        "position": position,
+        "message": message,
+        "audio_info": audioInfo?.toJson(),
       };
 
   void copyFrom(PlayerState other) {
@@ -80,6 +117,8 @@ class PlayerState {
     index = other.index ?? index;
     state = other.state ?? state;
     position = other.position ?? position;
+    message = other.message ?? message;
+    audioInfo = other.audioInfo ?? audioInfo;
   }
 }
 

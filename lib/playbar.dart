@@ -28,8 +28,8 @@ class _PlaybarState extends State<Playbar> {
   double? _calculateRelativeProgress() {
     int position = context.watch<TrackPositionProvider>().position;
     PlayerState state = context.read<PlayerStateProvider>().state;
-    int duration = state.currentTrack?.duration ?? 0;
-    return duration != 0 ? position / (1000 * duration) : 0.0;
+    int duration = state.audioInfo?.durationMs ?? 0;
+    return duration != 0 ? position / duration : 0.0;
   }
 
   @override

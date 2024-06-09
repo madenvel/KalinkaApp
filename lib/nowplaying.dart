@@ -26,6 +26,7 @@ class _NowPlayingState extends State<NowPlaying> {
             alignment: Alignment.topCenter,
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               _buildImageWidget(context),
+              _buildAudioInfoWidget(context),
               const SizedBox(height: 20),
               _buildProgressBarWidget(context),
               const SizedBox(height: 10),
@@ -35,6 +36,24 @@ class _NowPlayingState extends State<NowPlaying> {
               _buildVolumeControl(context),
               const SizedBox(height: 20)
             ])));
+  }
+
+  Widget _buildAudioInfoWidget(BuildContext context) {
+    PlayerStateProvider playerStateProvider =
+        context.watch<PlayerStateProvider>();
+    double sampleRate =
+        (playerStateProvider.state.audioInfo?.sampleRate ?? 0) / 1000;
+    int bitness = playerStateProvider.state.audioInfo?.bitsPerSample ?? 0;
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'FLAC $sampleRate' 'kHz / $bitness bit',
+          style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
   }
 
   Widget _buildImageWidget(BuildContext context) {
@@ -97,16 +116,15 @@ class _NowPlayingState extends State<NowPlaying> {
 
   Widget _buildProgressBarWidget(BuildContext context) {
     int duration = context.select<PlayerStateProvider, int>((stateProvider) {
-      return stateProvider.state.currentTrack?.duration ?? 0;
+      return stateProvider.state.audioInfo?.durationMs ?? 0;
     });
     int position = context.watch<TrackPositionProvider>().position;
     return Column(children: [
-      LinearProgressIndicator(
-          value: duration != 0 ? position / (1000 * duration) : 0.0),
+      LinearProgressIndicator(value: duration != 0 ? position / duration : 0.0),
       const SizedBox(height: 8),
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
         Text(_formatDuration((position / 1000).floor())),
-        Text(_formatDuration(duration))
+        Text(_formatDuration((duration / 1000).floor()))
       ]),
     ]);
   }
@@ -174,6 +192,7 @@ class _NowPlayingState extends State<NowPlaying> {
         playIcon = Icons.play_arrow;
         break;
       case PlayerStateType.buffering:
+      case PlayerStateType.ready:
         playIcon = Icons.hourglass_empty;
         break;
       case PlayerStateType.error:
