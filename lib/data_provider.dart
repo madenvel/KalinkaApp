@@ -168,9 +168,7 @@ class TrackPositionProvider with ChangeNotifier {
   }
 
   void _setProgressTimer() {
-    if (_progressTimer != null && _progressTimer!.isActive) {
-      return;
-    }
+    _clearProgressTimer();
     _progressTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       notifyListeners();
     });
@@ -179,6 +177,7 @@ class TrackPositionProvider with ChangeNotifier {
 
   void _clearProgressTimer() {
     _progressTimer?.cancel();
+    _progressTimer = null;
     _stopwatch.stop();
     _stopwatch.reset();
   }
