@@ -2,6 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:rpi_music/connection_manager.dart';
 import 'package:provider/provider.dart';
+import 'package:rpi_music/now_playing_carousel.dart';
+import 'package:rpi_music/nowplaying.dart';
 import 'package:rpi_music/service_discovery.dart';
 import 'data_provider.dart';
 import 'discover.dart';
@@ -137,7 +139,8 @@ class _MyHomePageState extends State<MyHomePage> {
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => const SwipableTabs()));
+                                builder: (context) =>
+                                    const NowPlayingCarousel()));
                       });
                     } else {
                       return const SizedBox.shrink();
