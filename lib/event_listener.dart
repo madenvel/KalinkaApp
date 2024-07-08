@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
+import 'package:rpi_music/rpiplayer_proxy.dart';
 import 'package:uuid/uuid.dart';
 
 import 'data_model.dart';
@@ -68,6 +69,8 @@ class EventListener {
   late CancelToken _cancelToken;
   bool _isRunning = false;
   bool get isRunning => _isRunning;
+  int driftMs = 0;
+  Timer? driftCorrectionTimer;
 
   String registerCallback(Map<EventType, Function(List<dynamic>)> callbacks) {
     var uuid = const Uuid().v4();
@@ -93,12 +96,14 @@ class EventListener {
     if (_isRunning && _cancelToken.isCancelled == false) {
       _cancelToken.cancel();
     }
+    driftCorrectionTimer?.cancel();
   }
 
   void startListening(String host, int port) async {
     if (_isRunning) {
       return;
     }
+    await setupDriftCorrectionTimer();
     final String url = 'http://$host:$port/queue/events';
     logger.i('Connecting to stream: $url');
     _isRunning = true;
@@ -157,7 +162,7 @@ class EventListener {
   List<dynamic> _parseArgs(EventType eventType, List<dynamic> args) {
     switch (eventType) {
       case EventType.StateChanged:
-        return [PlayerState.fromJson(args[0])];
+        return [correctStatePosition(PlayerState.fromJson(args[0]))];
       case EventType.RequestMoreTracks:
         return [];
       case EventType.TracksAdded:
@@ -171,7 +176,10 @@ class EventListener {
       case EventType.FavoriteRemoved:
         return [FavoriteRemoved.fromJson(args[0])];
       case EventType.StateReplay:
-        return [PlayerState.fromJson(args[0]), TrackList.fromJson(args[1])];
+        return [
+          correctStatePosition(PlayerState.fromJson(args[0])),
+          TrackList.fromJson(args[1])
+        ];
       default:
         throw Exception("Invalid event arguments");
     }
@@ -185,6 +193,30 @@ class EventListener {
     for (var callback in _callbacks[eventType]!.values) {
       callback(args);
     }
+  }
+
+  Future<int> detectDrift() async {
+    final stopwatch = Stopwatch();
+    stopwatch.start();
+    await RpiPlayerProxy().getState();
+    stopwatch.stop();
+    logger.i('Latency detected: ${stopwatch.elapsedMilliseconds}ms');
+    return stopwatch.elapsedMilliseconds ~/ 2;
+  }
+
+  Future<void> setupDriftCorrectionTimer() async {
+    driftMs = await detectDrift();
+    driftCorrectionTimer =
+        Timer.periodic(const Duration(seconds: 30), (timer) async {
+      driftMs = await detectDrift();
+    });
+  }
+
+  PlayerState correctStatePosition(PlayerState state) {
+    if (state.state == PlayerStateType.playing && state.position != null) {
+      state.position = state.position! + driftMs;
+    }
+    return state;
   }
 
   static EventListener get instance => _instance;

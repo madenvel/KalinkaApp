@@ -92,8 +92,8 @@ class _ConnectionManagerState extends State<ConnectionManager> {
     _audioPlayerService.hideNotificationControls();
     _eventListener.stopListening();
     if (host.isNotEmpty && port != 0) {
-      _eventListener.startListening(host, port);
       _rpiPlayerProxy.connect(host, port);
+      _eventListener.startListening(host, port);
     }
   }
 
