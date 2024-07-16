@@ -9,7 +9,7 @@
     <application
         android:label="RPi Music"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/redberry_icon"
         android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"

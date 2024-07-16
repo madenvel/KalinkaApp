@@ -115,7 +115,7 @@ class RpiMusicService : Service(), EventCallback {
         )
 
         return Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.mipmap.redberry_icon)
             .setStyle(mediaStyle)
             .setContentIntent(pendingIntent)
             .build()
@@ -243,7 +243,7 @@ class RpiMusicService : Service(), EventCallback {
             loadBitmap(metadata.albumArtworkUri)
         } catch (e: Exception) {
             Log.e(LOGTAG, "Failed to load album artwork", e)
-            BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
+            BitmapFactory.decodeResource(resources, R.mipmap.redberry_icon)
         }
         Log.i(LOGTAG, "Finished loading bitmap")
         mediaSession!!.setMetadata(
