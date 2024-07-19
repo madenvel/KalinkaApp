@@ -33,8 +33,8 @@ class PlayButton extends StatelessWidget {
           case PlayerStateType.error:
             icon = Icons.error;
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text("Error while playing track."),
+              ScaffoldMessenger.of(context).showSnackBar( SnackBar(
+                content: Text(playerState.state.message ?? "Error while playing track."),
               ));
             });
             break;
