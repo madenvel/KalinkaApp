@@ -15,7 +15,7 @@ import io.flutter.Log
 import org.json.JSONObject
 import java.net.URI
 
-class Response(
+open class Response(
     var message: String? = null
 ) {
     companion object Factory {
@@ -26,6 +26,21 @@ class Response(
             val obj = Response()
             obj.message = "message".let { if (json.has(it)) json.getString(it) else null }
 
+            return obj
+        }
+    }
+}
+
+class SeekResponse(var message: String? = null, var positionMs: Long? = null)
+{
+    companion object Factory {
+        fun fromJson(json: JSONObject?): SeekResponse? {
+            if (json == null) {
+                return null
+            }
+            val obj = SeekResponse()
+            obj.message = "message".let { if (json.has(it)) json.getString(it) else null }
+            obj.positionMs = "position_ms".let{ if (json.has(it)) json.getLong(it) else null }
             return obj
         }
     }
@@ -72,6 +87,15 @@ class RpiPlayerProxy(
             URI(baseUrl).resolve("/queue/prev").toURL(),
             onSuccess,
             converter = { Response.fromJson(it) }
+        )
+    }
+
+    fun seekTo(positionMs: Long, onSuccess: (SeekResponse) -> Unit) {
+        asyncGetHttpRequest<SeekResponse>(
+            "PUT",
+            URI(baseUrl).resolve("/queue/current_track/seek?position_ms=$positionMs").toURL(),
+            onSuccess,
+            converter = { SeekResponse.fromJson(it) }
         )
     }
 

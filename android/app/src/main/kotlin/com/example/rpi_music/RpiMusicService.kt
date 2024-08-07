@@ -32,6 +32,7 @@ class RpiMusicService : Service(), EventCallback {
 
     private var mediaSession: MediaSession? = null
     private var isRunning = false
+    private var isSeekInProgress = false;
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate() {
@@ -88,7 +89,7 @@ class RpiMusicService : Service(), EventCallback {
 
             override fun onSkipToNext() {
                 Log.i(LOGTAG, "onSkipToNext called")
-                rpiPlayerProxy.skipToNext { }
+                rpiPlayerProxy.skipToNext {}
                 updatePlaybackState(PlaybackInfo("SKIP_TO_NEXT", 0))
             }
 
@@ -96,6 +97,19 @@ class RpiMusicService : Service(), EventCallback {
                 Log.i(LOGTAG, "onSkipToPrevious called")
                 rpiPlayerProxy.skipToPrev {}
                 updatePlaybackState(PlaybackInfo("SKIP_TO_PREV", 0))
+            }
+
+            override fun onSeekTo(pos: Long) {
+                Log.i(LOGTAG, "onSeekTo called")
+                isSeekInProgress = true
+                rpiPlayerProxy.seekTo(pos) { response ->
+                    if (response.positionMs != null && response.positionMs!! > 0) {
+                        updatePlaybackState(PlaybackInfo("SEEK_IN_PROGRESS", pos))
+                    }
+                    else {
+                        isSeekInProgress = false
+                    }
+                }
             }
         })
         mediaSession!!.setRatingType(Rating.RATING_HEART)
@@ -154,8 +168,11 @@ class RpiMusicService : Service(), EventCallback {
             dirty = true
         }
         if (newState.state != null) {
+            if (newState.state!! == "PLAYING") {
+                isSeekInProgress = false
+            }
             val progressMs =
-                if (newState.position != null) newState.position!! else mediaSession!!.controller.playbackState?.position
+                if (newState.position != null && !isSeekInProgress) newState.position!! else mediaSession!!.controller.playbackState?.position
                     ?: 0L
             val playbackInfo = PlaybackInfo(
                 newState.state!!,
@@ -203,6 +220,7 @@ class RpiMusicService : Service(), EventCallback {
             "STOPPED" -> PlaybackState.STATE_STOPPED
             "SKIP_TO_NEXT" -> PlaybackState.STATE_SKIPPING_TO_NEXT
             "SKIP_TO_PREV" -> PlaybackState.STATE_SKIPPING_TO_PREVIOUS
+            "SEEK_IN_PROGRESS" -> PlaybackState.STATE_REWINDING
             else -> PlaybackState.STATE_NONE
         }
     }
@@ -227,7 +245,8 @@ class RpiMusicService : Service(), EventCallback {
                     PlaybackState.ACTION_PLAY_PAUSE or
                             PlaybackState.ACTION_SKIP_TO_NEXT or
                             PlaybackState.ACTION_SKIP_TO_PREVIOUS or
-                            PlaybackState.ACTION_SET_RATING
+                            PlaybackState.ACTION_SET_RATING or
+                            PlaybackState.ACTION_SEEK_TO
                 )
                 .build()
         mediaSession!!.setPlaybackState(playbackState)
