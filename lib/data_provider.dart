@@ -115,7 +115,8 @@ class TrackPositionProvider with ChangeNotifier {
       EventType.StateChanged: (args) {
         PlayerState newState = args[0];
         if (newState.state != null) {
-          if (newState.position != null) {
+          if (newState.state == PlayerStateType.playing &&
+              newState.position != null) {
             _position = newState.position!;
           }
           state = newState.state!;

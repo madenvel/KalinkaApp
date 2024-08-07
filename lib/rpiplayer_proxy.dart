@@ -238,6 +238,19 @@ class RpiPlayerProxy {
     });
   }
 
+  Future<SeekStatusMessage> seek(int positionMs) {
+    final url = _buildUri(
+        '/queue/current_track/seek', {'position_ms': positionMs.toString()});
+    return client.put(url).then((response) {
+      if (response.statusCode != 200) {
+        var url = response.request?.url;
+        throw Exception('Request $response.request.url failed, url=$url');
+      }
+      return SeekStatusMessage.fromJson(
+          json.decode(utf8.decode(response.bodyBytes)));
+    });
+  }
+
   StatusMessage statusMessageFromResponse(http.Response response) {
     if (response.statusCode != 200) {
       var url = response.request?.url;

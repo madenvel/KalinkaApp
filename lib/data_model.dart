@@ -680,3 +680,24 @@ class StatusMessage {
         "message": message,
       };
 }
+
+class SeekStatusMessage extends StatusMessage {
+  final int? positionMs;
+
+  SeekStatusMessage({
+    this.positionMs,
+    super.message,
+  });
+
+  factory SeekStatusMessage.fromJson(Map<String, dynamic> json) =>
+      SeekStatusMessage(
+        positionMs: json["position_ms"],
+        message: json["message"],
+      );
+
+  @override
+  Map<String, dynamic> toJson() => {
+        "position_ms": positionMs,
+        "message": message,
+      };
+}

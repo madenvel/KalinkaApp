@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:rpi_music/favorite_button.dart';
 import 'package:rpi_music/rpiplayer_proxy.dart';
@@ -16,7 +17,35 @@ class NowPlaying extends StatefulWidget {
 }
 
 class _NowPlayingState extends State<NowPlaying> {
+  final logger = Logger();
+  bool isSeeking = false;
+  double seekValue = 0;
   _NowPlayingState();
+
+  @override
+  void initState() {
+    super.initState();
+    if (mounted) {
+      context.read<PlayerStateProvider>().addListener(streamPositionUpdated);
+    }
+  }
+
+  void streamPositionUpdated() {
+    if (mounted) {
+      setState(() {
+        final state = context.read<PlayerStateProvider>().state;
+        if (state.state == PlayerStateType.playing && state.position != null) {
+          isSeeking = false;
+        }
+      });
+    }
+  }
+
+  @override
+  void deactivate() {
+    super.deactivate();
+    context.read<GenreFilterProvider>().removeListener(streamPositionUpdated);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,10 +149,32 @@ class _NowPlayingState extends State<NowPlaying> {
     });
     int position = context.watch<TrackPositionProvider>().position;
     return Column(children: [
-      LinearProgressIndicator(value: duration != 0 ? position / duration : 0.0),
+      Slider(
+        value: isSeeking ? seekValue : position.toDouble(),
+        min: 0,
+        max: duration.toDouble(),
+        onChanged: (double value) {
+          setState(() {
+            seekValue = value.clamp(0, duration.toDouble());
+          });
+        },
+        onChangeStart: (value) => {isSeeking = true},
+        onChangeEnd: (value) {
+          logger.i('Seeking to $value');
+          RpiPlayerProxy().seek(value.toInt()).then((value) {
+            if (value.positionMs == null || value.positionMs! < 0) {
+              logger.w('Seek failed, position=${value.positionMs}');
+              setState(() {
+                isSeeking = false;
+              });
+            }
+          });
+        },
+      ),
       const SizedBox(height: 8),
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text(_formatDuration((position / 1000).floor())),
+        Text(_formatDuration(
+            ((isSeeking ? seekValue : position) / 1000).floor())),
         Text(_formatDuration((duration / 1000).floor()))
       ]),
     ]);
