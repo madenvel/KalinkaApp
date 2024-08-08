@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:rpi_music/bottom_menu.dart';
-import 'package:rpi_music/data_model.dart';
-import 'package:rpi_music/data_provider.dart';
+import 'package:kalinka/bottom_menu.dart';
+import 'package:kalinka/data_model.dart';
+import 'package:kalinka/data_provider.dart';
 
 import 'nowplaying.dart';
 import 'playqueue.dart';

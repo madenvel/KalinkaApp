@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:rpi_music/data_model.dart';
-import 'package:rpi_music/data_provider.dart';
+import 'package:kalinka/data_model.dart';
+import 'package:kalinka/data_provider.dart';
 
 class FavoriteButton extends StatelessWidget {
   final BrowseItem item;

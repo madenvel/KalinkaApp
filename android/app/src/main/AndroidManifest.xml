@@ -7,7 +7,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <application
-        android:label="RPi Music"
+        android:label="Kalinka App"
         android:name="${applicationName}"
         android:icon="@mipmap/redberry_icon"
         android:usesCleartextTraffic="true">

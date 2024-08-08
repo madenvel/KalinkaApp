@@ -4,7 +4,7 @@ import 'package:logger/logger.dart';
 class AudioPlayerService {
   final logger = Logger();
   final MethodChannel _channel =
-      const MethodChannel('com.example.rpi_music/notification_controls');
+      const MethodChannel('com.example.kalinka/notification_controls');
 
   static final AudioPlayerService _instance = AudioPlayerService._internal();
 

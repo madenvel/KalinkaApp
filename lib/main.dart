@@ -1,8 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:rpi_music/connection_manager.dart';
+import 'package:kalinka/connection_manager.dart';
 import 'package:provider/provider.dart';
-import 'package:rpi_music/service_discovery.dart';
+import 'package:kalinka/service_discovery.dart';
 import 'data_provider.dart';
 import 'discover.dart';
 import 'library.dart';
@@ -66,7 +66,7 @@ class RpiMusic extends StatelessWidget {
         ],
         child: MaterialApp(
           scrollBehavior: MyCustomScrollBehavior(),
-          title: 'Rpi Music',
+          title: 'Kalinka App',
           theme: ThemeData(
               brightness: Brightness.light,
               useMaterial3: true,

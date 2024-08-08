@@ -2,12 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:rpi_music/bottom_menu.dart';
-import 'package:rpi_music/custom_list_tile.dart';
-import 'package:rpi_music/data_provider.dart';
+import 'package:kalinka/bottom_menu.dart';
+import 'package:kalinka/custom_list_tile.dart';
+import 'package:kalinka/data_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
-import 'package:rpi_music/rpiplayer_proxy.dart';
+import 'package:kalinka/rpiplayer_proxy.dart';
 
 import 'browse.dart';
 import 'data_model.dart';

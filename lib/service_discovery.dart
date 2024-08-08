@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:bonsoir/bonsoir.dart';
 
 class ServiceDiscoveryDataProvider with ChangeNotifier {
-  final String type = '_rpiplayer._tcp';
+  final String type = '_kalinkaplayer._tcp';
 
   late BonsoirDiscovery _discovery;
 

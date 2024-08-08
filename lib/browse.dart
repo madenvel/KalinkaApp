@@ -3,15 +3,15 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:rpi_music/bottom_menu.dart';
-import 'package:rpi_music/custom_cache_manager.dart';
-import 'package:rpi_music/custom_list_tile.dart';
-import 'package:rpi_music/data_provider.dart';
-import 'package:rpi_music/favorite_button.dart';
-import 'package:rpi_music/genre_select_filter.dart';
-import 'package:rpi_music/list_card.dart';
-import 'package:rpi_music/multilist.dart';
-import 'package:rpi_music/rpiplayer_proxy.dart';
+import 'package:kalinka/bottom_menu.dart';
+import 'package:kalinka/custom_cache_manager.dart';
+import 'package:kalinka/custom_list_tile.dart';
+import 'package:kalinka/data_provider.dart';
+import 'package:kalinka/favorite_button.dart';
+import 'package:kalinka/genre_select_filter.dart';
+import 'package:kalinka/list_card.dart';
+import 'package:kalinka/multilist.dart';
+import 'package:kalinka/rpiplayer_proxy.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'data_model.dart';
 

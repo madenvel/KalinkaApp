@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:rpi_music/data_provider.dart';
+import 'package:kalinka/data_provider.dart';
 
 class GenreSelector extends StatelessWidget {
   const GenreSelector({super.key});

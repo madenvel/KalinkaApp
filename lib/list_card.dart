@@ -1,7 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:rpi_music/custom_cache_manager.dart';
-import 'package:rpi_music/data_model.dart';
+import 'package:kalinka/custom_cache_manager.dart';
+import 'package:kalinka/data_model.dart';
 
 class ListCard extends StatefulWidget {
   final BrowseItem browseItem;

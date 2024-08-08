@@ -5,18 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "rpi_music",
+            "name": "kalinka",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "rpi_music (profile mode)",
+            "name": "kalinka (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "rpi_music (release mode)",
+            "name": "kalinka (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"

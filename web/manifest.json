@@ -1,6 +1,6 @@
 {
-    "name": "rpi_music",
-    "short_name": "rpi_music",
+    "name": "kalinka",
+    "short_name": "kalinka",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

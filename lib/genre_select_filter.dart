@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:rpi_music/data_provider.dart';
-import 'package:rpi_music/genre_selector.dart';
+import 'package:kalinka/data_provider.dart';
+import 'package:kalinka/genre_selector.dart';
 
 class GenreFilterButton extends StatelessWidget {
   const GenreFilterButton({super.key});

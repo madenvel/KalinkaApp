@@ -1,4 +1,4 @@
-# rpi_music
+# kalinka
 
 A new Flutter project.
 

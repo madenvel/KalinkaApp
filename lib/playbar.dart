@@ -1,9 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:rpi_music/fg_service.dart';
-import 'package:rpi_music/play_button.dart';
-import 'package:rpi_music/rpiplayer_proxy.dart';
+import 'package:kalinka/fg_service.dart';
+import 'package:kalinka/play_button.dart';
+import 'package:kalinka/rpiplayer_proxy.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
 import 'custom_cache_manager.dart';

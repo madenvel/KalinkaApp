@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
-import 'package:rpi_music/data_provider.dart';
-import 'package:rpi_music/event_listener.dart';
-import 'package:rpi_music/fg_service.dart';
-import 'package:rpi_music/rpiplayer_proxy.dart';
-import 'package:rpi_music/settings_tab.dart';
+import 'package:kalinka/data_provider.dart';
+import 'package:kalinka/event_listener.dart';
+import 'package:kalinka/fg_service.dart';
+import 'package:kalinka/rpiplayer_proxy.dart';
+import 'package:kalinka/settings_tab.dart';
 
 class ConnectionManager extends StatefulWidget {
   final Widget child;

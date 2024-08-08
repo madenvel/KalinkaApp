@@ -1,4 +1,4 @@
-package com.example.rpi_music
+package com.example.kalinka
 
 import android.content.Intent
 import android.os.SystemClock
@@ -25,7 +25,7 @@ data class Metadata(
 
 class MainActivity : FlutterActivity() {
     private val LOGTAG = "MainActivity"
-    private val CHANNEL = "com.example.rpi_music/notification_controls"
+    private val CHANNEL = "com.example.kalinka/notification_controls"
     private lateinit var methodChannel: MethodChannel
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

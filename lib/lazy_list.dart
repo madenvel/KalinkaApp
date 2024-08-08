@@ -1,4 +1,4 @@
-import 'package:rpi_music/data_model.dart';
+import 'package:kalinka/data_model.dart';
 
 class LazyLoadingList {
   int _totalItems = 0;

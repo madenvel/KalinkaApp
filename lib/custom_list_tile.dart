@@ -1,8 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:rpi_music/data_provider.dart';
-import 'package:rpi_music/soundwave.dart';
+import 'package:kalinka/data_provider.dart';
+import 'package:kalinka/soundwave.dart';
 import 'custom_cache_manager.dart';
 import 'data_model.dart';
 

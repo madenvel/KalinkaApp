@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:rpi_music/data_provider.dart';
-import 'package:rpi_music/service_discovery.dart';
+import 'package:kalinka/data_provider.dart';
+import 'package:kalinka/service_discovery.dart';
 
 class SettingsTab extends StatefulWidget {
   final int expandSection;

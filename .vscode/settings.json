@@ -1,5 +1,5 @@
 {
-    "cmake.sourceDirectory": "C:/Source/rpi_music/linux",
+    "cmake.sourceDirectory": "/home/envel/Source/RpiMusic/linux",
     "editor.tokenColorCustomizations": {
         "[*Light*]": {
             "textMateRules": [

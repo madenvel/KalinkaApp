@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:rpi_music/data_model.dart';
-import 'package:rpi_music/data_provider.dart';
-import 'package:rpi_music/rpiplayer_proxy.dart';
+import 'package:kalinka/data_model.dart';
+import 'package:kalinka/data_provider.dart';
+import 'package:kalinka/rpiplayer_proxy.dart';
 
 class PlayButton extends StatelessWidget {
   final double size;
@@ -33,8 +33,9 @@ class PlayButton extends StatelessWidget {
           case PlayerStateType.error:
             icon = Icons.error;
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              ScaffoldMessenger.of(context).showSnackBar( SnackBar(
-                content: Text(playerState.state.message ?? "Error while playing track."),
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(
+                    playerState.state.message ?? "Error while playing track."),
               ));
             });
             break;

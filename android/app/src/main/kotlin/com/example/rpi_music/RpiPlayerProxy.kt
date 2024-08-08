@@ -1,4 +1,4 @@
-package com.example.rpi_music
+package com.example.kalinka
 
 import android.os.Build
 import androidx.annotation.RequiresApi

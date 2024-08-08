@@ -2,8 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
-import 'package:rpi_music/favorite_button.dart';
-import 'package:rpi_music/rpiplayer_proxy.dart';
+import 'package:kalinka/favorite_button.dart';
+import 'package:kalinka/rpiplayer_proxy.dart';
 
 import 'custom_cache_manager.dart';
 import 'data_model.dart';

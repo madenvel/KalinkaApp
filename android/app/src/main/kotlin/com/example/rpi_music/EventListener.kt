@@ -1,4 +1,4 @@
-package com.example.rpi_music
+package com.example.kalinka
 
 import io.flutter.Log
 import org.json.JSONObject
