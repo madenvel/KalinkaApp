@@ -6,12 +6,14 @@ This project is a flutter application for multiple platforms (Windows, Linux, An
 
 **Make sure you build and install and run [Kalinka Player](https://github.com/madenvel/KalinkaPlayer) (backend) before proceeding with the next steps**.
 
-A pre-built APK for Android is provided. To install the app to your phone you need:
-1. Install [Android Platform Tools](https://developer.android.com/tools/releases/platform-tools)
+
+1. [Install flutter](https://docs.flutter.dev/get-started/install)
 2. Connect your phone to the PC and enable developer mode
-3. Download the package and run the command:
+3. Clone the repo
 ```
-adb install <apk_name>
+cd KalinkaApp
+flutter build apk --release
+adb install build/app/outputs/flutter-apk/app-release.apk
 ```
 ## First run
 The application will show connection screen on the first start which will allow you to choose the machine where the server is running.
