@@ -2,7 +2,12 @@
 
 This project is a flutter application for multiple platforms (Windows, Linux, Android, iPhone) that allows you to control the backend ([Kalinka Audio Player](https://github.com/madenvel/KalinkaPlayer)) running on a device in your network.
 
-## Installation of the APK
+## Installing the app
+You will require android platform tools (adb) and your phone connected in developer's mode.
+1. Download the latest version from [pre-built](https://github.com/madenvel/KalinkaPrebuilt/tree/main/Kalinka%20App/android_arm64)
+2. Connect your phone and do `adb install <apk name>`
+
+## Building a package for Android
 
 **Make sure you build and install and run [Kalinka Player](https://github.com/madenvel/KalinkaPlayer) (backend) before proceeding with the next steps**.
 
