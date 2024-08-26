@@ -27,27 +27,29 @@ class FavoriteButton extends StatelessWidget {
         .ids
         .contains(item.id);
 
-    return MaterialButton(
+    return IconButton(
       onPressed: () {
         if (isFavorite) {
-          favoritesProvider.remove(item);
+          favoritesProvider.remove(item).catchError((error) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('Failed to remove from favorites, $error'),
+              duration: const Duration(seconds: 3),
+            ));
+          });
         } else {
-          favoritesProvider.add(item);
+          favoritesProvider.add(item).catchError((error) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('Failed to add to favorites, $error'),
+              duration: const Duration(seconds: 3),
+            ));
+          });
         }
       },
-      color: Theme.of(context).indicatorColor,
-      splashColor: Colors.white,
-      padding: const EdgeInsets.all(8),
-      shape: const CircleBorder(),
-      child: Padding(
-          padding: EdgeInsets.all(size / 5),
-          child: Icon(
-            isFavorite ? Icons.favorite : Icons.favorite_outline,
-            color: isFavorite
-                ? Colors.red
-                : Theme.of(context).scaffoldBackgroundColor,
-            size: size,
-          )),
+      icon: Icon(
+        isFavorite ? Icons.favorite : Icons.favorite_border,
+        color: isFavorite ? Colors.red : null,
+        size: size,
+      ),
     );
   }
 }

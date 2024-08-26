@@ -284,8 +284,16 @@ class UserFavoritesProvider with ChangeNotifier {
         SearchTypeExtension.fromStringValue(item.browseType);
     _favorites[searchType]!.ids.add(item.id);
     _favorites[searchType]!.items.insert(0, item);
-    await RpiPlayerProxy().addFavorite(searchType, item.id);
+    Future<void> future = RpiPlayerProxy().addFavorite(searchType, item.id);
     notifyListeners();
+    return future.catchError((error) {
+      logger.e('Error adding favorite: $error');
+      _favorites[searchType]!.ids.remove(item.id);
+      _favorites[searchType]!
+          .items
+          .removeWhere((element) => element.id == item.id);
+      throw error;
+    });
   }
 
   Future<void> remove(BrowseItem item) async {
@@ -295,8 +303,14 @@ class UserFavoritesProvider with ChangeNotifier {
     _favorites[searchType]!
         .items
         .removeWhere((element) => element.id == item.id);
-    await RpiPlayerProxy().removeFavorite(searchType, item.id);
+    Future<void> future = RpiPlayerProxy().removeFavorite(searchType, item.id);
     notifyListeners();
+    return future.catchError((error) {
+      logger.e('Error removing favorite: $error');
+      _favorites[searchType]!.ids.add(item.id);
+      _favorites[searchType]!.items.insert(0, item);
+      throw error;
+    });
   }
 
   bool isFavorite(BrowseItem item) {
