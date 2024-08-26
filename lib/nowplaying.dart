@@ -57,6 +57,7 @@ class _NowPlayingState extends State<NowPlaying> {
         _buildTrackInfoWidget(context),
         const SizedBox(height: 16),
         _buildAudioInfoWidget(context),
+        const SizedBox(height: 8),
         _buildProgressBarWidget(context),
         _buildButtonsBar(context),
         _buildVolumeControl(context)
@@ -93,7 +94,7 @@ class _NowPlayingState extends State<NowPlaying> {
       children: [
         IconButton(
             icon: const Icon(Icons.playlist_add),
-            iconSize: 48,
+            iconSize: 32,
             onPressed: () {}),
         const Spacer(),
         Container(
