@@ -53,8 +53,10 @@ class _NowPlayingState extends State<NowPlaying> {
       padding: const EdgeInsets.only(left: 16.0, right: 16.0),
       child: Column(children: [
         _buildAlbumArtWidget(context),
-        const SizedBox(height: 20),
-        _buildTrackInfoWidget(context),
+        const SizedBox(height: 16),
+        Container(
+          child: _buildTrackInfoWidget(context),
+        ),
         const SizedBox(height: 16),
         _buildAudioInfoWidget(context),
         const SizedBox(height: 8),
