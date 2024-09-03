@@ -133,6 +133,7 @@ class _BrowsePage extends State<BrowsePage> {
 
   @override
   Widget build(BuildContext context) {
+    var statusBarHeight = MediaQuery.of(context).padding.top;
     return Scaffold(
         extendBodyBehindAppBar: true,
         extendBody: true,
@@ -150,7 +151,10 @@ class _BrowsePage extends State<BrowsePage> {
                   })
           ],
         ),
-        body: _buildBrowsePage(context));
+        body: Padding(
+          padding: EdgeInsets.only(top: statusBarHeight),
+          child: _buildBrowsePage(context),
+        ));
   }
 
   void _showDrawer(BuildContext context, BrowseItem browseItem) {
