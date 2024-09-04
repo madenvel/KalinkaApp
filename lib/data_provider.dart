@@ -57,7 +57,7 @@ class TrackListProvider with ChangeNotifier {
 }
 
 class PlayerStateProvider with ChangeNotifier {
-  PlayerState _state = PlayerState(state: PlayerStateType.idle);
+  PlayerState _state = PlayerState(state: PlayerStateType.stopped);
   bool _isLoading = true;
   late String subscriptionId;
 
@@ -66,7 +66,7 @@ class PlayerStateProvider with ChangeNotifier {
   PlayerStateProvider() {
     _eventListener.registerCallback({
       EventType.NetworkDisconnected: (_) {
-        _state = PlayerState(state: PlayerStateType.idle);
+        _state = PlayerState(state: PlayerStateType.stopped);
         _isLoading = true;
         notifyListeners();
       },
@@ -151,6 +151,11 @@ class TrackPositionProvider with ChangeNotifier {
         } else {
           _clearProgressTimer();
         }
+        notifyListeners();
+      },
+      EventType.NetworkDisconnected: (_) {
+        _position = 0;
+        _clearProgressTimer();
         notifyListeners();
       }
     });

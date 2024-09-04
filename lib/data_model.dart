@@ -1,12 +1,8 @@
-enum PlayerStateType { idle, ready, stopped, playing, paused, buffering, error }
+enum PlayerStateType { stopped, playing, paused, buffering, error }
 
 extension PlayerStateTypeExtension on PlayerStateType {
   String toValue() {
     switch (this) {
-      case PlayerStateType.idle:
-        return 'IDLE';
-      case PlayerStateType.ready:
-        return 'READY';
       case PlayerStateType.stopped:
         return 'STOPPED';
       case PlayerStateType.playing:
@@ -24,10 +20,6 @@ extension PlayerStateTypeExtension on PlayerStateType {
 
   static PlayerStateType fromValue(String value) {
     switch (value) {
-      case 'IDLE':
-        return PlayerStateType.idle;
-      case 'READY':
-        return PlayerStateType.ready;
       case 'STOPPED':
         return PlayerStateType.stopped;
       case 'PLAYING':

@@ -243,7 +243,6 @@ class _NowPlayingState extends State<NowPlaying> {
         playIcon = Icons.play_arrow;
         break;
       case PlayerStateType.buffering:
-      case PlayerStateType.ready:
         playIcon = Icons.hourglass_empty;
         break;
       case PlayerStateType.error:

@@ -27,7 +27,6 @@ class PlayButton extends StatelessWidget {
             icon = Icons.play_arrow;
             break;
           case PlayerStateType.buffering:
-          case PlayerStateType.ready:
             icon = Icons.hourglass_empty;
             break;
           case PlayerStateType.error:
@@ -53,7 +52,6 @@ class PlayButton extends StatelessWidget {
                 RpiPlayerProxy().pause(paused: false);
                 break;
               case PlayerStateType.stopped:
-              case PlayerStateType.idle:
               case PlayerStateType.error:
                 RpiPlayerProxy().play();
                 break;
