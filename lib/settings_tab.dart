@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kalinka/version.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/service_discovery.dart';
@@ -75,6 +76,23 @@ class _SettingsTabState extends State<SettingsTab> {
               buildDiscoverySection(context),
               const Divider(),
               buildManualOptionSection(context)
+            ]),
+            canTapOnHeader: true),
+        ExpansionPanelRadio(
+            value: 1,
+            headerBuilder: (BuildContext context, bool isExpanded) {
+              return const ListTile(
+                title: Text('About'),
+              );
+            },
+            body: const Column(children: [
+              Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: EdgeInsets.only(left: 32),
+                    child: Text('Version: $appVersion'),
+                  )),
+              SizedBox(height: 16)
             ]),
             canTapOnHeader: true),
       ],
