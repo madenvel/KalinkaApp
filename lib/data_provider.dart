@@ -522,8 +522,16 @@ class VolumeControlProvider with ChangeNotifier {
           }
           notifyListeners();
         }
-      }
+      },
+      EventType.NetworkConnected: (_) {
+        _getVolume();
+      },
     });
+
+    return _getVolume();
+  }
+
+  Future<void> _getVolume() {
     return RpiPlayerProxy().getVolume().then((Volume value) {
       _currentVolume = value.currentVolume.toDouble();
       _realVolume = value.currentVolume;
