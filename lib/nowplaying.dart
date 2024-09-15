@@ -65,7 +65,6 @@ class _NowPlayingState extends State<NowPlaying> {
         _buildVolumeControl(context)
       ]),
     );
-    ;
   }
 
   BrowseItem? _getBrowseItem(
@@ -167,7 +166,9 @@ class _NowPlayingState extends State<NowPlaying> {
             trackHeight: 3,
           ),
           child: Slider(
-            value: isSeeking ? seekValue : position.toDouble(),
+            value: isSeeking
+                ? seekValue
+                : (duration >= position ? position.toDouble() : 0),
             min: 0,
             max: duration.toDouble(),
             onChanged: (double value) {
