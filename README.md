@@ -4,7 +4,7 @@ This project is a flutter application for multiple platforms (Windows, Linux, An
 
 ## Installing the app
 You will require android platform tools (adb) and your phone connected in developer's mode.
-1. Download the latest version from [pre-built](https://github.com/madenvel/KalinkaPrebuilt/tree/main/Kalinka%20App/android_arm64)
+1. Download the latest version from [releases](https://github.com/madenvel/KalinkaApp/releases) page.
 2. Connect your phone and do `adb install <apk name>`
 
 ## Building a package for Android
