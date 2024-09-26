@@ -83,12 +83,14 @@ class BottomMenu extends StatelessWidget {
                   RpiPlayerProxy()
                       .getMetadata('/album/${browseItem.track!.album!.id}')
                       .then((BrowseItem item) {
-                    Navigator.pop(context);
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                BrowsePage(parentItem: item)));
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  BrowsePage(parentItem: item)));
+                    }
                   });
                 })
             : const SizedBox.shrink(),
@@ -100,12 +102,14 @@ class BottomMenu extends StatelessWidget {
                   RpiPlayerProxy()
                       .getMetadata('/artist/${browseItem.album!.artist!.id}')
                       .then((BrowseItem item) {
-                    Navigator.pop(context);
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                BrowsePage(parentItem: item)));
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  BrowsePage(parentItem: item)));
+                    }
                   });
                 })
             : const SizedBox.shrink(),

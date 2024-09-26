@@ -22,7 +22,8 @@ class Playbar extends StatefulWidget {
 class _PlaybarState extends State<Playbar> {
   _PlaybarState();
 
-  final CarouselController _carouselController = CarouselController();
+  final CarouselSliderController _carouselController =
+      CarouselSliderController();
   int _currentPageIndex = 0;
 
   double? _calculateRelativeProgress() {

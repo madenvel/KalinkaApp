@@ -31,7 +31,7 @@ class _DiscoverState extends State<Discover> {
     MediaQuery.of(context).size;
     return PopScope(
         canPop: false,
-        onPopInvoked: (bool didPop) {
+        onPopInvokedWithResult: (bool didPop, _) {
           if (didPop) {
             return;
           }

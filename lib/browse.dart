@@ -100,12 +100,15 @@ class _BrowsePage extends State<BrowsePage> {
         });
       }
     }).catchError((obj) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Error while sending request to server"),
-      ));
-      setState(() {
-        _loadInProgress = false;
-      });
+      if (context.mounted) {
+        // ignore: use_build_context_synchronously
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Error while sending request to server"),
+        ));
+        setState(() {
+          _loadInProgress = false;
+        });
+      }
     });
   }
 

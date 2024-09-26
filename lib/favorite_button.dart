@@ -31,17 +31,21 @@ class FavoriteButton extends StatelessWidget {
       onPressed: () {
         if (isFavorite) {
           favoritesProvider.remove(item).catchError((error) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('Failed to remove from favorites, $error'),
-              duration: const Duration(seconds: 3),
-            ));
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('Failed to remove from favorites, $error'),
+                duration: const Duration(seconds: 3),
+              ));
+            }
           });
         } else {
           favoritesProvider.add(item).catchError((error) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('Failed to add to favorites, $error'),
-              duration: const Duration(seconds: 3),
-            ));
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('Failed to add to favorites, $error'),
+                duration: const Duration(seconds: 3),
+              ));
+            }
           });
         }
       },

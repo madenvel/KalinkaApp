@@ -28,7 +28,7 @@ class _LibraryState extends State<Library> {
   Widget build(BuildContext context) {
     return PopScope(
         canPop: false,
-        onPopInvoked: (bool didPop) {
+        onPopInvokedWithResult: (bool didPop, _) {
           if (didPop) {
             return;
           }
