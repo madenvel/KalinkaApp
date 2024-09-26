@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:kalinka/version.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/service_discovery.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class SettingsTab extends StatefulWidget {
   final int expandSection;
@@ -21,6 +21,9 @@ class _SettingsTabState extends State<SettingsTab> {
 
   int expandedSection = -1;
 
+  String _appVersion = '...';
+  String _appBuildNumber = '';
+
   @override
   void initState() {
     super.initState();
@@ -29,6 +32,7 @@ class _SettingsTabState extends State<SettingsTab> {
     final port = context.read<ConnectionSettingsProvider>().port;
     _portController.text = port == 0 ? '' : port.toString();
     expandedSection = widget.expandSection;
+    _initPackageInfo();
   }
 
   @override
@@ -52,6 +56,14 @@ class _SettingsTabState extends State<SettingsTab> {
         ),
         body:
             SingleChildScrollView(child: Container(child: buildBody(context))));
+  }
+
+  Future<void> _initPackageInfo() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _appVersion = packageInfo.version;
+      _appBuildNumber = packageInfo.buildNumber;
+    });
   }
 
   Widget buildBody(BuildContext context) {
@@ -85,14 +97,14 @@ class _SettingsTabState extends State<SettingsTab> {
                 title: Text('About'),
               );
             },
-            body: const Column(children: [
+            body: Column(children: [
               Align(
                   alignment: Alignment.centerLeft,
                   child: Padding(
-                    padding: EdgeInsets.only(left: 32),
-                    child: Text('Version: $appVersion'),
+                    padding: const EdgeInsets.only(left: 32),
+                    child: Text('Version: $_appVersion build $_appBuildNumber'),
                   )),
-              SizedBox(height: 16)
+              const SizedBox(height: 16)
             ]),
             canTapOnHeader: true),
       ],
