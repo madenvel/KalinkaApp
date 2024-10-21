@@ -45,7 +45,7 @@ class CustomListTile extends StatelessWidget {
 
   String _formatDuration(int duration) {
     int hours = duration ~/ 3600;
-    int minutes = duration ~/ 60;
+    int minutes = (duration % 3600) ~/ 60;
     int seconds = duration % 60;
     if (hours == 0) {
       return "$minutes:${seconds.toString().padLeft(2, '0')}";
