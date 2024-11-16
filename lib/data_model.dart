@@ -64,6 +64,30 @@ class AudioInfo {
       };
 }
 
+class PlaybackMode {
+  final bool repeatAll;
+  final bool repeatSingle;
+  final bool shuffle;
+
+  PlaybackMode({
+    required this.repeatAll,
+    required this.repeatSingle,
+    required this.shuffle,
+  });
+
+  factory PlaybackMode.fromJson(Map<String, dynamic> json) => PlaybackMode(
+        repeatAll: json["repeat_all"],
+        repeatSingle: json["repeat_single"],
+        shuffle: json["shuffle"],
+      );
+
+  Map<String, dynamic> toJson() => {
+        "repeat_all": repeatAll,
+        "repeat_single": repeatSingle,
+        "shuffle": shuffle,
+      };
+}
+
 class PlayerState {
   PlayerStateType? state;
   Track? currentTrack;

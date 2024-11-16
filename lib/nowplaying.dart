@@ -231,6 +231,9 @@ class _NowPlayingState extends State<NowPlaying> {
         context.select<PlayerStateProvider, PlayerStateType?>(
             (stateProvider) => stateProvider.state.state);
 
+    PlaybackModeProvider playbackModeProvider =
+        context.watch<PlaybackModeProvider>();
+
     if (state == null) {
       return const SizedBox.shrink();
     }
@@ -253,34 +256,69 @@ class _NowPlayingState extends State<NowPlaying> {
         playIcon = Icons.question_mark;
         break;
     }
-    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      IconButton(
-          icon: const Icon(Icons.fast_rewind),
-          iconSize: 36,
-          onPressed: () {
-            RpiPlayerProxy().previous();
-          }),
-      IconButton(
-          icon: Icon(playIcon),
-          iconSize: 78,
-          onPressed: () {
-            switch (state) {
-              case PlayerStateType.playing:
-                RpiPlayerProxy().pause(paused: true);
-                break;
-              case PlayerStateType.paused:
-                RpiPlayerProxy().pause(paused: false);
-              default:
-                RpiPlayerProxy().play();
-            }
-          }),
-      IconButton(
-          icon: const Icon(Icons.fast_forward),
-          iconSize: 36,
-          onPressed: () {
-            RpiPlayerProxy().next();
-          }),
+    return Stack(alignment: Alignment.center, children: [
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        IconButton(
+            icon: const Icon(Icons.fast_rewind),
+            iconSize: 36,
+            onPressed: () {
+              RpiPlayerProxy().previous();
+            }),
+        IconButton(
+            icon: Icon(playIcon),
+            iconSize: 78,
+            onPressed: () {
+              switch (state) {
+                case PlayerStateType.playing:
+                  RpiPlayerProxy().pause(paused: true);
+                  break;
+                case PlayerStateType.paused:
+                  RpiPlayerProxy().pause(paused: false);
+                default:
+                  RpiPlayerProxy().play();
+              }
+            }),
+        IconButton(
+            icon: const Icon(Icons.fast_forward),
+            iconSize: 36,
+            onPressed: () {
+              RpiPlayerProxy().next();
+            }),
+      ]),
+      Positioned(
+          right: 0,
+          child: IconButton(
+            icon: Icon(_getRepeatIcon(playbackModeProvider)),
+            iconSize: 36,
+            onPressed: () {
+              var repeatSingle = playbackModeProvider.repeatSingle;
+              var repeatAll = playbackModeProvider.repeatAll;
+              if (!repeatSingle && !repeatAll) {
+                repeatAll = true;
+              } else if (repeatAll && !repeatSingle) {
+                repeatAll = false;
+                repeatSingle = true;
+              } else {
+                repeatAll = false;
+                repeatSingle = false;
+              }
+              RpiPlayerProxy().setPlaybackMode(
+                  repeatOne: repeatSingle, repeatAll: repeatAll);
+            },
+          ))
     ]);
+  }
+
+  IconData _getRepeatIcon(PlaybackModeProvider provider) {
+    if (provider.repeatSingle) {
+      return Icons.repeat_one;
+    }
+
+    if (provider.repeatAll) {
+      return Icons.repeat;
+    }
+
+    return Icons.arrow_right_alt;
   }
 
   _buildAlbumArtWidget(BuildContext context) {

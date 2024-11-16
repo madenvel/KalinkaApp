@@ -117,6 +117,19 @@ class RpiPlayerProxy {
     });
   }
 
+  Future<StatusMessage> setPlaybackMode(
+      {bool? repeatOne, bool? repeatAll, bool? shuffle}) async {
+    final url = _buildUri('/queue/mode', {
+      if (repeatOne != null) 'repeat_single': repeatOne.toString(),
+      if (repeatAll != null) 'repeat_all': repeatAll.toString(),
+      if (shuffle != null) 'shuffle': shuffle.toString()
+    });
+
+    return client.put(url).then((response) {
+      return statusMessageFromResponse(response);
+    });
+  }
+
   Future<BrowseItemsList> search(SearchType queryType, String query,
       {int offset = 0, int limit = 30}) async {
     final url = _buildUri('/search/${queryType.toStringValue()}/$query',
