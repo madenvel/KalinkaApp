@@ -4,7 +4,7 @@ import 'package:kalinka/browse.dart';
 import 'package:kalinka/custom_list_tile.dart';
 import 'package:kalinka/data_model.dart';
 import 'package:kalinka/data_provider.dart';
-import 'package:kalinka/rpiplayer_proxy.dart';
+import 'package:kalinka/kalinkaplayer_proxy.dart';
 
 class BottomMenu extends StatelessWidget {
   final BrowseItem browseItem;
@@ -34,10 +34,10 @@ class BottomMenu extends StatelessWidget {
                 title: const Text('Play'),
                 leading: const Icon(Icons.play_arrow),
                 onTap: () {
-                  RpiPlayerProxy().clear().then((_) {
-                    return RpiPlayerProxy().add(browseItem.url);
+                  KalinkaPlayerProxy().clear().then((_) {
+                    return KalinkaPlayerProxy().add(browseItem.url);
                   }).then((_) {
-                    return RpiPlayerProxy().play();
+                    return KalinkaPlayerProxy().play();
                   });
                   Navigator.pop(context);
                 },
@@ -48,7 +48,7 @@ class BottomMenu extends StatelessWidget {
                 title: const Text('Add to queue'),
                 leading: const Icon(Icons.queue_music),
                 onTap: () {
-                  RpiPlayerProxy().add(browseItem.url);
+                  KalinkaPlayerProxy().add(browseItem.url);
                   Navigator.pop(context);
                 })
             : const SizedBox.shrink(),
@@ -80,7 +80,7 @@ class BottomMenu extends StatelessWidget {
                 title: const Text('More from this Album'),
                 leading: const Icon(Icons.album),
                 onTap: () {
-                  RpiPlayerProxy()
+                  KalinkaPlayerProxy()
                       .getMetadata('/album/${browseItem.track!.album!.id}')
                       .then((BrowseItem item) {
                     if (context.mounted) {
@@ -99,7 +99,7 @@ class BottomMenu extends StatelessWidget {
                 title: const Text('More from this Artist'),
                 leading: const Icon(Icons.album),
                 onTap: () {
-                  RpiPlayerProxy()
+                  KalinkaPlayerProxy()
                       .getMetadata('/artist/${browseItem.album!.artist!.id}')
                       .then((BrowseItem item) {
                     if (context.mounted) {

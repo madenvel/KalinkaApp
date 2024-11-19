@@ -21,6 +21,7 @@ enum EventType {
   FavoriteAdded,
   FavoriteRemoved,
   StateReplay,
+  PlaybackModeChanged,
 }
 
 extension EventTypeExtension on EventType {
@@ -48,6 +49,8 @@ extension EventTypeExtension on EventType {
         return "favorite_removed";
       case EventType.StateReplay:
         return "state_replay";
+      case EventType.PlaybackModeChanged:
+        return "playback_mode_changed";
       default:
         throw Exception("Invalid event type = $this");
     }
@@ -171,7 +174,13 @@ class EventListener {
       case EventType.FavoriteRemoved:
         return [FavoriteRemoved.fromJson(args[0])];
       case EventType.StateReplay:
-        return [PlayerState.fromJson(args[0]), TrackList.fromJson(args[1])];
+        return [
+          PlayerState.fromJson(args[0]),
+          TrackList.fromJson(args[1]),
+          args.length > 2 ? PlaybackMode.fromJson(args[2]) : null
+        ];
+      case EventType.PlaybackModeChanged:
+        return [PlaybackMode.fromJson(args[0])];
       default:
         throw Exception("Invalid event arguments");
     }

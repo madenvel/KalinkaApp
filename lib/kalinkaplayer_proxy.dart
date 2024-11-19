@@ -2,14 +2,14 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'data_model.dart';
 
-class RpiPlayerProxy {
-  static final RpiPlayerProxy _instance = RpiPlayerProxy._internal();
+class KalinkaPlayerProxy {
+  static final KalinkaPlayerProxy _instance = KalinkaPlayerProxy._internal();
 
-  factory RpiPlayerProxy() {
+  factory KalinkaPlayerProxy() {
     return _instance;
   }
 
-  RpiPlayerProxy._internal();
+  KalinkaPlayerProxy._internal();
 
   late PlayerState state;
   late List<Track> tracks = [];
@@ -114,6 +114,19 @@ class RpiPlayerProxy {
       }
 
       return PlayerState.fromJson(json.decode(utf8.decode(response.bodyBytes)));
+    });
+  }
+
+  Future<StatusMessage> setPlaybackMode(
+      {bool? repeatOne, bool? repeatAll, bool? shuffle}) async {
+    final url = _buildUri('/queue/mode', {
+      if (repeatOne != null) 'repeat_single': repeatOne.toString(),
+      if (repeatAll != null) 'repeat_all': repeatAll.toString(),
+      if (shuffle != null) 'shuffle': shuffle.toString()
+    });
+
+    return client.put(url).then((response) {
+      return statusMessageFromResponse(response);
     });
   }
 

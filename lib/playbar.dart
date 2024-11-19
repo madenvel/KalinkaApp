@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/fg_service.dart';
 import 'package:kalinka/play_button.dart';
-import 'package:kalinka/rpiplayer_proxy.dart';
+import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
 import 'custom_cache_manager.dart';
@@ -166,7 +166,9 @@ class _PlaybarState extends State<Playbar> {
             onPageChanged: (index, reason) {
               if (reason == CarouselPageChangedReason.manual) {
                 _currentPageIndex = index;
-                RpiPlayerProxy().play(index);
+                KalinkaPlayerProxy().play(index);
+              } else if (reason == CarouselPageChangedReason.controller) {
+                _currentPageIndex = index;
               }
             }),
         itemCount: provider.trackList.length,

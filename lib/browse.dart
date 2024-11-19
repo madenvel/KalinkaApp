@@ -11,7 +11,7 @@ import 'package:kalinka/favorite_button.dart';
 import 'package:kalinka/genre_select_filter.dart';
 import 'package:kalinka/list_card.dart';
 import 'package:kalinka/multilist.dart';
-import 'package:kalinka/rpiplayer_proxy.dart';
+import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'data_model.dart';
 
@@ -86,7 +86,7 @@ class _BrowsePage extends State<BrowsePage> {
 
     List<String> filter = context.read<GenreFilterProvider>().filter;
     bool canGenreFilter = widget.parentItem.catalog?.canGenreFilter ?? false;
-    RpiPlayerProxy()
+    KalinkaPlayerProxy()
         .browse(widget.parentItem.url,
             offset: offset,
             limit: chunkSize,
@@ -127,11 +127,11 @@ class _BrowsePage extends State<BrowsePage> {
     }
 
     if (!itemsEqual) {
-      await RpiPlayerProxy().clear();
-      await RpiPlayerProxy().add(widget.parentItem.url);
+      await KalinkaPlayerProxy().clear();
+      await KalinkaPlayerProxy().add(widget.parentItem.url);
     }
 
-    await RpiPlayerProxy().play(index);
+    await KalinkaPlayerProxy().play(index);
   }
 
   @override
@@ -390,7 +390,7 @@ class _BrowsePage extends State<BrowsePage> {
                 ? IconButton(
                     icon: const Icon(Icons.queue_music),
                     onPressed: () {
-                      RpiPlayerProxy().add(widget.parentItem.url);
+                      KalinkaPlayerProxy().add(widget.parentItem.url);
                     })
                 : const SizedBox.shrink(),
           ]),

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/favorite_button.dart';
-import 'package:kalinka/rpiplayer_proxy.dart';
+import 'package:kalinka/kalinkaplayer_proxy.dart';
 
 import 'custom_cache_manager.dart';
 import 'data_model.dart';
@@ -179,7 +179,7 @@ class _NowPlayingState extends State<NowPlaying> {
             onChangeStart: (value) => {isSeeking = true},
             onChangeEnd: (value) {
               logger.i('Seeking to $value');
-              RpiPlayerProxy().seek(value.toInt()).then((value) {
+              KalinkaPlayerProxy().seek(value.toInt()).then((value) {
                 if (value.positionMs == null || value.positionMs! < 0) {
                   logger.w('Seek failed, position=${value.positionMs}');
                   setState(() {
@@ -231,6 +231,9 @@ class _NowPlayingState extends State<NowPlaying> {
         context.select<PlayerStateProvider, PlayerStateType?>(
             (stateProvider) => stateProvider.state.state);
 
+    PlaybackModeProvider playbackModeProvider =
+        context.watch<PlaybackModeProvider>();
+
     if (state == null) {
       return const SizedBox.shrink();
     }
@@ -253,34 +256,69 @@ class _NowPlayingState extends State<NowPlaying> {
         playIcon = Icons.question_mark;
         break;
     }
-    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      IconButton(
-          icon: const Icon(Icons.fast_rewind),
-          iconSize: 36,
-          onPressed: () {
-            RpiPlayerProxy().previous();
-          }),
-      IconButton(
-          icon: Icon(playIcon),
-          iconSize: 78,
-          onPressed: () {
-            switch (state) {
-              case PlayerStateType.playing:
-                RpiPlayerProxy().pause(paused: true);
-                break;
-              case PlayerStateType.paused:
-                RpiPlayerProxy().pause(paused: false);
-              default:
-                RpiPlayerProxy().play();
-            }
-          }),
-      IconButton(
-          icon: const Icon(Icons.fast_forward),
-          iconSize: 36,
-          onPressed: () {
-            RpiPlayerProxy().next();
-          }),
+    return Stack(alignment: Alignment.center, children: [
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        IconButton(
+            icon: const Icon(Icons.fast_rewind),
+            iconSize: 36,
+            onPressed: () {
+              KalinkaPlayerProxy().previous();
+            }),
+        IconButton(
+            icon: Icon(playIcon),
+            iconSize: 78,
+            onPressed: () {
+              switch (state) {
+                case PlayerStateType.playing:
+                  KalinkaPlayerProxy().pause(paused: true);
+                  break;
+                case PlayerStateType.paused:
+                  KalinkaPlayerProxy().pause(paused: false);
+                default:
+                  KalinkaPlayerProxy().play();
+              }
+            }),
+        IconButton(
+            icon: const Icon(Icons.fast_forward),
+            iconSize: 36,
+            onPressed: () {
+              KalinkaPlayerProxy().next();
+            }),
+      ]),
+      Positioned(
+          right: 0,
+          child: IconButton(
+            icon: Icon(_getRepeatIcon(playbackModeProvider)),
+            iconSize: 36,
+            onPressed: () {
+              var repeatSingle = playbackModeProvider.repeatSingle;
+              var repeatAll = playbackModeProvider.repeatAll;
+              if (!repeatSingle && !repeatAll) {
+                repeatAll = true;
+              } else if (repeatAll && !repeatSingle) {
+                repeatAll = false;
+                repeatSingle = true;
+              } else {
+                repeatAll = false;
+                repeatSingle = false;
+              }
+              KalinkaPlayerProxy().setPlaybackMode(
+                  repeatOne: repeatSingle, repeatAll: repeatAll);
+            },
+          ))
     ]);
+  }
+
+  IconData _getRepeatIcon(PlaybackModeProvider provider) {
+    if (provider.repeatSingle) {
+      return Icons.repeat_one;
+    }
+
+    if (provider.repeatAll) {
+      return Icons.repeat;
+    }
+
+    return Icons.arrow_right_alt;
   }
 
   _buildAlbumArtWidget(BuildContext context) {

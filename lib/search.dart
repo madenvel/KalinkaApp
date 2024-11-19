@@ -7,7 +7,7 @@ import 'package:kalinka/custom_list_tile.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
-import 'package:kalinka/rpiplayer_proxy.dart';
+import 'package:kalinka/kalinkaplayer_proxy.dart';
 
 import 'browse.dart';
 import 'data_model.dart';
@@ -331,11 +331,11 @@ class _SearchState extends State<Search> {
     }
 
     if (!needToAdd) {
-      RpiPlayerProxy().play(state.index);
+      KalinkaPlayerProxy().play(state.index);
     } else {
-      await RpiPlayerProxy().clear();
-      await RpiPlayerProxy().addTracks([trackId]);
-      await RpiPlayerProxy().play();
+      await KalinkaPlayerProxy().clear();
+      await KalinkaPlayerProxy().addTracks([trackId]);
+      await KalinkaPlayerProxy().play();
     }
   }
 }
