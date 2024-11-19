@@ -167,6 +167,8 @@ class _PlaybarState extends State<Playbar> {
               if (reason == CarouselPageChangedReason.manual) {
                 _currentPageIndex = index;
                 RpiPlayerProxy().play(index);
+              } else if (reason == CarouselPageChangedReason.controller) {
+                _currentPageIndex = index;
               }
             }),
         itemCount: provider.trackList.length,

@@ -41,6 +41,7 @@ class _ConnectionManagerState extends State<ConnectionManager> {
     context.read<TrackListProvider>();
     context.read<PlayerStateProvider>();
     context.read<TrackPositionProvider>();
+    context.read<PlaybackModeProvider>();
     subscriptionId = EventListener().registerCallback({
       EventType.NetworkDisconnected: (args) {
         logger.d('Disconnected!!!');
