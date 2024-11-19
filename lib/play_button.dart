@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_model.dart';
 import 'package:kalinka/data_provider.dart';
-import 'package:kalinka/rpiplayer_proxy.dart';
+import 'package:kalinka/kalinkaplayer_proxy.dart';
 
 class PlayButton extends StatelessWidget {
   final double size;
@@ -46,14 +46,14 @@ class PlayButton extends StatelessWidget {
           onPressed: () {
             switch (playerState.state.state) {
               case PlayerStateType.playing:
-                RpiPlayerProxy().pause(paused: true);
+                KalinkaPlayerProxy().pause(paused: true);
                 break;
               case PlayerStateType.paused:
-                RpiPlayerProxy().pause(paused: false);
+                KalinkaPlayerProxy().pause(paused: false);
                 break;
               case PlayerStateType.stopped:
               case PlayerStateType.error:
-                RpiPlayerProxy().play();
+                KalinkaPlayerProxy().play();
                 break;
               default:
                 break;

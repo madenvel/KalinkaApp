@@ -7,7 +7,7 @@ import 'package:kalinka/custom_list_tile.dart';
 
 import 'browse.dart';
 import 'data_model.dart';
-import 'rpiplayer_proxy.dart';
+import 'kalinkaplayer_proxy.dart';
 
 class Library extends StatefulWidget {
   const Library({super.key});
@@ -190,11 +190,11 @@ class _LibraryState extends State<Library> {
     }
 
     if (!needToAdd) {
-      RpiPlayerProxy().play(index);
+      KalinkaPlayerProxy().play(index);
     } else {
-      await RpiPlayerProxy().clear();
-      await RpiPlayerProxy().addTracks([trackId]);
-      await RpiPlayerProxy().play();
+      await KalinkaPlayerProxy().clear();
+      await KalinkaPlayerProxy().addTracks([trackId]);
+      await KalinkaPlayerProxy().play();
     }
   }
 }

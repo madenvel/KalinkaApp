@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data_model.dart';
 import 'event_listener.dart';
-import 'rpiplayer_proxy.dart';
+import 'kalinkaplayer_proxy.dart';
 import 'lazy_list.dart';
 
 class TrackListProvider with ChangeNotifier {
@@ -312,7 +312,7 @@ class UserFavoritesProvider with ChangeNotifier {
 
   Future<void> _loadIds() async {
     _idsLoaded = false;
-    await RpiPlayerProxy().getFavoriteIds().then((value) {
+    await KalinkaPlayerProxy().getFavoriteIds().then((value) {
       _favorites[SearchType.track]!.ids = value.tracks.toSet();
       _favorites[SearchType.album]!.ids = value.albums.toSet();
       _favorites[SearchType.artist]!.ids = value.artists.toSet();
@@ -327,7 +327,7 @@ class UserFavoritesProvider with ChangeNotifier {
         SearchTypeExtension.fromStringValue(item.browseType);
     _favorites[searchType]!.ids.add(item.id);
     _favorites[searchType]!.items.insert(0, item);
-    Future<void> future = RpiPlayerProxy().addFavorite(searchType, item.id);
+    Future<void> future = KalinkaPlayerProxy().addFavorite(searchType, item.id);
     notifyListeners();
     return future.catchError((error) {
       logger.e('Error adding favorite: $error');
@@ -346,7 +346,8 @@ class UserFavoritesProvider with ChangeNotifier {
     _favorites[searchType]!
         .items
         .removeWhere((element) => element.id == item.id);
-    Future<void> future = RpiPlayerProxy().removeFavorite(searchType, item.id);
+    Future<void> future =
+        KalinkaPlayerProxy().removeFavorite(searchType, item.id);
     notifyListeners();
     return future.catchError((error) {
       logger.e('Error removing favorite: $error');
@@ -370,7 +371,7 @@ class UserFavoritesProvider with ChangeNotifier {
     List<BrowseItem> items = [];
     do {
       try {
-        await RpiPlayerProxy()
+        await KalinkaPlayerProxy()
             .getFavorite(queryType, offset: offset, limit: limit)
             .then((value) {
           items.addAll(value.items);
@@ -402,7 +403,7 @@ class SearchResultsProvider extends LazyLoadingList with ChangeNotifier {
 
   @override
   Future<BrowseItemsList> performRequest(int offset, int limit) {
-    return RpiPlayerProxy()
+    return KalinkaPlayerProxy()
         .search(_searchType, _query, offset: offset, limit: limit);
   }
 
@@ -458,7 +459,7 @@ class DiscoverSectionProvider with ChangeNotifier {
 
   Future<void> _loadSections() async {
     _sections.clear();
-    return RpiPlayerProxy()
+    return KalinkaPlayerProxy()
         .browse('/catalog', offset: 0, limit: 10)
         .then((value) {
       _sections.addAll(value.items);
@@ -480,7 +481,7 @@ class DiscoverSectionProvider with ChangeNotifier {
         continue;
       }
       String url = _sections[i].url;
-      futures.add(RpiPlayerProxy()
+      futures.add(KalinkaPlayerProxy()
           .browse(url,
               offset: 0,
               limit: 12,
@@ -540,7 +541,7 @@ class VolumeControlProvider with ChangeNotifier {
 
     if (_currentVolume.toInt() != _realVolume) {
       _realVolume = _currentVolume.toInt();
-      RpiPlayerProxy().setVolume(_realVolume);
+      KalinkaPlayerProxy().setVolume(_realVolume);
     }
   }
 
@@ -570,7 +571,7 @@ class VolumeControlProvider with ChangeNotifier {
   }
 
   Future<void> _getVolume() {
-    return RpiPlayerProxy().getVolume().then((Volume value) {
+    return KalinkaPlayerProxy().getVolume().then((Volume value) {
       _currentVolume = value.currentVolume.toDouble();
       _realVolume = value.currentVolume;
       _maxVolume = value.maxVolume;
@@ -640,7 +641,7 @@ class GenreFilterProvider with ChangeNotifier {
 
   void _init() async {
     _isLoaded = false;
-    RpiPlayerProxy().getGenres().then((value) {
+    KalinkaPlayerProxy().getGenres().then((value) {
       _genres.addAll(value.items);
       _isLoaded = true;
       notifyListeners();

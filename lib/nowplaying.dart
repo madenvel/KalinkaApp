@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/favorite_button.dart';
-import 'package:kalinka/rpiplayer_proxy.dart';
+import 'package:kalinka/kalinkaplayer_proxy.dart';
 
 import 'custom_cache_manager.dart';
 import 'data_model.dart';
@@ -179,7 +179,7 @@ class _NowPlayingState extends State<NowPlaying> {
             onChangeStart: (value) => {isSeeking = true},
             onChangeEnd: (value) {
               logger.i('Seeking to $value');
-              RpiPlayerProxy().seek(value.toInt()).then((value) {
+              KalinkaPlayerProxy().seek(value.toInt()).then((value) {
                 if (value.positionMs == null || value.positionMs! < 0) {
                   logger.w('Seek failed, position=${value.positionMs}');
                   setState(() {
@@ -262,7 +262,7 @@ class _NowPlayingState extends State<NowPlaying> {
             icon: const Icon(Icons.fast_rewind),
             iconSize: 36,
             onPressed: () {
-              RpiPlayerProxy().previous();
+              KalinkaPlayerProxy().previous();
             }),
         IconButton(
             icon: Icon(playIcon),
@@ -270,19 +270,19 @@ class _NowPlayingState extends State<NowPlaying> {
             onPressed: () {
               switch (state) {
                 case PlayerStateType.playing:
-                  RpiPlayerProxy().pause(paused: true);
+                  KalinkaPlayerProxy().pause(paused: true);
                   break;
                 case PlayerStateType.paused:
-                  RpiPlayerProxy().pause(paused: false);
+                  KalinkaPlayerProxy().pause(paused: false);
                 default:
-                  RpiPlayerProxy().play();
+                  KalinkaPlayerProxy().play();
               }
             }),
         IconButton(
             icon: const Icon(Icons.fast_forward),
             iconSize: 36,
             onPressed: () {
-              RpiPlayerProxy().next();
+              KalinkaPlayerProxy().next();
             }),
       ]),
       Positioned(
@@ -302,7 +302,7 @@ class _NowPlayingState extends State<NowPlaying> {
                 repeatAll = false;
                 repeatSingle = false;
               }
-              RpiPlayerProxy().setPlaybackMode(
+              KalinkaPlayerProxy().setPlaybackMode(
                   repeatOne: repeatSingle, repeatAll: repeatAll);
             },
           ))

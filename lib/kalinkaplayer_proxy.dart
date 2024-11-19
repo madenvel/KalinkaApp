@@ -2,14 +2,14 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'data_model.dart';
 
-class RpiPlayerProxy {
-  static final RpiPlayerProxy _instance = RpiPlayerProxy._internal();
+class KalinkaPlayerProxy {
+  static final KalinkaPlayerProxy _instance = KalinkaPlayerProxy._internal();
 
-  factory RpiPlayerProxy() {
+  factory KalinkaPlayerProxy() {
     return _instance;
   }
 
-  RpiPlayerProxy._internal();
+  KalinkaPlayerProxy._internal();
 
   late PlayerState state;
   late List<Track> tracks = [];

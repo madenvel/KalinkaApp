@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/event_listener.dart';
 import 'package:kalinka/fg_service.dart';
-import 'package:kalinka/rpiplayer_proxy.dart';
+import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:kalinka/settings_tab.dart';
 
 class ConnectionManager extends StatefulWidget {
@@ -29,7 +29,7 @@ class _ConnectionManagerState extends State<ConnectionManager> {
   bool _manualSettingsOverride = false;
 
   final EventListener _eventListener = EventListener();
-  final RpiPlayerProxy _rpiPlayerProxy = RpiPlayerProxy();
+  final KalinkaPlayerProxy _rpiPlayerProxy = KalinkaPlayerProxy();
   final AudioPlayerService _audioPlayerService = AudioPlayerService();
   final logger = Logger();
 
