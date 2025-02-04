@@ -251,7 +251,7 @@ class KalinkaPlayerProxy {
     });
   }
 
-  Future<SeekStatusMessage> seek(int positionMs) {
+  Future<SeekStatusMessage> seek(int positionMs) async {
     final url = _buildUri(
         '/queue/current_track/seek', {'position_ms': positionMs.toString()});
     return client.put(url).then((response) {
@@ -260,6 +260,53 @@ class KalinkaPlayerProxy {
         throw Exception('Request $response.request.url failed, url=$url');
       }
       return SeekStatusMessage.fromJson(
+          json.decode(utf8.decode(response.bodyBytes)));
+    });
+  }
+
+  Future<Playlist> playlistCreate(String name, String? description) async {
+    final url = _buildUri('/playlist/create',
+        {'name': name, if (description != null) 'description': description});
+    return client.post(url).then((response) {
+      if (response.statusCode != 200) {
+        throw Exception('Failed to create playlist, url=$url');
+      }
+      return Playlist.fromJson(json.decode(utf8.decode(response.bodyBytes)));
+    });
+  }
+
+  Future<void> playlistDelete(String playlistId) async {
+    final url = _buildUri('/playlist/delete', {'playlist_id': playlistId});
+    return client.delete(url).then((response) {
+      if (response.statusCode != 200) {
+        throw Exception(
+            'Failed to delete playlist, url=$url, message=${response.body}');
+      }
+    });
+  }
+
+  Future<Playlist> playlistAddTracks(
+      String playlistId, List<String> trackIds) async {
+    final url = _buildUri('/playlist/add_tracks', {'playlist_id': playlistId});
+    final String encodedItems = jsonEncode(trackIds);
+    return client
+        .post(url,
+            headers: {"Content-Type": "application/json"}, body: encodedItems)
+        .then((response) {
+      if (response.statusCode != 200) {
+        throw Exception('Failed to add tracks to playlist, url=$url');
+      }
+      return Playlist.fromJson(json.decode(utf8.decode(response.bodyBytes)));
+    });
+  }
+
+  Future<BrowseItemsList> playlistUserList(int offset, int limit) async {
+    final url = _buildUri('/playlist/list');
+    return client.get(url).then((response) {
+      if (response.statusCode != 200) {
+        throw Exception('Failed to list user playlists, url=$url');
+      }
+      return BrowseItemsList.fromJson(
           json.decode(utf8.decode(response.bodyBytes)));
     });
   }

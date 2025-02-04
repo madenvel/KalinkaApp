@@ -64,6 +64,7 @@ class RpiMusic extends StatelessWidget {
               create: (context) => ServiceDiscoveryDataProvider()),
           ChangeNotifierProvider(
               create: (context) => ConnectionSettingsProvider()),
+          ChangeNotifierProvider(create: (context) => UserPlaylistProvider())
         ],
         child: MaterialApp(
           scrollBehavior: MyCustomScrollBehavior(),

@@ -265,8 +265,8 @@ class _BrowsePage extends State<BrowsePage> {
     return Row(children: [
       const Spacer(),
       TextButton(
-          child: const Text('Load more items',
-              style: TextStyle(color: Colors.grey, fontSize: 16.0)),
+          child: Text('Load more items (${total - browseItems.length})',
+              style: const TextStyle(color: Colors.grey, fontSize: 16.0)),
           onPressed: () {
             _loadMoreItems();
           }),

@@ -2,7 +2,9 @@ import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:kalinka/add_to_playlist.dart';
 import 'package:kalinka/custom_cache_manager.dart';
+import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/bottom_menu.dart';
 import 'package:kalinka/data_model.dart';
@@ -29,16 +31,22 @@ class _SwipableTabsState extends State<SwipableTabs>
     super.initState();
     controller = TabController(
         length: widgets.length, initialIndex: _index, vsync: this);
-    controller.addListener(() {
+    controller.addListener(_updateIndex);
+  }
+
+  void _updateIndex() {
+    int newIndex = controller.index;
+    if (_index != newIndex) {
       setState(() {
-        _index = controller.index;
+        _index = newIndex;
       });
-    });
+    }
   }
 
   @override
   void dispose() {
     super.dispose();
+    controller.animation?.removeListener(_updateIndex);
     controller.dispose();
   }
 
@@ -60,43 +68,78 @@ class _SwipableTabsState extends State<SwipableTabs>
             ),
           ]),
           centerTitle: true,
-          actions: controller.index == 0
-              ? [
-                  IconButton(
-                      icon: const Icon(Icons.more_vert),
-                      onPressed: () {
-                        if (controller.index == 0) {
-                          PlayerStateProvider provider =
-                              context.read<PlayerStateProvider>();
-                          Track? track = provider.state.currentTrack;
-                          BrowseItem? item = track != null
-                              ? BrowseItem(
-                                  id: track.id,
-                                  name: track.title,
-                                  subname: track.performer?.name,
-                                  url: '/track/${track.id}',
-                                  canAdd: true,
-                                  canBrowse: false,
-                                  track: track)
-                              : null;
-                          if (item != null) {
-                            showModalBottomSheet(
-                                context: context,
-                                showDragHandle: true,
-                                useRootNavigator: true,
-                                scrollControlDisabledMaxHeightRatio: 0.4,
-                                builder: (context) {
-                                  return BottomMenu(
-                                    browseItem: item,
-                                    showPlay: false,
-                                    showAddToQueue: false,
-                                  );
-                                });
-                          }
-                        }
-                      })
-                ]
-              : [],
+          actions: [
+            [
+              IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: () {
+                    if (controller.index == 0) {
+                      PlayerStateProvider provider =
+                          context.read<PlayerStateProvider>();
+                      Track? track = provider.state.currentTrack;
+                      BrowseItem? item = track != null
+                          ? BrowseItem(
+                              id: track.id,
+                              name: track.title,
+                              subname: track.performer?.name,
+                              url: '/track/${track.id}',
+                              canAdd: true,
+                              canBrowse: false,
+                              track: track)
+                          : null;
+                      if (item != null) {
+                        showModalBottomSheet(
+                            context: context,
+                            showDragHandle: true,
+                            useRootNavigator: true,
+                            scrollControlDisabledMaxHeightRatio: 0.4,
+                            builder: (context) {
+                              return BottomMenu(
+                                browseItem: item,
+                                showPlay: false,
+                                showAddToQueue: false,
+                              );
+                            });
+                      }
+                    }
+                  })
+            ],
+            [
+              IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: const Text('Actions'),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                leading: const Icon(Icons.playlist_add),
+                                title: const Text('Add to playlist'),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  _buildAddToPlaylist(context);
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.clear_all),
+                                title: const Text('Clear Queue'),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  KalinkaPlayerProxy().clear();
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  })
+            ]
+          ][_index],
         ),
         body: Stack(
           children: [
@@ -130,5 +173,14 @@ class _SwipableTabsState extends State<SwipableTabs>
               filterQuality: FilterQuality.low,
             ))
         : const SizedBox.shrink();
+  }
+
+  void _buildAddToPlaylist(BuildContext context) {
+    showDialog<Playlist>(
+        context: context,
+        builder: (BuildContext context) {
+          return AddToPlaylist(
+              tracks: context.read<TrackListProvider>().trackList);
+        }).then((playlist) {});
   }
 }

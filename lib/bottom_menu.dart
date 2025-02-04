@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kalinka/add_to_playlist.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/browse.dart';
 import 'package:kalinka/custom_list_tile.dart';
@@ -52,10 +53,19 @@ class BottomMenu extends StatelessWidget {
                   Navigator.pop(context);
                 })
             : const SizedBox.shrink(),
-        browseItem.canAdd
-            ? const ListTile(
+        browseItem.canAdd && browseItem.browseType != "playlist"
+            ? ListTile(
                 title: Text('Add to playlist'),
-                leading: Icon(Icons.playlist_add))
+                leading: Icon(Icons.playlist_add),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => AddToPlaylist(
+                                tracks: [browseItem.track!],
+                              )));
+                })
             : const SizedBox.shrink(),
         browseItem.canFavorite && !favoritesProvider.isFavorite(browseItem)
             ? ListTile(
@@ -72,6 +82,14 @@ class BottomMenu extends StatelessWidget {
                 leading: const Icon(Icons.heart_broken),
                 onTap: () {
                   favoritesProvider.remove(browseItem);
+                  if (browseItem.browseType == 'playlist') {
+                    UserPlaylistProvider playlistProvider =
+                        context.read<UserPlaylistProvider>();
+                    playlistProvider.removePlaylist(browseItem.playlist!);
+                  }
+                  UserPlaylistProvider playlistProvider =
+                      context.read<UserPlaylistProvider>();
+                  playlistProvider.removePlaylist(browseItem.playlist!);
                   Navigator.pop(context);
                 })
             : const SizedBox.shrink(),

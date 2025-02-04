@@ -669,3 +669,87 @@ class GenreFilterProvider with ChangeNotifier {
     super.dispose();
   }
 }
+
+class UserPlaylistProvider with ChangeNotifier {
+  final logger = Logger();
+  final List<BrowseItem> _playlists = [];
+  bool _isLoading = true;
+  late String subscriptionId;
+
+  List<BrowseItem> get playlists => _playlists;
+  bool get isLoading => _isLoading;
+
+  final EventListener _eventListener = EventListener();
+
+  UserPlaylistProvider() {
+    _isLoading = true;
+    subscriptionId = _eventListener.registerCallback({
+      EventType.NetworkDisconnected: (_) {
+        _isLoading = true;
+        _playlists.clear();
+        notifyListeners();
+      },
+      EventType.NetworkConnected: (_) {
+        _loadPlaylists();
+      },
+    });
+    _loadPlaylists();
+  }
+
+  Future<void> _loadPlaylists() async {
+    _isLoading = true;
+    try {
+      BrowseItemsList loadedPlaylists =
+          await KalinkaPlayerProxy().playlistUserList(0, 500);
+      _playlists.clear();
+      _playlists.addAll(loadedPlaylists.items);
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      logger.e('Error loading playlists: $e');
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> addPlaylist(String name, String description) async {
+    try {
+      Playlist playlist =
+          await KalinkaPlayerProxy().playlistCreate(name, description);
+      _playlists.insert(
+          0,
+          BrowseItem(
+              id: playlist.id,
+              name: playlist.name,
+              subname: playlist.owner?.name,
+              url: "playlist/${playlist.id}",
+              canBrowse: true,
+              canAdd: true,
+              playlist: playlist));
+      notifyListeners();
+    } catch (e) {
+      logger.e('Error adding playlist: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> removePlaylist(Playlist playlist) async {
+    try {
+      if (!_playlists.any((p) => p.id == playlist.id)) {
+        return;
+      }
+      await KalinkaPlayerProxy().playlistDelete(playlist.id);
+      _playlists.removeWhere((p) => p.id == playlist.id);
+      notifyListeners();
+    } catch (e) {
+      logger.e('Error removing playlist: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  void dispose() {
+    _eventListener.unregisterCallback(subscriptionId);
+    super.dispose();
+  }
+}

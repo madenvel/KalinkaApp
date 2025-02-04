@@ -144,6 +144,7 @@ class Track {
   int duration;
   Artist? performer;
   Album? album;
+  String? playlistTrackId;
 
   Track({
     required this.id,
@@ -151,6 +152,7 @@ class Track {
     required this.duration,
     this.performer,
     this.album,
+    this.playlistTrackId,
   });
 
   factory Track.fromJson(Map<String, dynamic> json) => Track(
@@ -161,6 +163,7 @@ class Track {
             ? null
             : Artist.fromJson(json["performer"]),
         album: json["album"] == null ? null : Album.fromJson(json["album"]),
+        playlistTrackId: json["playlist_track_id"],
       );
 
   Map<String, dynamic> toJson() => {
@@ -169,6 +172,7 @@ class Track {
         "duration": duration,
         "performer": performer?.toJson(),
         "album": album?.toJson(),
+        "playlist_track_id": playlistTrackId,
       };
 }
 
