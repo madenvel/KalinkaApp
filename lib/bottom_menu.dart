@@ -63,7 +63,7 @@ class BottomMenu extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                           builder: (context) => AddToPlaylist(
-                                tracks: [browseItem.track!],
+                                items: BrowseItemsList(0, 1, 1, [browseItem]),
                               )));
                 })
             : const SizedBox.shrink(),

@@ -176,11 +176,25 @@ class _SwipableTabsState extends State<SwipableTabs>
   }
 
   void _buildAddToPlaylist(BuildContext context) {
-    showDialog<Playlist>(
-        context: context,
-        builder: (BuildContext context) {
-          return AddToPlaylist(
-              tracks: context.read<TrackListProvider>().trackList);
-        }).then((playlist) {});
+    var trackList = context.read<TrackListProvider>().trackList;
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => AddToPlaylist(
+                items: BrowseItemsList(
+                    0,
+                    trackList.length,
+                    trackList.length,
+                    trackList
+                        .map((track) => BrowseItem(
+                              id: track.id,
+                              name: track.title,
+                              subname: track.performer?.name,
+                              url: '/track/${track.id}',
+                              canAdd: true,
+                              canBrowse: false,
+                              track: track,
+                            ))
+                        .toList()))));
   }
 }

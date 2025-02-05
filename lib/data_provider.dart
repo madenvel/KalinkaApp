@@ -284,6 +284,11 @@ class UserFavoritesProvider with ChangeNotifier {
 
   bool get idsLoaded => _idsLoaded;
 
+  void markForReload(SearchType searchType) {
+    _favorites[searchType]!.isLoaded = false;
+    notifyListeners();
+  }
+
   UserFavoritesProvider() {
     subscriptionId = EventListener().registerCallback({
       // EventType.FavoriteAdded: (args) {
@@ -320,6 +325,11 @@ class UserFavoritesProvider with ChangeNotifier {
       _idsLoaded = true;
       notifyListeners();
     });
+  }
+
+  void addIdOnly(SearchType searchType, String id) {
+    _favorites[searchType]!.ids.add(id);
+    notifyListeners();
   }
 
   Future<void> add(BrowseItem item) async {
@@ -365,7 +375,7 @@ class UserFavoritesProvider with ChangeNotifier {
 
   Future<List<BrowseItem>> getAll(SearchType queryType) async {
     _requestInProgress[queryType] = true;
-    int limit = 100;
+    int limit = 500;
     int offset = 0;
     int total = 0;
     List<BrowseItem> items = [];
@@ -712,7 +722,11 @@ class UserPlaylistProvider with ChangeNotifier {
     }
   }
 
-  Future<void> addPlaylist(String name, String description) async {
+  Future<void> refresh() async {
+    return _loadPlaylists();
+  }
+
+  Future<Playlist> addPlaylist(String name, String description) async {
     try {
       Playlist playlist =
           await KalinkaPlayerProxy().playlistCreate(name, description);
@@ -727,6 +741,7 @@ class UserPlaylistProvider with ChangeNotifier {
               canAdd: true,
               playlist: playlist));
       notifyListeners();
+      return playlist;
     } catch (e) {
       logger.e('Error adding playlist: $e');
       rethrow;

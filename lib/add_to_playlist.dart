@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:kalinka/custom_list_tile.dart';
 import 'package:kalinka/data_model.dart';
@@ -6,8 +8,8 @@ import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:provider/provider.dart';
 
 class AddToPlaylist extends StatefulWidget {
-  final List<Track> tracks;
-  const AddToPlaylist({super.key, required this.tracks});
+  final BrowseItemsList items;
+  const AddToPlaylist({super.key, required this.items});
 
   @override
   State<AddToPlaylist> createState() => AddToPlaylistState();
@@ -27,10 +29,90 @@ class AddToPlaylistState extends State<AddToPlaylist> {
     setState(() {
       playlistsAddComplete.add(playlistId);
     });
-    KalinkaPlayerProxy()
-        .playlistAddTracks(
-            playlistId, widget.tracks.map((track) => track.id).toList())
-        .then((_) {
+
+    // Keep the order of keys to make sure the tracks are added in the correct order
+    SplayTreeMap<int, List<Track>> trackMap = SplayTreeMap<int, List<Track>>();
+    List<Future> futures = [];
+    var elementNo = 0;
+    for (BrowseItem item in widget.items.items) {
+      if (item.browseType == 'track') {
+        trackMap[elementNo] = [item.track!];
+      } else if (item.canBrowse) {
+        futures.add(KalinkaPlayerProxy()
+            .browse(item.url, offset: 0, limit: 100)
+            .then((value) async {
+          List<Track> tracks = value.items
+              .where((e) => e.track != null)
+              .map((e) => e.track!)
+              .toList();
+          int offset = 100;
+          while (offset < value.total) {
+            var chunk = await KalinkaPlayerProxy()
+                .browse(item.url, offset: offset, limit: 100);
+            tracks.addAll(
+                chunk.items.where((e) => e.track != null).map((e) => e.track!));
+            if (chunk.items.length < 100) break;
+            offset += 100;
+          }
+          trackMap[elementNo] = tracks;
+        }));
+      } else {
+        continue;
+      }
+      elementNo++;
+    }
+    Future.wait(futures).then((_) {
+      var tracks = trackMap.values
+          .expand((element) => element)
+          .toList()
+          .map((track) => track.id)
+          .toList();
+      KalinkaPlayerProxy().playlistAddTracks(playlistId, tracks).then((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check, color: Colors.green),
+                const SizedBox(width: 8),
+                Text(
+                  '${tracks.length} track${tracks.length > 1 ? 's' : ''} added to playlist${playlistName.isNotEmpty ? ' \'$playlistName\'' : ''}',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.black87,
+          ),
+        );
+      }).catchError((error) {
+        playlistsAddComplete.remove(playlistId);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.error, color: Colors.red),
+                SizedBox(width: 8),
+                Text('Failed to add tracks to playlist'),
+              ],
+            ),
+            backgroundColor: Colors.black87,
+          ),
+        );
+      });
+    });
+  }
+
+  void _createNewPlaylist(String name, String description) {
+    UserPlaylistProvider provider = context.read<UserPlaylistProvider>();
+    UserFavoritesProvider favoritesProvider =
+        context.read<UserFavoritesProvider>();
+    provider.addPlaylist(name, description).then((value) {
+      favoritesProvider.addIdOnly(SearchType.playlist, value.id);
+      setState(() {
+        _selectedIndex = 0;
+      });
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -39,7 +121,7 @@ class AddToPlaylistState extends State<AddToPlaylist> {
               const Icon(Icons.check, color: Colors.green),
               const SizedBox(width: 8),
               Text(
-                '${widget.tracks.length} track${widget.tracks.length > 1 ? 's' : ''} added to playlist${playlistName.isNotEmpty ? ' \'$playlistName\'' : ''}',
+                'Playlist \'$name\' created',
                 style: const TextStyle(color: Colors.white),
               ),
             ],
@@ -47,31 +129,7 @@ class AddToPlaylistState extends State<AddToPlaylist> {
           backgroundColor: Colors.black87,
         ),
       );
-    }).catchError((error) {
-      playlistsAddComplete.remove(playlistId);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: const [
-              Icon(Icons.error, color: Colors.red),
-              SizedBox(width: 8),
-              Text('Failed to add tracks to playlist'),
-            ],
-          ),
-          backgroundColor: Colors.black87,
-        ),
-      );
     });
-  }
-
-  void _createNewPlaylist(String name, String description) {
-    UserPlaylistProvider provider = context.read<UserPlaylistProvider>();
-    provider.addPlaylist(name, description).then((value) => {
-          setState(() {
-            _selectedIndex = 0;
-          })
-        });
   }
 
   @override

@@ -92,6 +92,11 @@ class _LibraryState extends State<Library> {
                                           setState(() {
                                             _selectedIndex =
                                                 selected ? index : 0;
+                                            context
+                                                .read<UserFavoritesProvider>()
+                                                .markForReload(
+                                                    SearchType.values[
+                                                        _selectedIndex + 1]);
                                           });
                                         },
                                       ));
