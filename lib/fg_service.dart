@@ -32,7 +32,7 @@ class AudioPlayerService {
     } on PlatformException catch (e) {
       logger.e('Failed to start foreground service: ${e.message}');
     } on MissingPluginException catch (e) {
-      logger.e('Service is not implemented for this platform ${e.message}');
+      logger.e('Service is not implemented for this platform, ${e.message}');
     }
   }
 
