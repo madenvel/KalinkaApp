@@ -4,7 +4,7 @@ import 'package:bonsoir/bonsoir.dart';
 class ServiceDiscoveryDataProvider with ChangeNotifier {
   final String type = '_kalinkaplayer._tcp';
 
-  late BonsoirDiscovery _discovery;
+  BonsoirDiscovery? _discovery;
 
   final List<ResolvedBonsoirService> _services = [];
   final List<BonsoirService> _unresolvedServices = [];
@@ -13,12 +13,12 @@ class ServiceDiscoveryDataProvider with ChangeNotifier {
   Future<void> start() async {
     _discovery = BonsoirDiscovery(type: type);
     _services.clear();
-    await _discovery.ready;
+    await _discovery!.ready;
     notifyListeners();
 
-    _discovery.eventStream!.listen((event) {
+    _discovery!.eventStream!.listen((event) {
       if (event.type == BonsoirDiscoveryEventType.discoveryServiceFound) {
-        event.service!.resolve(_discovery.serviceResolver);
+        event.service!.resolve(_discovery!.serviceResolver);
         _unresolvedServices.add(event.service!);
       } else if (event.type ==
           BonsoirDiscoveryEventType.discoveryServiceResolved) {
@@ -39,7 +39,7 @@ class ServiceDiscoveryDataProvider with ChangeNotifier {
       }
     });
 
-    return _discovery.start();
+    return _discovery!.start();
   }
 
   @override
@@ -49,6 +49,6 @@ class ServiceDiscoveryDataProvider with ChangeNotifier {
   }
 
   Future<void> stop() async {
-    return _discovery.stop();
+    return _discovery?.stop();
   }
 }

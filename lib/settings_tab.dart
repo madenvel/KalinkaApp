@@ -27,12 +27,19 @@ class _SettingsTabState extends State<SettingsTab> {
   @override
   void initState() {
     super.initState();
-    context.read<ServiceDiscoveryDataProvider>().start();
-    _addressController.text = context.read<ConnectionSettingsProvider>().host;
-    final port = context.read<ConnectionSettingsProvider>().port;
-    _portController.text = port == 0 ? '' : port.toString();
-    expandedSection = widget.expandSection;
-    _initPackageInfo();
+  }
+
+  @override
+  void activate() {
+    context.read<ServiceDiscoveryDataProvider>().start().then((_) {
+      if (!mounted) return;
+      _addressController.text = context.read<ConnectionSettingsProvider>().host;
+      final port = context.read<ConnectionSettingsProvider>().port;
+      _portController.text = port == 0 ? '' : port.toString();
+      expandedSection = widget.expandSection;
+      _initPackageInfo();
+    });
+    super.activate();
   }
 
   @override
@@ -60,6 +67,7 @@ class _SettingsTabState extends State<SettingsTab> {
 
   Future<void> _initPackageInfo() async {
     final packageInfo = await PackageInfo.fromPlatform();
+    if (!mounted) return;
     setState(() {
       _appVersion = packageInfo.version;
       _appBuildNumber = packageInfo.buildNumber;
