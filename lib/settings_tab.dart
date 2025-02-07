@@ -27,10 +27,6 @@ class _SettingsTabState extends State<SettingsTab> {
   @override
   void initState() {
     super.initState();
-  }
-
-  @override
-  void activate() {
     context.read<ServiceDiscoveryDataProvider>().start().then((_) {
       if (!mounted) return;
       _addressController.text = context.read<ConnectionSettingsProvider>().host;
@@ -39,7 +35,6 @@ class _SettingsTabState extends State<SettingsTab> {
       expandedSection = widget.expandSection;
       _initPackageInfo();
     });
-    super.activate();
   }
 
   @override
