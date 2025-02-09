@@ -49,11 +49,20 @@ class BottomMenu extends StatelessWidget {
                 title: const Text('Add to queue'),
                 leading: const Icon(Icons.queue_music),
                 onTap: () {
-                  KalinkaPlayerProxy().add(browseItem.url);
+                  KalinkaPlayerProxy().add(browseItem.url).then((_) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text('Added item to playueue'),
+                        duration: Duration(seconds: 2)));
+                  }).catchError((error, stackTrace) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text('Error adding item to queue')));
+                  });
                   Navigator.pop(context);
                 })
             : const SizedBox.shrink(),
-        browseItem.canAdd && browseItem.browseType != "playlist"
+        browseItem.canAdd
             ? ListTile(
                 title: Text('Add to playlist'),
                 leading: Icon(Icons.playlist_add),

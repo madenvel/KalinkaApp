@@ -144,9 +144,8 @@ class _ConnectionManagerState extends State<ConnectionManager> {
       const Center(
         child: Padding(
           padding: EdgeInsets.all(8.0),
-          child: Text(
-              'Failed to connect to server. Please check your settings and try again.',
-              textAlign: TextAlign.center),
+          child:
+              Text('Failed to connect to server', textAlign: TextAlign.center),
         ),
       ),
       ElevatedButton(
@@ -155,7 +154,7 @@ class _ConnectionManagerState extends State<ConnectionManager> {
             _manualSettingsOverride = true;
           });
         },
-        child: const Text('Connection settings'),
+        child: const Text('Connection Settings'),
       ),
     ]));
   }

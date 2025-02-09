@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:kalinka/favorite_button.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 
+import 'add_to_playlist.dart';
 import 'custom_cache_manager.dart';
 import 'data_model.dart';
 import 'data_provider.dart';
@@ -93,10 +94,20 @@ class _NowPlayingState extends State<NowPlaying> {
     int bitDepth = playerStateProvider.state.audioInfo?.bitsPerSample ?? 0;
     return Row(
       children: [
-        IconButton(
-            icon: const Icon(Icons.playlist_add),
-            iconSize: 32,
-            onPressed: () {}),
+        item != null
+            ? IconButton(
+                icon: const Icon(Icons.playlist_add),
+                iconSize: 32,
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => AddToPlaylist(
+                                items: BrowseItemsList(0, 1, 1, [item]),
+                              )));
+                })
+            : const SizedBox.shrink(),
         const Spacer(),
         Container(
           decoration: BoxDecoration(

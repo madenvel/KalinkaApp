@@ -39,6 +39,7 @@ class GenreSelector extends StatelessWidget {
               }
               provider.performFilterChange();
             },
+            controlAffinity: ListTileControlAffinity.leading,
           );
         },
       );

@@ -9,16 +9,17 @@ import 'package:kalinka/custom_list_tile.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/favorite_button.dart';
 import 'package:kalinka/genre_select_filter.dart';
-import 'package:kalinka/list_card.dart';
-import 'package:kalinka/multilist.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'data_model.dart';
+import 'text_card_colors.dart';
 
 class BrowsePage extends StatefulWidget {
-  const BrowsePage({super.key, required this.parentItem});
+  const BrowsePage(
+      {super.key, required this.parentItem, this.coloredAppBar = false});
 
   final BrowseItem parentItem;
+  final bool coloredAppBar;
 
   @override
   State<BrowsePage> createState() => _BrowsePage();
@@ -136,13 +137,23 @@ class _BrowsePage extends State<BrowsePage> {
 
   @override
   Widget build(BuildContext context) {
-    var statusBarHeight = MediaQuery.of(context).padding.top;
+    String browseType = widget.parentItem.browseType;
+    bool isCatalog = browseType == 'catalog';
+    var statusBarHeight = isCatalog ? 0.0 : MediaQuery.of(context).padding.top;
     return Scaffold(
-        extendBodyBehindAppBar: true,
+        extendBodyBehindAppBar: !isCatalog,
         extendBody: true,
         appBar: AppBar(
-          forceMaterialTransparency: _appBarTitle == null,
-          title: _appBarTitle,
+          backgroundColor: widget.coloredAppBar
+              ? TextCardColors.generateGradientColors(
+                      widget.parentItem.name ?? 'Unknown')
+                  .first
+              : null,
+          forceMaterialTransparency: !isCatalog ? _appBarTitle == null : false,
+          title: isCatalog
+              ? Text(widget.parentItem.name ?? 'Unknown',
+                  style: const TextStyle(fontWeight: FontWeight.bold))
+              : _appBarTitle,
           actions: <Widget>[
             if (widget.parentItem.browseType == 'catalog')
               const GenreFilterButton()
@@ -207,48 +218,59 @@ class _BrowsePage extends State<BrowsePage> {
       return const Center(child: Text('No items'));
     }
 
-    const int horizontalItemCount = 2;
-    double padding = 8;
-    double size = (MediaQuery.of(context).size.width -
-            padding * (horizontalItemCount + 1)) /
-        horizontalItemCount;
-    double height = (size * imageRatioForBrowseType(browseItems[0]) +
-        (browseItems[0].image != null ? 64 : 0));
-
-    return Padding(
-      padding: const EdgeInsets.only(left: 8.0, right: 8),
-      child: MultiList(
-        horizontalSeparatorBuilder: (context, index) =>
-            const SizedBox(width: 8),
-        verticalSeparatorBuilder: (context, index) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          final item = browseItems[index];
-          return SizedBox(
-              height: height, child: _buildCard(context, item, index));
-        },
-        itemCount: browseItems.length,
-        horizontalItemCount: horizontalItemCount,
-        footerBuilder: (context) => _buildFooter(context),
-      ),
+    return ListView.builder(
+      padding: EdgeInsets.zero,
+      itemCount: browseItems.length + 1,
+      itemBuilder: (context, index) {
+        if (index == browseItems.length) {
+          return _buildFooter(context);
+        }
+        final item = browseItems[index];
+        return ListTile(
+          leading: item.image != null
+              ? CachedNetworkImage(
+                  imageUrl: item.image!.small ?? item.image!.thumbnail ?? '',
+                  width: 50 / imageRatioForBrowseType(item),
+                  height: 50,
+                  fit: BoxFit.cover,
+                )
+              : null,
+          title: item.image != null
+              ? Text(item.name ?? 'Unknown')
+              : _buildTextCard(item.name ?? 'Unknown'),
+          subtitle: item.subname != null ? Text(item.subname!) : null,
+          onTap: () {
+            if (item.canBrowse) {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => BrowsePage(
+                            parentItem: item,
+                            coloredAppBar: item.image == null,
+                          )));
+            }
+          },
+        );
+      },
     );
   }
 
-  Widget _buildCard(BuildContext context, BrowseItem? item, int index) {
-    if (item == null) {
-      return const Spacer();
-    }
-
-    return ListCard(
-        browseItem: item,
-        index: index,
-        onTap: () {
-          if (item.canBrowse) {
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => BrowsePage(parentItem: item)));
-          }
-        });
+  Widget _buildTextCard(String text) {
+    return Row(children: [
+      Container(
+        padding: const EdgeInsets.only(left: 8, right: 8, top: 16, bottom: 16),
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: TextCardColors.generateGradientColors(text),
+                tileMode: TileMode.mirror)),
+        child: Text(text,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      ),
+      const Spacer()
+    ]);
   }
 
   Widget _buildFooterText(BuildContext context) {
@@ -264,9 +286,9 @@ class _BrowsePage extends State<BrowsePage> {
     }
     return Row(children: [
       const Spacer(),
-      TextButton(
-          child: Text('Load more items (${total - browseItems.length})',
-              style: const TextStyle(color: Colors.grey, fontSize: 16.0)),
+      ElevatedButton(
+          child: Text('Load More Items (${total - browseItems.length})',
+              style: const TextStyle(fontSize: 16.0)),
           onPressed: () {
             _loadMoreItems();
           }),
@@ -390,7 +412,13 @@ class _BrowsePage extends State<BrowsePage> {
                 ? IconButton(
                     icon: const Icon(Icons.queue_music),
                     onPressed: () {
-                      KalinkaPlayerProxy().add(widget.parentItem.url);
+                      KalinkaPlayerProxy().add(widget.parentItem.url).then((_) {
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Added item to playueue'),
+                                duration: Duration(seconds: 2)));
+                      });
                     })
                 : const SizedBox.shrink(),
           ]),

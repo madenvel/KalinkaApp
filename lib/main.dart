@@ -70,18 +70,25 @@ class RpiMusic extends StatelessWidget {
           scrollBehavior: MyCustomScrollBehavior(),
           title: 'Kalinka App',
           theme: ThemeData(
+            brightness: Brightness.light,
+            useMaterial3: true,
+            visualDensity: VisualDensity.compact,
+            // colorSchemeSeed: Colors.black,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.blue,
+              // ···
               brightness: Brightness.light,
-              useMaterial3: true,
-              visualDensity: VisualDensity.compact,
-              // colorSchemeSeed: Colors.black,
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: Colors.blue,
-                // ···
-                brightness: Brightness.light,
-              ),
-              listTileTheme: listTileTheme
-              /* light theme settings */
-              ),
+            ),
+            listTileTheme: listTileTheme,
+            appBarTheme: AppBarTheme(
+              toolbarHeight: 48,
+              titleTextStyle: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black),
+            ),
+            /* light theme settings */
+          ),
           darkTheme: ThemeData(
             brightness: Brightness.dark,
             useMaterial3: true,
@@ -92,6 +99,13 @@ class RpiMusic extends StatelessWidget {
               seedColor: Colors.blue,
               // ···
               brightness: Brightness.dark,
+            ),
+            appBarTheme: AppBarTheme(
+              toolbarHeight: 48,
+              titleTextStyle: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white),
             ),
             /* dark theme settings */
           ),

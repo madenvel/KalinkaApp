@@ -112,11 +112,12 @@ class _PlaybarState extends State<Playbar> {
         children: [
           Text(
             trackList[index].title,
-            style: Theme.of(context).listTileTheme.titleTextStyle,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             overflow: TextOverflow.ellipsis,
           ),
           Text(
-            trackList[index].performer?.name ?? 'Unknown artist',
+            // '${trackList[index].performer?.name ?? 'Unknown artist'} - ${trackList[index].album!.title}',
+            '${trackList[index].performer?.name ?? 'Unknown Artist'}  ·  ${trackList[index].album?.title ?? 'Unknown Album'}',
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).listTileTheme.subtitleTextStyle,
           )

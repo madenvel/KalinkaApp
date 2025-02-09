@@ -12,7 +12,7 @@ class GenreFilterButton extends StatelessWidget {
       return Badge.count(
           isLabelVisible: provider.filter.isNotEmpty,
           count: provider.filter.length,
-          alignment: Alignment.bottomLeft,
+          alignment: Alignment.topLeft,
           child: IconButton(
               icon: const Icon(Icons.tune),
               onPressed: () {

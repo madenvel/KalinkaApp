@@ -3,17 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_model.dart';
 
+import 'text_card_colors.dart';
+
 class ListCard extends StatefulWidget {
   final BrowseItem browseItem;
   final GestureTapCallback? onTap;
-  final int? index;
   final double textLabelHeight;
 
   const ListCard(
       {super.key,
       required this.browseItem,
       this.onTap,
-      this.index,
       this.textLabelHeight = 64.0});
 
   @override
@@ -30,12 +30,24 @@ class _ListCardState extends State<ListCard> {
   }
 
   Widget _buildCard(BuildContext context, BoxConstraints constraints) {
+    BrowseItem item = widget.browseItem;
+    String? image;
+    if (item.image != null) {
+      image = item.image!.large ?? item.image!.small ?? item.image!.thumbnail;
+    }
+
+    var adjustToTextHeight = image != null ? widget.textLabelHeight : 0;
+
+    Size size = Size(
+        (constraints.maxHeight - adjustToTextHeight) /
+            imageRatioForBrowseType(),
+        constraints.maxHeight - adjustToTextHeight);
     switch (widget.browseItem.browseType) {
       case 'album':
       case 'playlist':
-        return _buildImageCard(context, constraints);
+        return _buildImageCard(context, size);
       case 'catalog':
-        return _buildCatalogCard(context, constraints);
+        return _buildCatalogCard(context, size);
       // case 'track':
       //   return _buildAlbumCard(context, constraints);
     }
@@ -43,36 +55,35 @@ class _ListCardState extends State<ListCard> {
     return Container();
   }
 
-  Widget _buildImageCard(BuildContext context, BoxConstraints constraints) {
+  Widget _buildImageCard(BuildContext context, Size size) {
     return Container(
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _buildItemImage(_getFallbackIcon(), constraints),
-        widget.browseItem.image != null
-            ? SizedBox(
-                height: widget.textLabelHeight,
-                width: (constraints.maxHeight - widget.textLabelHeight) /
-                    imageRatioForBrowseType(),
-                child: _buildText())
-            : const SizedBox.shrink()
-      ]),
-    );
+        width: size.width,
+        height: size.height,
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _buildItemImage(_getFallbackIcon(), size),
+          widget.browseItem.image != null
+              ? _buildText()
+              : const SizedBox.shrink()
+        ]));
   }
 
-  Widget _buildCatalogCard(BuildContext context, BoxConstraints constraints) {
-    return _buildItemImage(_getFallbackIcon(), constraints);
+  Widget _buildCatalogCard(BuildContext context, Size size) {
+    return _buildItemImage(_getFallbackIcon(), size);
   }
 
   Widget _buildText() {
     BrowseItem item = widget.browseItem;
-    return ListTile(
-        contentPadding: const EdgeInsets.all(0),
-        title:
-            Text(item.name ?? 'Unknown title', overflow: TextOverflow.ellipsis),
-        subtitle: item.subname != null
-            ? Text(item.subname!, overflow: TextOverflow.ellipsis)
-            : null,
-        visualDensity: VisualDensity.compact);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const SizedBox(height: 4),
+      Text(item.name ?? 'Unknown title',
+          style: TextStyle(fontWeight: FontWeight.bold),
+          overflow: TextOverflow.ellipsis),
+      item.subname != null
+          ? Text(item.subname!, overflow: TextOverflow.ellipsis)
+          : const SizedBox.shrink(),
+      const SizedBox(height: 4),
+    ]);
   }
 
   IconData _getFallbackIcon() {
@@ -104,19 +115,12 @@ class _ListCardState extends State<ListCard> {
     return 1.0;
   }
 
-  Widget _buildItemImage(IconData fallbackIcon, BoxConstraints constraints) {
+  Widget _buildItemImage(IconData fallbackIcon, Size size) {
     BrowseItem item = widget.browseItem;
     String? image;
     if (item.image != null) {
       image = item.image!.large ?? item.image!.small ?? item.image!.thumbnail;
     }
-
-    var adjustToTextHeight = image != null ? widget.textLabelHeight : 0;
-
-    Size size = Size(
-        (constraints.maxHeight - adjustToTextHeight) /
-            imageRatioForBrowseType(),
-        constraints.maxHeight - adjustToTextHeight);
 
     return ClipRRect(
         borderRadius: BorderRadius.circular(8),
@@ -136,49 +140,39 @@ class _ListCardState extends State<ListCard> {
                   )));
   }
 
-  List<Color> generateGradientColors(String text) {
-    int hash = text.hashCode;
-
-    // Convert the hash to a value between 0 and 360
-    double hue = (hash % 360).toDouble();
-
-    // Generate two colors with milder tones based on the hue
-    Color color1 = HSLColor.fromAHSL(1.0, hue, 0.5, 0.4).toColor();
-    Color color2 = HSLColor.fromAHSL(1.0, hue, 0.5, 0.5).toColor();
-
-    return [color1, color2];
-  }
-
   Widget _buildTextIcon(BuildContext context, String text) {
-    return Container(
-        decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: generateGradientColors(text),
-                tileMode: TileMode.mirror)),
-        child: Center(
-            child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text(text,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 22.0,
-                fontWeight: FontWeight.bold,
-                shadows: <Shadow>[
-                  Shadow(
-                    offset: Offset(0.0, 0.0),
-                    blurRadius: 4.0,
-                    color: Color.fromARGB(255, 0, 0, 0),
-                  ),
-                  Shadow(
-                    offset: Offset(3.0, 3.0),
-                    blurRadius: 8.0,
-                    color: Color.fromARGB(125, 0, 0, 0),
-                  ),
-                ],
-              )),
-        )));
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+      child: Container(
+          decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: TextCardColors.generateGradientColors(text),
+                  tileMode: TileMode.mirror)),
+          child: Center(
+              child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(text,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 18.0,
+                  fontWeight: FontWeight.bold,
+                  shadows: <Shadow>[
+                    Shadow(
+                      offset: Offset(0.0, 0.0),
+                      blurRadius: 4.0,
+                      color: Color.fromARGB(255, 0, 0, 0),
+                    ),
+                    Shadow(
+                      offset: Offset(3.0, 3.0),
+                      blurRadius: 8.0,
+                      color: Color.fromARGB(125, 0, 0, 0),
+                    ),
+                  ],
+                )),
+          ))),
+    );
   }
 }

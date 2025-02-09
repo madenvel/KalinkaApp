@@ -22,7 +22,7 @@ class _DiscoverState extends State<Discover> {
   _DiscoverState();
 
   final navigatorKey = GlobalKey<NavigatorState>();
-  final double textLabelHeight = 64;
+  final double textLabelHeight = 48;
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +77,7 @@ class _DiscoverState extends State<Discover> {
         );
       case LoadStatus.loaded:
         return ListView.separated(
-            separatorBuilder: (context, index) => const SizedBox(height: 16),
+            separatorBuilder: (context, index) => const SizedBox(height: 8),
             scrollDirection: Axis.vertical,
             itemCount: provider.sections.length,
             itemBuilder: (context, index) {
@@ -97,13 +97,12 @@ class _DiscoverState extends State<Discover> {
       padding: const EdgeInsets.only(left: 8.0, right: 8.0),
       child: Container(
           decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 58, 58, 58),
               borderRadius: const BorderRadius.all(Radius.circular(8)),
               gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    const Color.fromARGB(255, 38, 38, 38),
+                    const Color.fromARGB(255, 38, 38, 58),
                     Theme.of(context).scaffoldBackgroundColor
                   ])),
           child: _buildSection(
@@ -122,41 +121,43 @@ class _DiscoverState extends State<Discover> {
       BuildContext context, BrowseItem item, Widget horizontalList,
       {bool seeAll = true}) {
     return Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.only(left: 8, right: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            Row(children: [
-              Text(
-                item.name ?? 'Unknown Section',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+            Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 8),
+              child: Row(children: [
+                Text(
+                  item.name ?? 'Unknown Section',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              seeAll
-                  ? Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                              child: const Text('See all >',
-                                  style: TextStyle(fontSize: 16)),
-                              onPressed: () {
-                                if (item.canBrowse) {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                        builder: (context) =>
-                                            BrowsePage(parentItem: item)),
-                                  );
-                                }
-                              })))
-                  : const SizedBox.shrink()
-            ]),
+                const Spacer(),
+                seeAll
+                    ? Align(
+                        alignment: Alignment.centerRight,
+                        child: ElevatedButton(
+                            child: const Text('More',
+                                style: TextStyle(fontSize: 16)),
+                            onPressed: () {
+                              if (item.canBrowse) {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          BrowsePage(parentItem: item)),
+                                );
+                              }
+                            }))
+                    : const SizedBox.shrink()
+              ]),
+            ),
             item.description != null
                 ? Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.only(bottom: 4),
                     child: Text(item.description!),
                   )
                 : const SizedBox.shrink(),
@@ -172,23 +173,27 @@ class _DiscoverState extends State<Discover> {
     if (browseItems[0].image != null) {
       BoxConstraints constraints = BoxConstraints(
           minHeight: 100 + textLabelHeight,
-          maxHeight: size.height / 4 + textLabelHeight);
+          maxHeight: size.height / 5 + textLabelHeight);
       cardSize = constraints
-          .constrain(Size(0, size.width / 2.5 + textLabelHeight))
+          .constrain(Size(0, size.width / 3 + textLabelHeight))
           .height;
     } else {
       cardSize = 100;
     }
     return SizedBox(
-        height: cardSize,
+        height: cardSize * 2,
         child: ListView.separated(
             shrinkWrap: true,
             scrollDirection: Axis.horizontal,
-            itemCount: browseItems.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 8),
+            itemCount: browseItems.length ~/ 2,
+            separatorBuilder: (context, index) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
-              return _buildPreviewListItem(
-                  context, browseItems[index], cardSize, index);
+              return Column(children: [
+                _buildPreviewListItem(
+                    context, browseItems[index * 2], cardSize, index),
+                _buildPreviewListItem(
+                    context, browseItems[index * 2 + 1], cardSize, index)
+              ]);
             }));
   }
 
@@ -198,7 +203,6 @@ class _DiscoverState extends State<Discover> {
         height: itemSize,
         child: ListCard(
           browseItem: item,
-          index: index,
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(

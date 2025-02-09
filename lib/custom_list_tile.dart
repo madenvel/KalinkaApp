@@ -62,7 +62,7 @@ class CustomListTile extends StatelessWidget {
           style: Theme.of(context)
               .listTileTheme
               .titleTextStyle
-              ?.copyWith(fontSize: 16.0 * (size / 50.0)),
+              ?.copyWith(fontSize: 14.0 * (size / 50.0)),
           overflow: TextOverflow.ellipsis,
         ),
         browseItem.subname != null

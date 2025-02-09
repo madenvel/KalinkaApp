@@ -77,11 +77,9 @@ class AddToPlaylistState extends State<AddToPlaylist> {
                 const SizedBox(width: 8),
                 Text(
                   '${tracks.length} track${tracks.length > 1 ? 's' : ''} added to playlist${playlistName.isNotEmpty ? ' \'$playlistName\'' : ''}',
-                  style: const TextStyle(color: Colors.white),
                 ),
               ],
             ),
-            backgroundColor: Colors.black87,
           ),
         );
       }).catchError((error) {
@@ -122,11 +120,9 @@ class AddToPlaylistState extends State<AddToPlaylist> {
               const SizedBox(width: 8),
               Text(
                 'Playlist \'$name\' created',
-                style: const TextStyle(color: Colors.white),
               ),
             ],
           ),
-          backgroundColor: Colors.black87,
         ),
       );
     });
@@ -141,19 +137,21 @@ class AddToPlaylistState extends State<AddToPlaylist> {
       body: _selectedIndex == 0
           ? _buildPlaylistTab(context)
           : _buildCreatePlaylistTab(),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
+      bottomNavigationBar: NavigationBar(
+        destinations: const <NavigationDestination>[
+          NavigationDestination(
             icon: Icon(Icons.playlist_add),
+            selectedIcon: Icon(Icons.playlist_add_outlined),
             label: 'Add to Playlists',
           ),
-          BottomNavigationBarItem(
+          NavigationDestination(
             icon: Icon(Icons.add),
+            selectedIcon: Icon(Icons.add_outlined),
             label: 'Create New Playlist',
           ),
         ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: _onItemTapped,
       ),
     );
   }
