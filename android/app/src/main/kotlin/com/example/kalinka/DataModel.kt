@@ -170,3 +170,39 @@ data class CurrentTrack(
         }
     }
 }
+
+data class FavoriteAddedEvent (
+    var id: String? = null,
+    var type: String? = null
+) {
+    companion object Factory{
+        fun fromJson(jsonObj: JSONObject?): FavoriteAddedEvent? {
+            if (jsonObj == null) {
+                return null
+            }
+            val obj = FavoriteAddedEvent()
+            obj.id = "id".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
+            obj.type = "type".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
+
+            return obj
+        }
+    }
+}
+
+data class FavoriteRemovedEvent (
+    var id: String? = null,
+    var type: String? = null
+) {
+    companion object Factory{
+        fun fromJson(jsonObj: JSONObject?): FavoriteRemovedEvent? {
+            if (jsonObj == null) {
+                return null
+            }
+            val obj = FavoriteRemovedEvent()
+            obj.id = "id".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
+            obj.type = "type".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
+
+            return obj
+        }
+    }
+}

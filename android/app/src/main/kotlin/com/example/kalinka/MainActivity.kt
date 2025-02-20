@@ -10,12 +10,21 @@ import io.flutter.plugin.common.MethodChannel
 import java.net.URL
 import kotlinx.coroutines.*
 
+enum class PlaybackMode {
+    RepeatNone,
+    RepeatAll,
+    RepeatOne
+}
+
 data class PlaybackInfo(
     val playerStateType: String,
-    val progressMs: Long
+    val progressMs: Long,
+    val isFavorite: Boolean,
+    val playbackMode: PlaybackMode
 )
 
 data class Metadata(
+    var id: String,
     val durationMs: Long,
     val albumArtworkUri: String,
     val title: String,
@@ -58,6 +67,16 @@ class MainActivity : FlutterActivity() {
                         result.error("UNAVAILABLE", "Notification controls are not available", null)
                     }
                 }
+                "setFavoriteState" -> {
+                    val isFavorite = call.argument<Boolean>("isFavorite") ?: false
+                    val res = setIsFavorite(isFavorite)
+
+                    if (res) {
+                        result.success(true)
+                    } else {
+                        result.error("UNAVAILABLE", "Notification controls are not available", null)
+                    }
+                }
 
                 else -> {
                     result.notImplemented()
@@ -92,5 +111,18 @@ class MainActivity : FlutterActivity() {
             stopService(intent)
         }
         return true
+    }
+
+    private fun setIsFavorite(isFavorite: Boolean): Boolean {
+        Log.i(LOGTAG, "setIsFavorite called")
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val intent = Intent(this, RpiMusicService::class.java)
+            intent.putExtra("isFavorite", isFavorite)
+            startService(intent)
+
+            return true
+        }
+
+        return false
     }
 }

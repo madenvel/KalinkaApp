@@ -2,7 +2,6 @@ package com.example.kalinka
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -63,6 +62,15 @@ class RpiPlayerProxy(
 
     }
 
+    fun stop(onSuccess: (Response) -> Unit) {
+        asyncGetHttpRequest<Response>(
+            "PUT",
+            URI(baseUrl).resolve("/queue/stop").toURL(),
+            onSuccess,
+            converter = { Response.fromJson(it) }
+        )
+    }
+
     fun pause(paused: Boolean, onSuccess: (Response) -> Unit) {
         asyncGetHttpRequest<Response>(
             "PUT",
@@ -96,6 +104,24 @@ class RpiPlayerProxy(
             URI(baseUrl).resolve("/queue/current_track/seek?position_ms=$positionMs").toURL(),
             onSuccess,
             converter = { SeekResponse.fromJson(it) }
+        )
+    }
+
+    fun addFavoriteTrack(id: String, onSuccess: (Response) -> Unit) {
+        asyncGetHttpRequest<Response>(
+            "PUT",
+            URI(baseUrl).resolve("/favorite/add/track/$id").toURL(),
+            onSuccess,
+            converter = { Response.fromJson(it) }
+        )
+    }
+
+    fun removeFavoriteTrack(id: String, onSuccess: (Response) -> Unit) {
+        asyncGetHttpRequest<Response>(
+            "DELETE",
+            URI(baseUrl).resolve("/favorite/remove/track/$id").toURL(),
+            onSuccess,
+            converter = { Response.fromJson(it) }
         )
     }
 

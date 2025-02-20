@@ -13,6 +13,7 @@ import android.media.Rating
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.Build
+import android.os.Bundle
 import android.os.IBinder
 import android.os.SystemClock
 import androidx.annotation.RequiresApi
@@ -25,6 +26,9 @@ class RpiMusicService : Service(), EventCallback {
     private val LOGTAG: String = "RpiMusicService"
     private val NOTIFICATION_CHANNEL_ID = "RpiMusicNotificationChannel"
     private val NOTIFICATION: Int = 1001
+
+    private val ACTION_FAVORITE: String = "com.example.kalinka.ACTION_FAVORITE"
+    private val ACTION_TOGGLE_REPEAT: String = "com.example.kalinka.ACTION_TOGGLE_REPEAT"
 
     private lateinit var mNM: NotificationManager
     private lateinit var eventListener: EventListener
@@ -51,6 +55,7 @@ class RpiMusicService : Service(), EventCallback {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         if (isRunning) {
+            val isFavorite = intent.getBooleanExtra("isFavorite", false)
             return START_NOT_STICKY
         }
         isRunning = true
@@ -90,13 +95,17 @@ class RpiMusicService : Service(), EventCallback {
             override fun onSkipToNext() {
                 Log.i(LOGTAG, "onSkipToNext called")
                 rpiPlayerProxy.skipToNext {}
-                updatePlaybackState(PlaybackInfo("SKIP_TO_NEXT", 0))
+                updatePlaybackState(PlaybackInfo("SKIP_TO_NEXT", 0,
+                    isFavorite = false,
+                    playbackMode = PlaybackMode.RepeatNone))
             }
 
             override fun onSkipToPrevious() {
                 Log.i(LOGTAG, "onSkipToPrevious called")
                 rpiPlayerProxy.skipToPrev {}
-                updatePlaybackState(PlaybackInfo("SKIP_TO_PREV", 0))
+                updatePlaybackState(PlaybackInfo("SKIP_TO_PREV", 0,
+                    isFavorite = false,
+                    playbackMode = PlaybackMode.RepeatNone))
             }
 
             override fun onSeekTo(pos: Long) {
@@ -104,11 +113,26 @@ class RpiMusicService : Service(), EventCallback {
                 isSeekInProgress = true
                 rpiPlayerProxy.seekTo(pos) { response ->
                     if (response.positionMs != null && response.positionMs!! > 0) {
-                        updatePlaybackState(PlaybackInfo("SEEK_IN_PROGRESS", pos))
+                        updatePlaybackState(PlaybackInfo("SEEK_IN_PROGRESS", pos,
+                            isFavorite = false,
+                            playbackMode = PlaybackMode.RepeatNone))
                     }
                     else {
                         isSeekInProgress = false
                     }
+                }
+            }
+
+            override fun onCustomAction(action: String, extras: Bundle?) {
+                if (action == ACTION_FAVORITE) {
+                    Log.w(LOGTAG, "onCustomAction called, $action")
+                    val id = mediaSession!!.controller.metadata?.getString(MediaMetadata.METADATA_KEY_MEDIA_ID)
+                    if (id != null) {
+                        rpiPlayerProxy.addFavoriteTrack(id) {}
+                    }
+                } else if (action == ACTION_TOGGLE_REPEAT) {
+                    Log.w(LOGTAG, "onCustomAction called, $action")
+//                    rpiPlayerProxy.toggleRepeatMode {}
                 }
             }
         })
@@ -149,15 +173,11 @@ class RpiMusicService : Service(), EventCallback {
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onStateChanged(newState: PlayerState) {
-        onStateChangedImpl(newState, false)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun onStateChangedImpl(newState: PlayerState, doNotRemoveNotification: Boolean) {
         Log.i(LOGTAG, "onStateChanged called, $newState")
         var dirty = false
         if (newState.currentTrack != null) {
             val metadata = Metadata(
+                newState.currentTrack!!.id!!,
                 newState.currentTrack!!.duration!!.toLong() * 1000L,
                 newState.currentTrack!!.album!!.image!!.large!!,
                 newState.currentTrack!!.title!!,
@@ -176,13 +196,15 @@ class RpiMusicService : Service(), EventCallback {
                     ?: 0L
             val playbackInfo = PlaybackInfo(
                 newState.state!!,
-                progressMs
+                progressMs,
+                isFavorite = false,
+                playbackMode = PlaybackMode.RepeatNone
             )
             updatePlaybackState(playbackInfo)
             dirty = true
         }
         if (dirty) {
-            updateNotification(doNotRemoveNotification)
+            updateNotification()
         }
     }
 
@@ -194,8 +216,15 @@ class RpiMusicService : Service(), EventCallback {
         mediaSession = null
     }
 
+    override fun onFavoriteTrackAdded(trackId: String) {
+    }
+
+    override fun onFavoriteTrackRemoved(trackId: String) {
+        TODO("Not yet implemented")
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun updateNotification(firstStart: Boolean) {
+    private fun updateNotification() {
         Log.i(
             LOGTAG,
             "updateNotification called, ${mediaSession!!.controller.playbackState}, ${
@@ -246,10 +275,29 @@ class RpiMusicService : Service(), EventCallback {
                             PlaybackState.ACTION_SKIP_TO_NEXT or
                             PlaybackState.ACTION_SKIP_TO_PREVIOUS or
                             PlaybackState.ACTION_SET_RATING or
-                            PlaybackState.ACTION_SEEK_TO
+                            PlaybackState.ACTION_SEEK_TO or PlaybackState.ACTION_SET_RATING
                 )
-                .build()
-        mediaSession!!.setPlaybackState(playbackState)
+//        if (state == PlaybackState.STATE_PLAYING ||
+//            state == PlaybackState.STATE_PAUSED ||
+//            state == PlaybackState.STATE_STOPPED
+//        ) {
+//            playbackState.addCustomAction(
+//                PlaybackState.CustomAction.Builder(
+//                    ACTION_FAVORITE, "Favorite",
+//                    if (info.isFavorite) R.drawable.baseline_favorite_24
+//                    else R.drawable.baseline_favorite_border_24,
+//                )
+//                    .build()
+//            )
+////                .addCustomAction(
+////                    PlaybackState.CustomAction.Builder(
+////                        ACTION_TOGGLE_REPEAT, "Playback Mode", R.drawable.baseline_loop_24,
+////                    )
+////                        .build()
+////                )
+////                .build()
+//        }
+        mediaSession!!.setPlaybackState(playbackState.build())
     }
 
     private fun updateMetadata(metadata: Metadata) {
@@ -267,6 +315,7 @@ class RpiMusicService : Service(), EventCallback {
         Log.i(LOGTAG, "Finished loading bitmap")
         mediaSession!!.setMetadata(
             MediaMetadata.Builder()
+                .putString(MediaMetadata.METADATA_KEY_MEDIA_ID, metadata.id)
                 .putString(MediaMetadata.METADATA_KEY_TITLE, metadata.title)
                 .putString(MediaMetadata.METADATA_KEY_ARTIST, metadata.artist)
                 .putString(MediaMetadata.METADATA_KEY_ALBUM, metadata.album)
