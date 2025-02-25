@@ -54,11 +54,7 @@ class _DiscoverState extends State<Discover> {
                             Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => SettingsTab(
-                                          onCloseRequested: () {
-                                            Navigator.pop(context);
-                                          },
-                                        )));
+                                    builder: (context) => SettingsTab()));
                           })
                     ]),
                     body: _buildBody(context, provider),

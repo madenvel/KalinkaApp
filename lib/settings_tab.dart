@@ -1,53 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_provider.dart';
-import 'package:kalinka/service_discovery.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class SettingsTab extends StatefulWidget {
-  final int expandSection;
-  final Function? onCloseRequested;
-
-  const SettingsTab(
-      {super.key, this.expandSection = -1, this.onCloseRequested});
+  const SettingsTab({super.key});
 
   @override
   State<SettingsTab> createState() => _SettingsTabState();
 }
 
 class _SettingsTabState extends State<SettingsTab> {
-  final _addressController = TextEditingController();
-  final _portController = TextEditingController();
-
-  int expandedSection = -1;
-
   String _appVersion = '...';
   String _appBuildNumber = '';
 
   @override
   void initState() {
     super.initState();
-    context.read<ServiceDiscoveryDataProvider>().start().then((_) {
-      if (!mounted) return;
-      _addressController.text = context.read<ConnectionSettingsProvider>().host;
-      final port = context.read<ConnectionSettingsProvider>().port;
-      _portController.text = port == 0 ? '' : port.toString();
-      expandedSection = widget.expandSection;
-      _initPackageInfo();
-    });
-  }
-
-  @override
-  void deactivate() {
-    context.read<ServiceDiscoveryDataProvider>().stop();
-    super.deactivate();
-  }
-
-  @override
-  void dispose() {
-    _addressController.dispose();
-    _portController.dispose();
-    super.dispose();
+    _initPackageInfo();
   }
 
   @override
@@ -70,17 +40,16 @@ class _SettingsTabState extends State<SettingsTab> {
   }
 
   Widget buildBody(BuildContext context) {
+    final connectionSettings = context.read<ConnectionSettingsProvider>();
     return ExpansionPanelList.radio(
-      initialOpenPanelValue: expandedSection,
       children: [
         ExpansionPanelRadio(
           value: 0,
           headerBuilder: (BuildContext context, bool isExpanded) {
             return ListTile(
-              title: Text(
-                  'Device ${context.read<ConnectionSettingsProvider>().name}'),
-              subtitle: Text(
-                  '${context.read<ConnectionSettingsProvider>().host}:${context.read<ConnectionSettingsProvider>().port}'),
+              title: Text('Device ${connectionSettings.name}'),
+              subtitle:
+                  Text('${connectionSettings.host}:${connectionSettings.port}'),
             );
           },
           body: Padding(
@@ -88,7 +57,7 @@ class _SettingsTabState extends State<SettingsTab> {
             child: ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                context.read<ConnectionSettingsProvider>().reset();
+                connectionSettings.reset();
               },
               child: const Text('Setup another device'),
             ),
