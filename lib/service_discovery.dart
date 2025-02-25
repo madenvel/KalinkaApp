@@ -7,6 +7,7 @@ class ServiceDiscoveryDataProvider with ChangeNotifier {
   final String type = '_kalinkaplayer._tcp';
 
   BonsoirDiscovery? _discovery;
+  StreamSubscription<BonsoirDiscoveryEvent>? _discoverySubscription;
 
   final List<ResolvedBonsoirService> _services = [];
   final List<BonsoirService> _unresolvedServices = [];
@@ -27,7 +28,7 @@ class ServiceDiscoveryDataProvider with ChangeNotifier {
       await _discovery!.ready;
       notifyListeners();
 
-      _discovery!.eventStream!.listen((event) {
+      _discoverySubscription = _discovery!.eventStream!.listen((event) {
         if (event.type == BonsoirDiscoveryEventType.discoveryServiceFound) {
           event.service!.resolve(_discovery!.serviceResolver);
           _unresolvedServices.add(event.service!);
@@ -70,6 +71,10 @@ class ServiceDiscoveryDataProvider with ChangeNotifier {
     if (_startCompleter != null) {
       await _startCompleter!.future;
     }
+
     await _discovery?.stop();
+    await _discoverySubscription?.cancel();
+    _discoverySubscription = null;
+    _discovery = null;
   }
 }
