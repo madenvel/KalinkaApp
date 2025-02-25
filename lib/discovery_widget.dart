@@ -28,13 +28,10 @@ class _DiscoveryWidgetState extends State<DiscoveryWidget> {
   }
 
   @override
-  void deactivate() {
-    context.read<ServiceDiscoveryDataProvider>().stop();
-    super.deactivate();
-  }
-
-  @override
   void dispose() {
+    if (context.mounted) {
+      context.read<ServiceDiscoveryDataProvider>().stop();
+    }
     _addressController.dispose();
     _portController.dispose();
     super.dispose();

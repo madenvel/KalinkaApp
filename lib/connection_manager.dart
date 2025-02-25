@@ -7,7 +7,7 @@ import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/event_listener.dart';
 import 'package:kalinka/fg_service.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
-import 'package:kalinka/settings_tab.dart';
+import 'package:kalinka/discovery_widget.dart';
 
 class ConnectionManager extends StatefulWidget {
   final Widget child;
@@ -48,21 +48,25 @@ class _ConnectionManagerState extends State<ConnectionManager> {
         setState(() {
           _connected = false;
         });
-        Timer(
-            Duration(
-                seconds: _connectionAttempts >= _maxConnectionAttempts ? 3 : 1),
-            () {
-          if (!_connected) {
-            logger.i('Attempting to reconnect, $_connectionAttempts');
-            setState(() {
-              _connectionAttempts++;
-            });
-            final provider = context.read<ConnectionSettingsProvider>();
-            final host = provider.host;
-            final port = provider.port;
-            _eventListener.startListening(host, port);
-          }
-        });
+        final provider = context.read<ConnectionSettingsProvider>();
+        if (provider.isSet) {
+          Timer(
+              Duration(
+                  seconds: _connectionAttempts >= _maxConnectionAttempts
+                      ? 3
+                      : 1), () {
+            if (!_connected) {
+              logger.i('Attempting to reconnect, $_connectionAttempts');
+              setState(() {
+                _connectionAttempts++;
+              });
+
+              final host = provider.host;
+              final port = provider.port;
+              _eventListener.startListening(host, port);
+            }
+          });
+        }
       },
       EventType.NetworkConnected: (args) {
         setState(() {
@@ -84,18 +88,22 @@ class _ConnectionManagerState extends State<ConnectionManager> {
     if (!mounted) {
       return;
     }
+    if (_connected) {
+      _manualSettingsOverride = true;
+      _audioPlayerService.hideNotificationControls();
+      _eventListener.stopListening();
+    }
+
     _connected = false;
-    _manualSettingsOverride = false;
     _connectionAttempts = 0;
     final provider = context.read<ConnectionSettingsProvider>();
     final host = provider.host;
     final port = provider.port;
-    _audioPlayerService.hideNotificationControls();
-    _eventListener.stopListening();
     if (host.isNotEmpty && port != 0) {
       _eventListener.startListening(host, port);
       _rpiPlayerProxy.connect(host, port);
     }
+    setState(() {});
   }
 
   @override
@@ -122,7 +130,10 @@ class _ConnectionManagerState extends State<ConnectionManager> {
   Widget _buildBody(BuildContext context, ConnectionSettingsProvider provider) {
     final isHostPortSet = provider.isSet;
     if (!isHostPortSet || _manualSettingsOverride) {
-      return SettingsTab(expandSection: 0, onCloseRequested: () {});
+      return DiscoveryWidget(onServiceSelected: (name, host, port) {
+        _manualSettingsOverride = false;
+        provider.setDevice(name, host, port);
+      });
     } else {
       if (_connected) {
         return widget.child;
