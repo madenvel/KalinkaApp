@@ -663,6 +663,8 @@ class GenreFilterProvider with ChangeNotifier {
 
   void _init() async {
     _isLoaded = false;
+    _genres.clear();
+    _filter.clear();
     KalinkaPlayerProxy().getGenres().then((value) {
       _genres.addAll(value.items);
       _isLoaded = true;
@@ -672,9 +674,6 @@ class GenreFilterProvider with ChangeNotifier {
 
   void _setupEventCallbacks() {
     subscriptionId = EventListener().registerCallback({
-      EventType.NetworkDisconnected: (_) {
-        _isLoaded = false;
-      },
       EventType.NetworkConnected: (_) {
         _init();
       }
