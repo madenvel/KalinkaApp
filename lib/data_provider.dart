@@ -604,9 +604,11 @@ class VolumeControlProvider with ChangeNotifier {
 }
 
 class ConnectionSettingsProvider with ChangeNotifier {
+  String _name = '';
   String _host = '';
   int _port = 0;
 
+  get name => _name;
   get host => _host;
   get port => _port;
   get isSet => _host.isNotEmpty && _port > 0;
@@ -617,20 +619,30 @@ class ConnectionSettingsProvider with ChangeNotifier {
 
   Future<void> _init() {
     return SharedPreferences.getInstance().then((prefs) {
+      _name = prefs.getString('RpiMusic.name') ?? 'Unknown';
       _host = prefs.getString('RpiMusic.host') ?? '';
       _port = prefs.getInt('RpiMusic.port') ?? 0;
       notifyListeners();
     });
   }
 
-  Future<void> setAddress(String host, int port) {
+  Future<void> setDevice(String name, String host, int port) {
     return SharedPreferences.getInstance().then((prefs) {
+      prefs.setString('RpiMusic.name', name);
       prefs.setString('RpiMusic.host', host);
       prefs.setInt('RpiMusic.port', port);
+      _name = name;
       _host = host;
       _port = port;
       notifyListeners();
     });
+  }
+
+  void reset() {
+    _name = '';
+    _host = '';
+    _port = 0;
+    notifyListeners();
   }
 }
 
