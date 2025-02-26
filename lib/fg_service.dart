@@ -23,26 +23,35 @@ class AudioPlayerService {
   AudioPlayerService._internal();
 
   Future<void> showNotificationControls() async {
-    try {
-      if (_host.isEmpty || _port == 0) {
-        return;
-      }
-      _channel.invokeMethod('showNotificationControls',
-          {'host': _host, 'port': _port}).then((_) {});
-    } on PlatformException catch (e) {
-      logger.e('Failed to start foreground service: ${e.message}');
-    } on MissingPluginException catch (e) {
-      logger.e('Service is not implemented for this platform, ${e.message}');
+    if (_host.isEmpty || _port == 0) {
+      return;
     }
+    _channel
+        .invokeMethod(
+            'showNotificationControls', {'host': _host, 'port': _port})
+        .then((_) {})
+        .catchError((e) {
+          if (e is PlatformException) {
+            logger.e('Failed to show notification controls: ${e.message}');
+          } else if (e is MissingPluginException) {
+            logger.w(
+                'Notification controls are not implemented for this platform: ${e.message}');
+          } else {
+            logger.e('An unexpected error occurred: $e');
+          }
+        });
   }
 
   Future<void> hideNotificationControls() async {
-    try {
-      await _channel.invokeMethod('hideNotificationControls');
-    } on PlatformException catch (e) {
-      logger.e('Failed to stop foreground service: ${e.message}');
-    } on MissingPluginException catch (e) {
-      logger.e('Service is not implemented for this platform ${e.message}');
-    }
+    await _channel.invokeMethod('hideNotificationControls').catchError((e) {
+      if (e is PlatformException) {
+        logger.e('Failed to hide notification controls: ${e.message}');
+      } else if (e is MissingPluginException) {
+        logger.w(
+            'Notification controls are not implemented for this platform: ${e.message}');
+      } else {
+        logger.e('An unexpected error occurred: $e');
+      }
+    });
   }
 }
