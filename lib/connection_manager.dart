@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:kalinka/service_discovery.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_provider.dart';
@@ -130,10 +131,12 @@ class _ConnectionManagerState extends State<ConnectionManager> {
   Widget _buildBody(BuildContext context, ConnectionSettingsProvider provider) {
     final isHostPortSet = provider.isSet;
     if (!isHostPortSet || _manualSettingsOverride) {
-      return DiscoveryWidget(onServiceSelected: (name, host, port) {
-        _manualSettingsOverride = false;
-        provider.setDevice(name, host, port);
-      });
+      return ChangeNotifierProvider(
+          create: (context) => ServiceDiscoveryDataProvider(),
+          child: DiscoveryWidget(onServiceSelected: (name, host, port) {
+            _manualSettingsOverride = false;
+            provider.setDevice(name, host, port);
+          }));
     } else {
       if (_connected) {
         return widget.child;
