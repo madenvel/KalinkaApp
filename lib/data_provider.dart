@@ -607,11 +607,13 @@ class ConnectionSettingsProvider with ChangeNotifier {
   String _name = '';
   String _host = '';
   int _port = 0;
+  bool _isLoaded = false;
 
   get name => _name;
   get host => _host;
   get port => _port;
   get isSet => _host.isNotEmpty && _port > 0;
+  get isLoaded => _isLoaded;
 
   ConnectionSettingsProvider() {
     _init();
@@ -622,6 +624,7 @@ class ConnectionSettingsProvider with ChangeNotifier {
       _name = prefs.getString('RpiMusic.name') ?? 'Unknown';
       _host = prefs.getString('RpiMusic.host') ?? '';
       _port = prefs.getInt('RpiMusic.port') ?? 0;
+      _isLoaded = true;
       notifyListeners();
     });
   }
