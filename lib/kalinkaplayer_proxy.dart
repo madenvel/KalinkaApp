@@ -311,6 +311,16 @@ class KalinkaPlayerProxy {
     });
   }
 
+  Future<Map<String, dynamic>> getSettings() async {
+    final url = _buildUri('/server/config');
+    return client.get(url).then((response) {
+      if (response.statusCode != 200) {
+        throw Exception('Failed to get settings, url=$url');
+      }
+      return json.decode(utf8.decode(response.bodyBytes));
+    });
+  }
+
   StatusMessage statusMessageFromResponse(http.Response response) {
     if (response.statusCode != 200) {
       var url = response.request?.url;
