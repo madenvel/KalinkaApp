@@ -2,7 +2,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:kalinka/connection_manager.dart';
 import 'package:provider/provider.dart';
-import 'package:kalinka/service_discovery.dart';
 import 'data_provider.dart';
 import 'discover.dart';
 import 'library.dart';
@@ -60,8 +59,6 @@ class RpiMusic extends StatelessWidget {
             },
           ),
           ChangeNotifierProvider(create: (context) => VolumeControlProvider()),
-          ChangeNotifierProvider(
-              create: (context) => ServiceDiscoveryDataProvider()),
           ChangeNotifierProvider(
               create: (context) => ConnectionSettingsProvider()),
           ChangeNotifierProvider(create: (context) => UserPlaylistProvider())
