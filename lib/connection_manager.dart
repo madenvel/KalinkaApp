@@ -137,8 +137,6 @@ class _ConnectionManagerState extends State<ConnectionManager> {
     } else {
       if (_connected) {
         return widget.child;
-      } else if (_connectionAttempts >= _maxConnectionAttempts) {
-        return buildFailedToConnectScreen(context);
       } else {
         return buildConnectingScreen(context);
       }
@@ -146,27 +144,35 @@ class _ConnectionManagerState extends State<ConnectionManager> {
   }
 
   Widget buildConnectingScreen(BuildContext context) {
-    return const Center(child: CircularProgressIndicator());
-  }
-
-  Widget buildFailedToConnectScreen(BuildContext context) {
     return Center(
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      const Center(
-        child: Padding(
-          padding: EdgeInsets.all(8.0),
-          child:
-              Text('Failed to connect to server', textAlign: TextAlign.center),
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Container(
+          width: 100,
+          height: 100,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+          ),
+          padding: const EdgeInsets.all(8.0),
+          child: Image.asset('assets/redberry_icon.png'),
         ),
-      ),
-      ElevatedButton(
-        onPressed: () {
-          setState(() {
-            _manualSettingsOverride = true;
-          });
-        },
-        child: const Text('Connection Settings'),
-      ),
-    ]));
+        const SizedBox(height: 16),
+        const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2.0)),
+        const SizedBox(height: 16),
+        if (_connectionAttempts >= _maxConnectionAttempts)
+          ElevatedButton(
+              child: const Text('Setup New Device'),
+              onPressed: () {
+                setState(() {
+                  _manualSettingsOverride = true;
+                });
+              })
+        else
+          const SizedBox(height: 32)
+      ]),
+    );
   }
 }
