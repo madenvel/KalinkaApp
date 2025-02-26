@@ -130,6 +130,10 @@ class _ConnectionManagerState extends State<ConnectionManager> {
 
   Widget _buildBody(BuildContext context, ConnectionSettingsProvider provider) {
     final isHostPortSet = provider.isSet;
+    if (!provider.isLoaded) {
+      return const SizedBox.shrink();
+    }
+
     if (!isHostPortSet || _manualSettingsOverride) {
       return ChangeNotifierProvider(
           create: (context) => ServiceDiscoveryDataProvider(),

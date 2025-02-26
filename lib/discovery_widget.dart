@@ -29,9 +29,6 @@ class _DiscoveryWidgetState extends State<DiscoveryWidget> {
 
   @override
   void dispose() {
-    if (context.mounted) {
-      context.read<ServiceDiscoveryDataProvider>().stop();
-    }
     _addressController.dispose();
     _portController.dispose();
     super.dispose();
@@ -188,7 +185,7 @@ class _DiscoveryWidgetState extends State<DiscoveryWidget> {
                           text: name,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        const TextSpan(text: ' at '),
+                        const TextSpan(text: ' on '),
                         TextSpan(
                           text: '$address:$port',
                           style: const TextStyle(fontWeight: FontWeight.bold),

@@ -86,7 +86,6 @@ class _SettingsTabState extends State<SettingsTab> {
             padding: const EdgeInsets.all(8.0),
             child: ElevatedButton(
               onPressed: () {
-                Navigator.pop(context);
                 connectionSettings.reset();
               },
               child: const Text('Setup another device'),
