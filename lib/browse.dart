@@ -213,6 +213,21 @@ class _BrowsePage extends State<BrowsePage> {
     return 1.0;
   }
 
+  IconData _getFallbackIcon(BrowseItem item) {
+    switch (item.browseType) {
+      case 'artist':
+        return Icons.person;
+      case 'album':
+        return Icons.album;
+      case 'track':
+        return Icons.music_note;
+      case 'playlist':
+        return Icons.playlist_play;
+      default:
+        return Icons.help;
+    }
+  }
+
   Widget _buildCatalog(BuildContext context) {
     if (browseItems.isEmpty) {
       return const Center(child: Text('No items'));
@@ -226,6 +241,7 @@ class _BrowsePage extends State<BrowsePage> {
           return _buildFooter(context);
         }
         final item = browseItems[index];
+        final fallbackIcon = _getFallbackIcon(item);
         return ListTile(
           leading: item.image != null
               ? CachedNetworkImage(
@@ -233,6 +249,10 @@ class _BrowsePage extends State<BrowsePage> {
                   width: 50 / imageRatioForBrowseType(item),
                   height: 50,
                   fit: BoxFit.cover,
+                  placeholder: (context, url) =>
+                      FittedBox(child: Icon(fallbackIcon)),
+                  errorWidget: (context, url, error) =>
+                      const Icon(Icons.error, size: 50.0),
                 )
               : null,
           title: item.image != null
@@ -334,7 +354,16 @@ class _BrowsePage extends State<BrowsePage> {
                   }));
         } else {
           return _loadInProgress
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(
+                  child: Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.0,
+                      )),
+                ))
               : _buildFooter(context);
         }
       },

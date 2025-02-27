@@ -109,7 +109,9 @@ class _DiscoverState extends State<Discover> {
                   : provider.previews[index].isNotEmpty
                       ? _buildHorizontalList(context, provider.previews[index])
                       : const SizedBox.shrink(),
-              seeAll: !hasImage)),
+              seeAll: !hasImage &&
+                  provider.previews[index].length <
+                      provider.sectionItemsCountTotal[index])),
     );
   }
 
