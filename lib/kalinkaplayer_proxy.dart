@@ -321,6 +321,29 @@ class KalinkaPlayerProxy {
     });
   }
 
+  Future<void> saveSettings(Map<String, dynamic> settings) async {
+    settings.forEach((key, value) {
+      final url = _buildUri('/server/config', {
+        'key': key,
+        'value': value,
+      });
+      client.put(url).then((response) {
+        if (response.statusCode != 200) {
+          throw Exception('Failed to save settings, url=$url');
+        }
+      });
+    });
+  }
+
+  Future<void> restartServer() async {
+    final url = _buildUri('/server/restart');
+    return client.put(url).then((response) {
+      if (response.statusCode != 200) {
+        throw Exception('Failed to restart server, url=$url');
+      }
+    });
+  }
+
   StatusMessage statusMessageFromResponse(http.Response response) {
     if (response.statusCode != 200) {
       var url = response.request?.url;
