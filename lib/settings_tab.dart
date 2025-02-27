@@ -20,9 +20,12 @@ class _SettingsTabState extends State<SettingsTab> {
   String _appVersion = '...';
   String _appBuildNumber = '';
 
+  static const double valueOffset = 16.0;
+
   bool _dynamicOptionsLoaded = false;
   Map<String, dynamic> _dynamicOptions = {};
   final Map<String, dynamic> _updatedValues = {};
+  final Set<String> _invalidInputPaths = {};
 
   final EventListener _eventListener = EventListener();
   late String subscriptionId;
@@ -74,6 +77,44 @@ class _SettingsTabState extends State<SettingsTab> {
         child: Scaffold(
             appBar: AppBar(
               title: const Text('Settings'),
+              actions: [
+                if (_updatedValues.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.restore),
+                    onPressed: () async {
+                      final shouldRevert = await showDialog<bool>(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text('Revert Changes'),
+                            content: const Text(
+                                'Do you want to revert all changes?'),
+                            actions: <Widget>[
+                              TextButton(
+                                child: const Text('Cancel'),
+                                onPressed: () {
+                                  Navigator.of(context).pop(false);
+                                },
+                              ),
+                              const Spacer(),
+                              TextButton(
+                                child: const Text('Yes'),
+                                onPressed: () {
+                                  Navigator.of(context).pop(true);
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                      if (shouldRevert == true) {
+                        setState(() {
+                          _updatedValues.clear();
+                        });
+                      }
+                    },
+                  ),
+              ],
             ),
             body: SingleChildScrollView(
                 child: Container(child: buildBody(context)))));
@@ -89,7 +130,10 @@ class _SettingsTabState extends State<SettingsTab> {
             child: ListBody(
               children: <Widget>[
                 const Text('Updated values:'),
-                ..._updatedValues.keys.map((key) => Text(key)),
+                ..._updatedValues.keys.map((key) => Text(
+                      key,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    )),
               ],
             ),
           ),
@@ -202,7 +246,7 @@ class _SettingsTabState extends State<SettingsTab> {
           Align(
               alignment: Alignment.centerLeft,
               child: Padding(
-                padding: const EdgeInsets.only(top: 8, bottom: 8, left: 32),
+                padding: const EdgeInsets.only(top: 8, bottom: 8, left: 16),
                 child: Text('Version: $_appVersion build $_appBuildNumber'),
               )),
           const SizedBox(height: 16)
@@ -228,124 +272,270 @@ class _SettingsTabState extends State<SettingsTab> {
 
   Widget buildDynamicOption(BuildContext context, Map<String, dynamic> settings,
       int level, String path) {
-    double sectionNameOffset = 16.0;
-    double valueOffset = 16.0;
     switch (settings['type']) {
       case 'section':
-        List<Widget> children = [];
-
-        if (level > 0) {
-          children.add(Padding(
-            padding: EdgeInsets.only(left: sectionNameOffset, right: 16.0),
-            child: Container(
-              decoration: level & 1 == 1
-                  ? BoxDecoration(
-                      color: Theme.of(context).focusColor,
-                      borderRadius: BorderRadius.circular(8.0),
-                    )
-                  : null,
-              child: ListTile(
-                title: Text(settings['name'] ?? 'Unknown Section'),
-                subtitle: Text(settings['description']),
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-          ));
-        }
-
-        settings['elements'].forEach((key, value) {
-          children
-              .add(buildDynamicOption(context, value, level + 1, '$path.$key'));
-        });
-
-        return Column(
-            crossAxisAlignment: CrossAxisAlignment.start, children: children);
+        return _buildSection(context, settings, level, path);
       case 'integer':
-        return Padding(
-          padding: EdgeInsets.only(
-              left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
-          child: TextFormField(
-            controller:
-                TextEditingController(text: settings['value'].toString()),
-            decoration: InputDecoration(
-              labelText: settings['description'],
-              border: const OutlineInputBorder(),
-            ),
-            keyboardType: TextInputType.number,
-            validator: (String? value) {
-              if (value == null ||
-                  value.isEmpty ||
-                  int.tryParse(value) == null) {
-                return 'Please enter a number';
-              }
-              return null;
-            },
-            onChanged: (String value) {
-              logger.i('Changed $path to $value');
-              _updatedValues[path] = value;
-            },
-          ),
-        );
+        return _buildIntegerField(context, settings, path);
       case 'string':
       case 'password':
-        return Padding(
-          padding: EdgeInsets.only(
-              left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
-          child: TextFormField(
-            controller: TextEditingController(text: settings['value']),
-            decoration: InputDecoration(
-              labelText: settings['description'],
-              border: const OutlineInputBorder(),
-            ),
-            obscureText: settings['type'] == 'password',
-            onChanged: (String value) {
-              if (settings['type'] == 'password') {
-                var bytes = utf8.encode(value);
-                var digest = md5.convert(bytes);
-                _updatedValues[path] = digest.toString();
-              } else {
-                _updatedValues[path] = value;
-              }
-            },
-          ),
-        );
+        return _buildStringField(context, settings, path);
       case 'boolean':
-        return Padding(
-          padding: EdgeInsets.only(
-              left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
-          child: SwitchListTile(
-            title: Text(settings['description']),
-            value: settings['value'],
-            onChanged: null, // Make the switch read-only
-          ),
-        );
+        return _buildBooleanField(context, settings, path);
       case 'number':
-        return Padding(
-          padding: EdgeInsets.only(
-              left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
-          child: TextFormField(
-            controller:
-                TextEditingController(text: settings['value'].toString()),
-            decoration: InputDecoration(
-              labelText: settings['description'],
-              border: const OutlineInputBorder(),
-            ),
-            keyboardType: TextInputType.numberWithOptions(decimal: true),
-            validator: (String? value) {
-              if (value == null ||
-                  value.isEmpty ||
-                  double.tryParse(value) == null) {
-                return 'Please enter a valid number';
-              }
-              return null;
-            },
-            onChanged: (String value) {
-              logger.i('Changed $path to $value');
-              _updatedValues[path] = value;
-            },
-          ),
-        );
+        return _buildNumberField(context, settings, path);
+      case 'enum':
+        return _buildEnumField(context, settings, path);
+      default:
+        return const SizedBox.shrink();
     }
-    return const SizedBox.shrink();
+  }
+
+  Widget _buildSection(BuildContext context, Map<String, dynamic> settings,
+      int level, String path) {
+    double sectionNameOffset = 16.0;
+    List<Widget> children = [];
+
+    if (level > 0) {
+      children.add(Padding(
+        padding: EdgeInsets.only(left: sectionNameOffset, right: 16.0),
+        child: Container(
+          decoration: level & 1 == 1
+              ? BoxDecoration(
+                  color: Theme.of(context).focusColor,
+                  borderRadius: BorderRadius.circular(8.0),
+                )
+              : null,
+          child: ListTile(
+            contentPadding: EdgeInsets.only(left: 8.0, right: 8.0),
+            title: Text(settings['name'] ?? 'Unknown Section'),
+            subtitle: Text(settings['description']),
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+      ));
+    }
+
+    settings['elements'].forEach((key, value) {
+      children.add(buildDynamicOption(context, value, level + 1, '$path.$key'));
+    });
+
+    return Column(
+        crossAxisAlignment: CrossAxisAlignment.start, children: children);
+  }
+
+  Widget _buildIntegerField(
+      BuildContext context, Map<String, dynamic> settings, String path) {
+    final bool hasUpdatedValue = _updatedValues.containsKey(path);
+    final String currentValue = hasUpdatedValue
+        ? _updatedValues[path].toString()
+        : settings['value'].toString();
+    return Padding(
+      padding: EdgeInsets.only(
+          left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
+      child: TextFormField(
+        controller: TextEditingController(text: currentValue),
+        decoration: InputDecoration(
+            labelText: settings['description'],
+            border: const OutlineInputBorder(),
+            suffixIcon: hasUpdatedValue
+                ? IconButton(
+                    icon: const Icon(Icons.replay),
+                    onPressed: () {
+                      setState(() {
+                        _updatedValues.remove(path);
+                      });
+                    },
+                  )
+                : null),
+        keyboardType: TextInputType.number,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        validator: (String? value) {
+          final int? parsed = int.tryParse(value ?? '');
+          if (value == null || value.isEmpty || parsed == null) {
+            _invalidInputPaths.add(path);
+            return 'Please enter a number';
+          }
+          if (parsed < 0) {
+            _invalidInputPaths.add(path);
+            return "Can't be negative";
+          }
+          _invalidInputPaths.remove(path);
+          return null;
+        },
+        onFieldSubmitted: (String value) {
+          _updateValue(path, settings['value'], currentValue, value);
+        },
+      ),
+    );
+  }
+
+  Widget _buildStringField(
+      BuildContext context, Map<String, dynamic> settings, String path) {
+    final bool hasUpdatedValue = _updatedValues.containsKey(path);
+    final String currentValue = hasUpdatedValue
+        ? _updatedValues[path].toString()
+        : settings['value'].toString();
+    return Padding(
+      padding: EdgeInsets.only(
+          left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
+      child: TextFormField(
+        controller: TextEditingController(text: currentValue),
+        decoration: InputDecoration(
+          labelText: settings['description'],
+          border: const OutlineInputBorder(),
+          suffixIcon: hasUpdatedValue
+              ? IconButton(
+                  icon: const Icon(Icons.replay),
+                  onPressed: () {
+                    setState(() {
+                      _updatedValues.remove(path);
+                    });
+                  },
+                )
+              : null,
+        ),
+        obscureText: settings['type'] == 'password',
+        onFieldSubmitted: (String value) {
+          if (settings['type'] == 'password') {
+            var bytes = utf8.encode(value);
+            var digest = md5.convert(bytes);
+            _updateValue(
+                path, settings['value'], currentValue, digest.toString());
+          } else {
+            _updateValue(path, settings['value'], currentValue, value);
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildBooleanField(
+      BuildContext context, Map<String, dynamic> settings, String path) {
+    final bool hasUpdatedValue = _updatedValues.containsKey(path);
+    final String currentValue = hasUpdatedValue
+        ? _updatedValues[path].toString()
+        : settings['value'].toString();
+    return Padding(
+      padding: EdgeInsets.all(0),
+      child: SwitchListTile(
+        contentPadding: EdgeInsets.only(
+            left: valueOffset, right: valueOffset, top: 8.0, bottom: 8.0),
+        title: Text(settings['description']),
+        value: _updatedValues.containsKey(path)
+            ? _updatedValues[path]
+            : settings['value'],
+        onChanged: (value) {
+          _updateValue(path, settings['value'], currentValue, value);
+        },
+      ),
+    );
+  }
+
+  Widget _buildNumberField(
+      BuildContext context, Map<String, dynamic> settings, String path) {
+    final bool hasUpdatedValue = _updatedValues.containsKey(path);
+    final String currentValue = hasUpdatedValue
+        ? _updatedValues[path].toString()
+        : settings['value'].toString();
+    return Padding(
+      padding: EdgeInsets.only(
+          left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
+      child: TextFormField(
+        controller: TextEditingController(text: currentValue),
+        decoration: InputDecoration(
+          labelText: settings['description'],
+          border: const OutlineInputBorder(),
+          suffixIcon: hasUpdatedValue
+              ? IconButton(
+                  icon: const Icon(Icons.replay),
+                  onPressed: () {
+                    setState(() {
+                      _updatedValues.remove(path);
+                    });
+                  },
+                )
+              : null,
+        ),
+        keyboardType: TextInputType.numberWithOptions(decimal: true),
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        validator: (String? value) {
+          final double? parsed = double.tryParse(value ?? '');
+          if (value == null || value.isEmpty || parsed == null) {
+            _invalidInputPaths.add(path);
+            return 'Please enter a valid number';
+          }
+          if (parsed < 0) {
+            _invalidInputPaths.add(path);
+            return "Can't be negative";
+          }
+          _invalidInputPaths.remove(path);
+          return null;
+        },
+        onFieldSubmitted: (String value) {
+          _updateValue(path, settings['value'], currentValue, value);
+        },
+      ),
+    );
+  }
+
+  Widget _buildEnumField(
+      BuildContext context, Map<String, dynamic> settings, String path) {
+    final bool hasUpdatedValue = _updatedValues.containsKey(path);
+    final String currentValue = hasUpdatedValue
+        ? _updatedValues[path].toString()
+        : settings['value'].toString();
+    return Padding(
+      padding: EdgeInsets.only(
+          left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
+      child: DropdownButtonFormField<String>(
+        hint: Text(settings['description']),
+        decoration: InputDecoration(
+          labelText: settings['name'],
+          border: const OutlineInputBorder(),
+          suffixIcon: hasUpdatedValue
+              ? IconButton(
+                  icon: const Icon(Icons.replay),
+                  onPressed: () {
+                    setState(() {
+                      _updatedValues.remove(path);
+                    });
+                  },
+                )
+              : null,
+        ),
+        value: currentValue,
+        onChanged: (String? value) {
+          _updateValue(path, settings['value'], currentValue, value);
+        },
+        items:
+            settings['values'].map<DropdownMenuItem<String>>((dynamic value) {
+          return DropdownMenuItem<String>(
+            value: value.toString(),
+            child: Text(value.toString()),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  void _updateValue(String path, dynamic originalValue, dynamic currentValue,
+      dynamic newValue) {
+    if (_invalidInputPaths.contains(path) ||
+        newValue.toString() == currentValue.toString()) {
+      return;
+    }
+    logger.i(
+        'Original value: $originalValue, current: $currentValue, new: $newValue');
+    setState(() {
+      if (originalValue.toString() == newValue.toString()) {
+        logger.i('Removing $path from updated values');
+        _updatedValues.remove(path);
+      } else {
+        logger.i('Updating $path to $newValue');
+        _updatedValues[path] = newValue;
+      }
+      _invalidInputPaths.remove(path);
+    });
   }
 }
