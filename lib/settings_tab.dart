@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:kalinka/event_listener.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
@@ -19,6 +22,7 @@ class _SettingsTabState extends State<SettingsTab> {
 
   bool _dynamicOptionsLoaded = false;
   Map<String, dynamic> _dynamicOptions = {};
+  final Map<String, dynamic> _updatedValues = {};
 
   final EventListener _eventListener = EventListener();
   late String subscriptionId;
@@ -51,12 +55,88 @@ class _SettingsTabState extends State<SettingsTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: const Text('Settings'),
-        ),
-        body:
-            SingleChildScrollView(child: Container(child: buildBody(context))));
+    return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (bool didPop, _) async {
+          if (didPop) {
+            return;
+          }
+          if (_updatedValues.isNotEmpty) {
+            final waitForRestart = await _showSaveDialog() ?? false;
+            if (waitForRestart) {
+              await _showRestartDialog();
+            }
+          }
+          if (context.mounted) {
+            Navigator.pop(context);
+          }
+        },
+        child: Scaffold(
+            appBar: AppBar(
+              title: const Text('Settings'),
+            ),
+            body: SingleChildScrollView(
+                child: Container(child: buildBody(context)))));
+  }
+
+  Future<bool?> _showSaveDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Server will be restarted'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                const Text('Updated values:'),
+                ..._updatedValues.keys.map((key) => Text(key)),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Discard'),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            ),
+            TextButton(
+              child: const Text('Save'),
+              onPressed: () async {
+                await KalinkaPlayerProxy().saveSettings(_updatedValues);
+                if (context.mounted) {
+                  Navigator.of(context).pop(true);
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showRestartDialog() {
+    KalinkaPlayerProxy().restartServer();
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        Future.delayed(const Duration(seconds: 15), () {
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
+        });
+        return AlertDialog(
+          title: const Center(child: Text('Restarting Server')),
+          content: SizedBox(
+            height: 50,
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _initPackageInfo() async {
@@ -101,7 +181,7 @@ class _SettingsTabState extends State<SettingsTab> {
       int i = 2;
       _dynamicOptions['elements'].forEach((key, value) {
         try {
-          children.add(buildTopLevelDynamicOption(context, value, i));
+          children.add(buildTopLevelDynamicOption(context, value, i, key));
           i++;
         } catch (e) {
           logger.e('Error building dynamic option: $e');
@@ -131,8 +211,8 @@ class _SettingsTabState extends State<SettingsTab> {
     return ExpansionPanelList.radio(children: children);
   }
 
-  ExpansionPanel buildTopLevelDynamicOption(
-      BuildContext context, Map<String, dynamic> settings, int index) {
+  ExpansionPanel buildTopLevelDynamicOption(BuildContext context,
+      Map<String, dynamic> settings, int index, String path) {
     return ExpansionPanelRadio(
       value: index,
       headerBuilder: (BuildContext context, bool isExpanded) {
@@ -141,31 +221,41 @@ class _SettingsTabState extends State<SettingsTab> {
           subtitle: Text(settings['description'] ?? ''),
         );
       },
-      body: buildDynamicOption(context, settings, 0),
+      body: buildDynamicOption(context, settings, 0, path),
       canTapOnHeader: true,
     );
   }
 
-  Widget buildDynamicOption(
-      BuildContext context, Map<String, dynamic> settings, int level) {
-    double sectionNameOffset = level * 16.0;
-    double valueOffset = level * 16.0;
+  Widget buildDynamicOption(BuildContext context, Map<String, dynamic> settings,
+      int level, String path) {
+    double sectionNameOffset = 16.0;
+    double valueOffset = 16.0;
     switch (settings['type']) {
       case 'section':
         List<Widget> children = [];
 
         if (level > 0) {
           children.add(Padding(
-            padding: EdgeInsets.only(
-                left: sectionNameOffset, bottom: 8.0, top: 8.0, right: 16.0),
-            child: ListTile(
+            padding: EdgeInsets.only(left: sectionNameOffset, right: 16.0),
+            child: Container(
+              decoration: level & 1 == 1
+                  ? BoxDecoration(
+                      color: Theme.of(context).focusColor,
+                      borderRadius: BorderRadius.circular(8.0),
+                    )
+                  : null,
+              child: ListTile(
                 title: Text(settings['name'] ?? 'Unknown Section'),
-                subtitle: Text(settings['description'])),
+                subtitle: Text(settings['description']),
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
           ));
         }
 
         settings['elements'].forEach((key, value) {
-          children.add(buildDynamicOption(context, value, level + 1));
+          children
+              .add(buildDynamicOption(context, value, level + 1, '$path.$key'));
         });
 
         return Column(
@@ -173,9 +263,8 @@ class _SettingsTabState extends State<SettingsTab> {
       case 'integer':
         return Padding(
           padding: EdgeInsets.only(
-              left: valueOffset, bottom: 8.0, right: 16.0, top: 8.0),
+              left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
           child: TextFormField(
-            readOnly: true,
             controller:
                 TextEditingController(text: settings['value'].toString()),
             decoration: InputDecoration(
@@ -191,31 +280,69 @@ class _SettingsTabState extends State<SettingsTab> {
               }
               return null;
             },
+            onChanged: (String value) {
+              logger.i('Changed $path to $value');
+              _updatedValues[path] = value;
+            },
           ),
         );
       case 'string':
       case 'password':
         return Padding(
           padding: EdgeInsets.only(
-              left: valueOffset, bottom: 8.0, right: 16.0, top: 8.0),
+              left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
           child: TextFormField(
-            readOnly: true,
             controller: TextEditingController(text: settings['value']),
             decoration: InputDecoration(
               labelText: settings['description'],
               border: const OutlineInputBorder(),
             ),
             obscureText: settings['type'] == 'password',
+            onChanged: (String value) {
+              if (settings['type'] == 'password') {
+                var bytes = utf8.encode(value);
+                var digest = md5.convert(bytes);
+                _updatedValues[path] = digest.toString();
+              } else {
+                _updatedValues[path] = value;
+              }
+            },
           ),
         );
       case 'boolean':
         return Padding(
           padding: EdgeInsets.only(
-              left: valueOffset, bottom: 8.0, right: 16.0, top: 8.0),
+              left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
           child: SwitchListTile(
             title: Text(settings['description']),
             value: settings['value'],
             onChanged: null, // Make the switch read-only
+          ),
+        );
+      case 'number':
+        return Padding(
+          padding: EdgeInsets.only(
+              left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
+          child: TextFormField(
+            controller:
+                TextEditingController(text: settings['value'].toString()),
+            decoration: InputDecoration(
+              labelText: settings['description'],
+              border: const OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
+            validator: (String? value) {
+              if (value == null ||
+                  value.isEmpty ||
+                  double.tryParse(value) == null) {
+                return 'Please enter a valid number';
+              }
+              return null;
+            },
+            onChanged: (String value) {
+              logger.i('Changed $path to $value');
+              _updatedValues[path] = value;
+            },
           ),
         );
     }
