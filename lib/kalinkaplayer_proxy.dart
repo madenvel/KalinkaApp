@@ -325,7 +325,7 @@ class KalinkaPlayerProxy {
     settings.forEach((key, value) {
       final url = _buildUri('/server/config', {
         'key': key,
-        'value': value,
+        'value': value.toString(),
       });
       client.put(url).then((response) {
         if (response.statusCode != 200) {
