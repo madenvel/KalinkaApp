@@ -445,11 +445,14 @@ enum LoadStatus {
 class DiscoverSectionProvider with ChangeNotifier {
   final List<BrowseItem> _sections = [];
   final List<List<BrowseItem>> _previews = [];
+  final List<int> _sectionItemsCountTotal = [];
+
   LoadStatus _loadStatus = LoadStatus.notLoaded;
   late String subscriptionId;
 
   List<BrowseItem> get sections => _sections;
   List<List<BrowseItem>> get previews => _previews;
+  List<int> get sectionItemsCountTotal => _sectionItemsCountTotal;
   LoadStatus get loadStatus => _loadStatus;
 
   DiscoverSectionProvider({List<String>? genreIds}) {
@@ -484,6 +487,8 @@ class DiscoverSectionProvider with ChangeNotifier {
     }
     _previews.clear();
     _previews.addAll(List.generate(_sections.length, (_) => []));
+    _sectionItemsCountTotal.clear();
+    _sectionItemsCountTotal.addAll(List.generate(_sections.length, (_) => 0));
     List<Future<void>> futures = [];
     for (int i = 0; i < _sections.length; ++i) {
       if (!(_sections[i].canBrowse)) {
@@ -499,6 +504,7 @@ class DiscoverSectionProvider with ChangeNotifier {
                   ? genreIds
                   : null)
           .then((value) {
+        _sectionItemsCountTotal[i] = value.total;
         _previews[i].addAll(value.items);
       }));
     }
