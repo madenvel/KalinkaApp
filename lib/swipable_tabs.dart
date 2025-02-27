@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:kalinka/add_to_playlist.dart';
 import 'package:kalinka/custom_cache_manager.dart';
+import 'package:kalinka/event_listener.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/bottom_menu.dart';
@@ -26,12 +27,21 @@ class _SwipableTabsState extends State<SwipableTabs>
   int _index = 0;
   List<Widget> widgets = const [NowPlaying(), PlayQueue()];
 
+  final _eventListener = EventListener();
+  late String _subscriptionId;
+
   @override
   void initState() {
     super.initState();
     controller = TabController(
         length: widgets.length, initialIndex: _index, vsync: this);
     controller.addListener(_updateIndex);
+
+    _subscriptionId = _eventListener.registerCallback({
+      EventType.NetworkDisconnected: (args) {
+        Navigator.pop(context);
+      }
+    });
   }
 
   void _updateIndex() {
@@ -48,6 +58,7 @@ class _SwipableTabsState extends State<SwipableTabs>
     super.dispose();
     controller.animation?.removeListener(_updateIndex);
     controller.dispose();
+    _eventListener.unregisterCallback(_subscriptionId);
   }
 
   @override
