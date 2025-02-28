@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/service_discovery.dart';
@@ -5,8 +6,9 @@ import 'package:provider/provider.dart';
 
 class DiscoveryWidget extends StatefulWidget {
   final void Function(String, String, int)? onServiceSelected;
+  final void Function()? onCancel;
 
-  const DiscoveryWidget({super.key, this.onServiceSelected});
+  const DiscoveryWidget({super.key, this.onServiceSelected, this.onCancel});
 
   @override
   State<DiscoveryWidget> createState() => _DiscoveryWidgetState();
@@ -37,13 +39,7 @@ class _DiscoveryWidgetState extends State<DiscoveryWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Row(children: [
-          Icon(Icons.speaker),
-          SizedBox(width: 8),
-          Text('Setup New Device')
-        ]),
-      ),
+      appBar: AppBar(title: Text('Connect New Device')),
       body: Column(
         children: [
           const SizedBox(height: 8),
@@ -57,6 +53,32 @@ class _DiscoveryWidgetState extends State<DiscoveryWidget> {
     final services = context.watch<ServiceDiscoveryDataProvider>().services;
     return Column(children: [
       Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(mainAxisSize: MainAxisSize.max, children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.rectangle,
+              borderRadius: BorderRadius.circular(40),
+              color: Colors.white,
+            ),
+            padding: const EdgeInsets.all(8.0),
+            child: Image.asset('assets/redberry_icon.png'),
+          ),
+          const SizedBox(width: 16),
+          Text('Kalinka Music Player',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[500]),
+              overflow: TextOverflow.ellipsis),
+        ]),
+      ),
+      const SizedBox(
+        height: 16,
+      ),
+      Padding(
         padding: const EdgeInsets.only(left: 16, bottom: 8),
         child: const Row(children: [
           Text(
@@ -65,7 +87,7 @@ class _DiscoveryWidgetState extends State<DiscoveryWidget> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          Spacer(),
+          SizedBox(width: 16),
           SizedBox(
               width: 16,
               height: 16,
@@ -78,35 +100,89 @@ class _DiscoveryWidgetState extends State<DiscoveryWidget> {
       Expanded(
           child: ListView.builder(
               itemBuilder: (context, index) {
-                if (index < services.length) {
-                  return ListTile(
-                      title: Text(services[index].name),
-                      subtitle: Text(
-                          '${services[index].host}:${services[index].port.toString()}'),
-                      leading: Image.asset('assets/redberry_hdpi.png',
-                          width: 20, height: 20),
-                      onTap: services[index].host != null &&
-                              services[index].host!.isNotEmpty &&
-                              services[index].port != 0
-                          ? () {
-                              buildConnectToDeviceConfirmation(
-                                  context,
-                                  services[index].name,
-                                  services[index].host!,
-                                  services[index].port);
-                            }
-                          : null);
-                } else {
-                  return ListTile(
-                      leading: const Icon(Icons.add),
-                      title: const Text("Setup device manually"),
-                      onTap: () {
-                        showSetupDeviceManuallyDialog(context);
-                      });
-                }
+                return ListTile(
+                    title: Text(services[index].name),
+                    subtitle: Text(
+                        '${services[index].host}:${services[index].port.toString()}'),
+                    leading: Icon(Icons.speaker),
+                    onTap: services[index].host != null &&
+                            services[index].host!.isNotEmpty &&
+                            services[index].port != 0
+                        ? () {
+                            buildConnectToDeviceConfirmation(
+                                context,
+                                services[index].name,
+                                services[index].host!,
+                                services[index].port);
+                          }
+                        : null);
               },
-              itemCount: services.length + 1))
+              itemCount: services.length)),
+      Align(
+        alignment: Alignment.bottomLeft,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: _buildHelpCard(context),
+        ),
+      )
     ]);
+  }
+
+  Widget _buildHelpCard(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Container(
+        constraints: BoxConstraints(maxWidth: 400),
+        padding: EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Align(
+                alignment: Alignment.topCenter,
+                child: Icon(Icons.warning, color: Colors.yellow, size: 24)),
+            SizedBox(width: 8),
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  text: 'Please pick a device from the list above.\n',
+                  style: TextStyle(fontSize: 16, color: Colors.grey[400]),
+                  children: [
+                    TextSpan(
+                      text: 'It may take some time for device to appear.\n\n',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.white),
+                    ),
+                    TextSpan(
+                      text:
+                          'If the device still doesn\'t appear after a minute, try to ',
+                      style: TextStyle(fontSize: 16, color: Colors.grey[400]),
+                      children: [
+                        TextSpan(
+                          text: 'add device manually.',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            decoration: TextDecoration.underline,
+                            fontSize: 16,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              showSetupDeviceManuallyDialog(context);
+                            },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void showSetupDeviceManuallyDialog(BuildContext context) {

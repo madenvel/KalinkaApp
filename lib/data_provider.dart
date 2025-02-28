@@ -615,6 +615,10 @@ class ConnectionSettingsProvider with ChangeNotifier {
   int _port = 0;
   bool _isLoaded = false;
 
+  final String sharedPrefName = 'Kalinka.name';
+  final String sharedPrefHost = 'Kalinka.host';
+  final String sharedPrefPort = 'Kalinka.port';
+
   get name => _name;
   get host => _host;
   get port => _port;
@@ -627,9 +631,9 @@ class ConnectionSettingsProvider with ChangeNotifier {
 
   Future<void> _init() {
     return SharedPreferences.getInstance().then((prefs) {
-      _name = prefs.getString('RpiMusic.name') ?? 'Unknown';
-      _host = prefs.getString('RpiMusic.host') ?? '';
-      _port = prefs.getInt('RpiMusic.port') ?? 0;
+      _name = prefs.getString(sharedPrefName) ?? 'Unknown';
+      _host = prefs.getString(sharedPrefHost) ?? '';
+      _port = prefs.getInt(sharedPrefPort) ?? 0;
       _isLoaded = true;
       notifyListeners();
     });
@@ -637,9 +641,9 @@ class ConnectionSettingsProvider with ChangeNotifier {
 
   Future<void> setDevice(String name, String host, int port) {
     return SharedPreferences.getInstance().then((prefs) {
-      prefs.setString('RpiMusic.name', name);
-      prefs.setString('RpiMusic.host', host);
-      prefs.setInt('RpiMusic.port', port);
+      prefs.setString(sharedPrefName, name);
+      prefs.setString(sharedPrefHost, host);
+      prefs.setInt(sharedPrefPort, port);
       _name = name;
       _host = host;
       _port = port;

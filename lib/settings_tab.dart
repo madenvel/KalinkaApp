@@ -2,8 +2,10 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
+import 'package:kalinka/discovery_widget.dart';
 import 'package:kalinka/event_listener.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
+import 'package:kalinka/service_discovery.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_provider.dart';
@@ -41,6 +43,8 @@ class _SettingsTabState extends State<SettingsTab> {
         _dynamicOptions = value;
         _dynamicOptionsLoaded = true;
       });
+    }).catchError((e) {
+      logger.w('Error loading dynamic options: $e');
     });
 
     subscriptionId = _eventListener.registerCallback({
@@ -210,9 +214,22 @@ class _SettingsTabState extends State<SettingsTab> {
             padding: const EdgeInsets.all(8.0),
             child: ElevatedButton(
               onPressed: () {
-                connectionSettings.reset();
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => ChangeNotifierProvider(
+                            create: (context) => ServiceDiscoveryDataProvider(),
+                            child: DiscoveryWidget(
+                              onServiceSelected: (name, host, port) {
+                                connectionSettings.setDevice(name, host, port);
+                                Navigator.pop(context);
+                              },
+                              onCancel: () {
+                                Navigator.pop(context);
+                              },
+                            ))));
               },
-              child: const Text('Setup another device'),
+              child: const Text('Connect new device'),
             ),
           ),
         ),
