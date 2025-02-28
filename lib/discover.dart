@@ -91,16 +91,7 @@ class _DiscoverState extends State<Discover> {
     final bool hasImage = image != null && image.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.only(left: 8.0, right: 8.0),
-      child: Container(
-          decoration: BoxDecoration(
-              borderRadius: const BorderRadius.all(Radius.circular(8)),
-              gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    const Color.fromARGB(255, 38, 38, 58),
-                    Theme.of(context).scaffoldBackgroundColor
-                  ])),
+      child: Card(
           child: _buildSection(
               context,
               provider.sections[index],
