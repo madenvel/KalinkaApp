@@ -27,7 +27,6 @@ class _ConnectionManagerState extends State<ConnectionManager> {
   final int _maxConnectionAttempts = 2;
 
   late String subscriptionId;
-  bool _manualSettingsOverride = false;
 
   final EventListener _eventListener = EventListener();
   final KalinkaPlayerProxy _rpiPlayerProxy = KalinkaPlayerProxy();
@@ -72,7 +71,6 @@ class _ConnectionManagerState extends State<ConnectionManager> {
       EventType.NetworkConnected: (args) {
         setState(() {
           _connected = true;
-          _manualSettingsOverride = false;
           _connectionAttempts = 0;
           widget.onConnected?.call();
           final provider = context.read<ConnectionSettingsProvider>();
@@ -90,7 +88,6 @@ class _ConnectionManagerState extends State<ConnectionManager> {
       return;
     }
     if (_connected) {
-      _manualSettingsOverride = true;
       _audioPlayerService.hideNotificationControls();
       _eventListener.stopListening();
     }
@@ -134,23 +131,15 @@ class _ConnectionManagerState extends State<ConnectionManager> {
       return const SizedBox.shrink();
     }
 
-    if (!isHostPortSet || _manualSettingsOverride) {
-      return ChangeNotifierProvider(
-          create: (context) => ServiceDiscoveryDataProvider(),
-          child: DiscoveryWidget(onServiceSelected: (name, host, port) {
-            _manualSettingsOverride = false;
-            provider.setDevice(name, host, port);
-          }));
+    if (!isHostPortSet || !_connected) {
+      return buildConnectingScreen(context, provider);
     } else {
-      if (_connected) {
-        return widget.child;
-      } else {
-        return buildConnectingScreen(context);
-      }
+      return widget.child;
     }
   }
 
-  Widget buildConnectingScreen(BuildContext context) {
+  Widget buildConnectingScreen(
+      BuildContext context, ConnectionSettingsProvider provider) {
     return Center(
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Container(
@@ -164,22 +153,36 @@ class _ConnectionManagerState extends State<ConnectionManager> {
           child: Image.asset('assets/redberry_icon.png'),
         ),
         const SizedBox(height: 16),
-        const SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2.0)),
+        if (provider.isSet)
+          const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2.0))
+        else
+          const SizedBox.shrink(),
         const SizedBox(height: 16),
-        if (_connectionAttempts >= _maxConnectionAttempts)
+        if (_connectionAttempts >= _maxConnectionAttempts || !provider.isSet)
           ElevatedButton(
               child: const Text('Setup New Device'),
               onPressed: () {
-                setState(() {
-                  _manualSettingsOverride = true;
-                });
+                _showDiscoveryScreen(context, provider);
               })
         else
           const SizedBox(height: 32)
       ]),
     );
+  }
+
+  void _showDiscoveryScreen(
+      BuildContext context, ConnectionSettingsProvider provider) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => ChangeNotifierProvider(
+                create: (context) => ServiceDiscoveryDataProvider(),
+                child: DiscoveryWidget(onServiceSelected: (name, host, port) {
+                  provider.setDevice(name, host, port);
+                  Navigator.pop(context);
+                }))));
   }
 }
