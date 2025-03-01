@@ -27,7 +27,7 @@ class GenreSelector extends StatelessWidget {
       return ListView.builder(
         itemCount: provider.genres.length,
         itemBuilder: (context, index) {
-          return CheckboxListTile(
+          return SwitchListTile(
             title: Text(provider.genres[index].name),
             value: provider.filter.contains(provider.genres[index].id) ||
                 provider.filter.isEmpty,
