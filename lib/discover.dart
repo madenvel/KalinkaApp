@@ -45,18 +45,23 @@ class _DiscoverState extends State<Discover> {
             key: navigatorKey,
             onGenerateRoute: (settings) => MaterialPageRoute(builder: (_) {
                   return Scaffold(
-                    appBar:
-                        AppBar(title: const Text('Discover'), actions: <Widget>[
-                      const GenreFilterButton(),
-                      IconButton(
-                          icon: const Icon(Icons.settings),
-                          onPressed: () {
-                            Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => SettingsTab()));
-                          })
-                    ]),
+                    appBar: AppBar(
+                        title: const Row(children: [
+                          Icon(Icons.explore),
+                          SizedBox(width: 8),
+                          Text('Discover')
+                        ]),
+                        actions: <Widget>[
+                          const GenreFilterButton(),
+                          IconButton(
+                              icon: const Icon(Icons.settings),
+                              onPressed: () {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => SettingsTab()));
+                              })
+                        ]),
                     body: _buildBody(context, provider),
                   );
                 })));

@@ -165,8 +165,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     selectedIndex: currentPageIndex,
                     destinations: const <Widget>[
                       NavigationDestination(
-                        selectedIcon: Icon(Icons.compass_calibration),
-                        icon: Icon(Icons.compass_calibration_outlined),
+                        selectedIcon: Icon(Icons.explore),
+                        icon: Icon(Icons.explore_outlined),
                         label: 'Discover',
                       ),
                       NavigationDestination(
