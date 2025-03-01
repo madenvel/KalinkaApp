@@ -13,6 +13,7 @@ class GenreFilterButton extends StatelessWidget {
           isLabelVisible: provider.filter.isNotEmpty,
           count: provider.filter.length,
           alignment: Alignment.topLeft,
+          offset: Offset.zero,
           child: IconButton(
               icon: const Icon(Icons.tune),
               onPressed: () {
