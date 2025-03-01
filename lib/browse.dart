@@ -244,15 +244,19 @@ class _BrowsePage extends State<BrowsePage> {
         final fallbackIcon = _getFallbackIcon(item);
         return ListTile(
           leading: item.image != null
-              ? CachedNetworkImage(
-                  imageUrl: item.image!.small ?? item.image!.thumbnail ?? '',
-                  width: 50 / imageRatioForBrowseType(item),
-                  height: 50,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) =>
-                      FittedBox(child: Icon(fallbackIcon)),
-                  errorWidget: (context, url, error) =>
-                      const Icon(Icons.error, size: 50.0),
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(4.0),
+                  child: CachedNetworkImage(
+                    cacheManager: KalinkaMusicCacheManager.instance,
+                    imageUrl: item.image!.small ?? item.image!.thumbnail ?? '',
+                    width: 50 / imageRatioForBrowseType(item),
+                    height: 50,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) =>
+                        FittedBox(child: Icon(fallbackIcon)),
+                    errorWidget: (context, url, error) =>
+                        const Icon(Icons.error, size: 50.0),
+                  ),
                 )
               : null,
           title: item.image != null
@@ -473,7 +477,7 @@ class _BrowsePage extends State<BrowsePage> {
         child: ImageFiltered(
             imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: CachedNetworkImage(
-              cacheManager: RpiMusicCacheManager.instance,
+              cacheManager: KalinkaMusicCacheManager.instance,
               imageUrl: imageUrl,
               fit: BoxFit.cover,
               width: double.infinity,
@@ -512,7 +516,7 @@ class _BrowsePage extends State<BrowsePage> {
                     ]),
                     child: getParentImage()?.large != null
                         ? CachedNetworkImage(
-                            cacheManager: RpiMusicCacheManager.instance,
+                            cacheManager: KalinkaMusicCacheManager.instance,
                             imageUrl: getParentImage()!.large!,
                             filterQuality: FilterQuality.high,
                             placeholder: (context, url) => const Center(

@@ -130,7 +130,7 @@ class _ListCardState extends State<ListCard> {
             child: image == null
                 ? _buildTextIcon(context, widget.browseItem.name ?? 'Unknown')
                 : CachedNetworkImage(
-                    cacheManager: RpiMusicCacheManager.instance,
+                    cacheManager: KalinkaMusicCacheManager.instance,
                     fit: BoxFit.fill,
                     imageUrl: image,
                     placeholder: (context, url) =>

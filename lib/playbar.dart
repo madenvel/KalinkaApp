@@ -142,7 +142,7 @@ class _PlaybarState extends State<Playbar> {
             borderRadius: BorderRadius.circular(4),
             child: CachedNetworkImage(
               fit: BoxFit.contain,
-              cacheManager: RpiMusicCacheManager.instance,
+              cacheManager: KalinkaMusicCacheManager.instance,
               imageUrl: imgSource,
               placeholder: (context, url) =>
                   const Icon(Icons.music_note, size: 48.0),
