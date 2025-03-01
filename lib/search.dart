@@ -158,7 +158,12 @@ class _SearchState extends State<Search> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AppBar(title: const Text('Search')),
+        AppBar(
+            title: const Row(children: [
+          Icon(Icons.search_outlined),
+          SizedBox(width: 8),
+          Text('Search')
+        ])),
         Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
@@ -276,8 +281,8 @@ class _SearchState extends State<Search> {
               const Spacer(),
               Padding(
                   padding: const EdgeInsets.only(right: 15, top: 4, bottom: 4),
-                  child: TextButton(
-                      child: const Text('Delete all',
+                  child: ElevatedButton(
+                      child: const Text('Delete All',
                           style: TextStyle(color: Colors.red)),
                       onPressed: () {
                         _clearHistory();

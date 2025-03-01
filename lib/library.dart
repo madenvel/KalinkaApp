@@ -43,7 +43,11 @@ class _LibraryState extends State<Library> {
             onGenerateRoute: (settings) => MaterialPageRoute(builder: (_) {
                   return Scaffold(
                     appBar: AppBar(
-                      title: const Text('My Library'),
+                      title: const Row(children: [
+                        Icon(Icons.library_music),
+                        SizedBox(width: 8),
+                        Text('My Library')
+                      ]),
                     ),
                     body: Column(
                       mainAxisSize: MainAxisSize.max,
