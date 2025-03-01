@@ -93,6 +93,7 @@ class _SettingsTabState extends State<SettingsTab> {
                             title: const Text('Revert Changes'),
                             content: const Text(
                                 'Do you want to revert all changes?'),
+                            actionsAlignment: MainAxisAlignment.spaceBetween,
                             actions: <Widget>[
                               TextButton(
                                 child: const Text('Cancel'),
@@ -100,7 +101,6 @@ class _SettingsTabState extends State<SettingsTab> {
                                   Navigator.of(context).pop(false);
                                 },
                               ),
-                              const Spacer(),
                               TextButton(
                                 child: const Text('Yes'),
                                 onPressed: () {
@@ -310,35 +310,43 @@ class _SettingsTabState extends State<SettingsTab> {
 
   Widget _buildSection(BuildContext context, Map<String, dynamic> settings,
       int level, String path) {
-    double sectionNameOffset = 16.0;
     List<Widget> children = [];
 
     if (level > 0) {
-      children.add(Padding(
-        padding: EdgeInsets.only(left: sectionNameOffset, right: 16.0),
-        child: Container(
-          decoration: level & 1 == 1
-              ? BoxDecoration(
-                  color: Theme.of(context).focusColor,
-                  borderRadius: BorderRadius.circular(8.0),
-                )
-              : null,
-          child: ListTile(
-            contentPadding: EdgeInsets.only(left: 8.0, right: 8.0),
-            title: Text(settings['name'] ?? 'Unknown Section'),
-            subtitle: Text(settings['description']),
-            visualDensity: VisualDensity.compact,
-          ),
-        ),
-      ));
+      final tile = ListTile(
+        contentPadding: EdgeInsets.only(left: 8.0, right: 8.0),
+        title: Text(settings['name'] ?? 'Unknown Section'),
+        subtitle: Text(settings['description']),
+        visualDensity: VisualDensity.compact,
+      );
+      children.add(tile);
     }
 
+    bool hasSections = false;
+
     settings['elements'].forEach((key, value) {
+      if (value['type'] == 'section') {
+        hasSections = true;
+      }
       children.add(buildDynamicOption(context, value, level + 1, '$path.$key'));
     });
 
-    return Column(
+    final widget = Column(
         crossAxisAlignment: CrossAxisAlignment.start, children: children);
+    return Card(
+        color: hasSections ? _getCardColor(level) : Theme.of(context).cardColor,
+        child: widget);
+  }
+
+  Color _getCardColor(int level) {
+    switch (level % 3) {
+      case 1:
+        return Colors.grey[850]!;
+      case 2:
+        return Theme.of(context).cardColor;
+      default:
+        return Theme.of(context).cardColor;
+    }
   }
 
   Widget _buildIntegerField(
@@ -364,7 +372,9 @@ class _SettingsTabState extends State<SettingsTab> {
                       });
                     },
                   )
-                : null),
+                : null,
+            fillColor: hasUpdatedValue ? Colors.red.withOpacity(0.1) : null,
+            filled: hasUpdatedValue),
         keyboardType: TextInputType.number,
         autovalidateMode: AutovalidateMode.onUserInteraction,
         validator: (String? value) {
@@ -411,6 +421,8 @@ class _SettingsTabState extends State<SettingsTab> {
                   },
                 )
               : null,
+          fillColor: hasUpdatedValue ? Colors.red.withOpacity(0.1) : null,
+          filled: hasUpdatedValue,
         ),
         obscureText: settings['type'] == 'password',
         onFieldSubmitted: (String value) {
@@ -435,16 +447,19 @@ class _SettingsTabState extends State<SettingsTab> {
         : settings['value'].toString();
     return Padding(
       padding: EdgeInsets.all(0),
-      child: SwitchListTile(
-        contentPadding: EdgeInsets.only(
-            left: valueOffset, right: valueOffset, top: 8.0, bottom: 8.0),
-        title: Text(settings['description']),
-        value: _updatedValues.containsKey(path)
-            ? _updatedValues[path]
-            : settings['value'],
-        onChanged: (value) {
-          _updateValue(path, settings['value'], currentValue, value);
-        },
+      child: Container(
+        color: hasUpdatedValue ? Colors.red.withOpacity(0.1) : null,
+        child: SwitchListTile(
+          contentPadding: EdgeInsets.only(
+              left: valueOffset, right: valueOffset, top: 8.0, bottom: 8.0),
+          title: Text(settings['description']),
+          value: _updatedValues.containsKey(path)
+              ? _updatedValues[path]
+              : settings['value'],
+          onChanged: (value) {
+            _updateValue(path, settings['value'], currentValue, value);
+          },
+        ),
       ),
     );
   }
@@ -473,6 +488,8 @@ class _SettingsTabState extends State<SettingsTab> {
                   },
                 )
               : null,
+          fillColor: hasUpdatedValue ? Colors.red.withOpacity(0.1) : null,
+          filled: hasUpdatedValue,
         ),
         keyboardType: TextInputType.numberWithOptions(decimal: true),
         autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -510,6 +527,8 @@ class _SettingsTabState extends State<SettingsTab> {
         decoration: InputDecoration(
           labelText: settings['name'],
           border: const OutlineInputBorder(),
+          fillColor: hasUpdatedValue ? Colors.red.withOpacity(0.1) : null,
+          filled: hasUpdatedValue,
           suffixIcon: hasUpdatedValue
               ? IconButton(
                   icon: const Icon(Icons.replay),
