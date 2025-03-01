@@ -345,7 +345,7 @@ class _NowPlayingState extends State<NowPlaying> {
       child: FittedBox(
         fit: BoxFit.contain,
         child: CachedNetworkImage(
-            cacheManager: RpiMusicCacheManager.instance,
+            cacheManager: KalinkaMusicCacheManager.instance,
             imageUrl: imageUrl,
             placeholder: (context, url) => const Icon(Icons.album),
             placeholderFadeInDuration: const Duration(milliseconds: 0),

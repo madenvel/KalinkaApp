@@ -80,7 +80,7 @@ class _PlayQueueState extends State<PlayQueue>
                             opacity: index == currentTrackIndex ? 0.3 : 1.0,
                             child: CachedNetworkImage(
                                 fit: BoxFit.contain,
-                                cacheManager: RpiMusicCacheManager.instance,
+                                cacheManager: KalinkaMusicCacheManager.instance,
                                 imageUrl:
                                     tracks[index].album?.image?.small ?? '',
                                 placeholder: (context, url) =>

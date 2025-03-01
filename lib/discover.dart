@@ -215,7 +215,7 @@ class _DiscoverState extends State<Discover> {
           child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: CachedNetworkImage(
-                cacheManager: RpiMusicCacheManager.instance,
+                cacheManager: KalinkaMusicCacheManager.instance,
                 imageUrl: imageUrl,
                 fit: BoxFit.contain,
               )),

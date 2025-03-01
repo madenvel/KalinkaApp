@@ -160,7 +160,7 @@ class CustomListTile extends StatelessWidget {
                 ? Icon(fallbackIcon, size: size)
                 : CachedNetworkImage(
                     fit: BoxFit.cover,
-                    cacheManager: RpiMusicCacheManager.instance,
+                    cacheManager: KalinkaMusicCacheManager.instance,
                     imageUrl: image,
                     placeholder: (context, url) =>
                         Icon(fallbackIcon, size: size),

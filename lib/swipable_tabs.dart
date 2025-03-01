@@ -174,7 +174,7 @@ class _SwipableTabsState extends State<SwipableTabs>
         ? ImageFiltered(
             imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: CachedNetworkImage(
-              cacheManager: RpiMusicCacheManager.instance,
+              cacheManager: KalinkaMusicCacheManager.instance,
               imageUrl: imageUrl,
               fit: BoxFit.cover,
               height: double.infinity,

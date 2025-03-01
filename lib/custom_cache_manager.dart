@@ -1,7 +1,7 @@
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
-class RpiMusicCacheManager {
-  static const key = 'RpiMusicAlbumArtCache';
+class KalinkaMusicCacheManager {
+  static const key = 'KalinkaAlbumArtCache';
   static final CacheManager instance = CacheManager(Config(
     key,
     stalePeriod: const Duration(days: 31),
