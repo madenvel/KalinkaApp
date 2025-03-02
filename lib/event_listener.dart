@@ -51,8 +51,6 @@ extension EventTypeExtension on EventType {
         return "state_replay";
       case EventType.PlaybackModeChanged:
         return "playback_mode_changed";
-      default:
-        throw Exception("Invalid event type = $this");
     }
   }
 }

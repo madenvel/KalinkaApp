@@ -374,7 +374,8 @@ class _SettingsTabState extends State<SettingsTab> {
                         },
                       )
                     : null,
-                fillColor: hasUpdatedValue ? Colors.red.withOpacity(0.1) : null,
+                fillColor:
+                    hasUpdatedValue ? Colors.red.withValues(alpha: 0.1) : null,
                 filled: hasUpdatedValue),
             keyboardType: TextInputType.number,
             autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -422,7 +423,7 @@ class _SettingsTabState extends State<SettingsTab> {
                   },
                 )
               : null,
-          fillColor: hasUpdatedValue ? Colors.red.withOpacity(0.1) : null,
+          fillColor: hasUpdatedValue ? Colors.red.withValues(alpha: 0.1) : null,
           filled: hasUpdatedValue,
         ),
         obscureText: settings['type'] == 'password',
@@ -451,7 +452,7 @@ class _SettingsTabState extends State<SettingsTab> {
     return Padding(
       padding: EdgeInsets.all(0),
       child: Container(
-        color: hasUpdatedValue ? Colors.red.withOpacity(0.1) : null,
+        color: hasUpdatedValue ? Colors.red.withValues(alpha: 0.1) : null,
         child: SwitchListTile(
           contentPadding: EdgeInsets.only(
               left: valueOffset, right: valueOffset, top: 8.0, bottom: 8.0),
@@ -494,7 +495,7 @@ class _SettingsTabState extends State<SettingsTab> {
                   },
                 )
               : null,
-          fillColor: hasUpdatedValue ? Colors.red.withOpacity(0.1) : null,
+          fillColor: hasUpdatedValue ? Colors.red.withValues(alpha: 0.1) : null,
           filled: hasUpdatedValue,
         ),
         keyboardType: TextInputType.numberWithOptions(decimal: true),
@@ -535,7 +536,8 @@ class _SettingsTabState extends State<SettingsTab> {
           decoration: InputDecoration(
             labelText: settings['name'],
             border: const OutlineInputBorder(),
-            fillColor: hasUpdatedValue ? Colors.red.withOpacity(0.1) : null,
+            fillColor:
+                hasUpdatedValue ? Colors.red.withValues(alpha: 0.1) : null,
             filled: hasUpdatedValue,
             suffixIcon: hasUpdatedValue
                 ? IconButton(

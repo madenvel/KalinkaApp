@@ -263,9 +263,6 @@ class _NowPlayingState extends State<NowPlaying> {
       case PlayerStateType.error:
         playIcon = Icons.error;
         break;
-      default:
-        playIcon = Icons.question_mark;
-        break;
     }
     return Stack(alignment: Alignment.center, children: [
       Row(mainAxisAlignment: MainAxisAlignment.center, children: [

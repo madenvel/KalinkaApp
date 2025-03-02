@@ -482,7 +482,9 @@ class _BrowsePage extends State<BrowsePage> {
               fit: BoxFit.cover,
               width: double.infinity,
               height: height,
-              color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.6),
+              color: Theme.of(context)
+                  .scaffoldBackgroundColor
+                  .withValues(alpha: 0.6),
               colorBlendMode: BlendMode.darken,
               filterQuality: FilterQuality.low,
             )));
