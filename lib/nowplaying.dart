@@ -63,7 +63,8 @@ class _NowPlayingState extends State<NowPlaying> {
         const SizedBox(height: 8),
         _buildProgressBarWidget(context),
         _buildButtonsBar(context),
-        _buildVolumeControl(context)
+        _buildVolumeControl(context),
+        const SizedBox(height: 16)
       ]),
     );
   }
