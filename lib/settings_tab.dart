@@ -355,46 +355,46 @@ class _SettingsTabState extends State<SettingsTab> {
     final String currentValue = hasUpdatedValue
         ? _updatedValues[path].toString()
         : settings['value'].toString();
+    final readonly = settings['readonly'];
     return Padding(
-      padding: EdgeInsets.only(
-          left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
-      child: TextFormField(
-        controller: TextEditingController(text: currentValue),
-        decoration: InputDecoration(
-            labelText: settings['description'],
-            border: const OutlineInputBorder(),
-            suffixIcon: hasUpdatedValue
-                ? IconButton(
-                    icon: const Icon(Icons.replay),
-                    onPressed: () {
-                      setState(() {
-                        _updatedValues.remove(path);
-                      });
-                    },
-                  )
-                : null,
-            fillColor: hasUpdatedValue ? Colors.red.withOpacity(0.1) : null,
-            filled: hasUpdatedValue),
-        keyboardType: TextInputType.number,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        validator: (String? value) {
-          final int? parsed = int.tryParse(value ?? '');
-          if (value == null || value.isEmpty || parsed == null) {
-            _invalidInputPaths.add(path);
-            return 'Please enter a number';
-          }
-          if (parsed < 0) {
-            _invalidInputPaths.add(path);
-            return "Can't be negative";
-          }
-          _invalidInputPaths.remove(path);
-          return null;
-        },
-        onFieldSubmitted: (String value) {
-          _updateValue(path, settings['value'], currentValue, value);
-        },
-      ),
-    );
+        padding: EdgeInsets.only(
+            left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
+        child: TextFormField(
+            controller: TextEditingController(text: currentValue),
+            decoration: InputDecoration(
+                labelText: settings['description'],
+                border: const OutlineInputBorder(),
+                suffixIcon: hasUpdatedValue
+                    ? IconButton(
+                        icon: const Icon(Icons.replay),
+                        onPressed: () {
+                          setState(() {
+                            _updatedValues.remove(path);
+                          });
+                        },
+                      )
+                    : null,
+                fillColor: hasUpdatedValue ? Colors.red.withOpacity(0.1) : null,
+                filled: hasUpdatedValue),
+            keyboardType: TextInputType.number,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            validator: (String? value) {
+              final int? parsed = int.tryParse(value ?? '');
+              if (value == null || value.isEmpty || parsed == null) {
+                _invalidInputPaths.add(path);
+                return 'Please enter a number';
+              }
+              if (parsed < 0) {
+                _invalidInputPaths.add(path);
+                return "Can't be negative";
+              }
+              _invalidInputPaths.remove(path);
+              return null;
+            },
+            onFieldSubmitted: (String value) {
+              _updateValue(path, settings['value'], currentValue, value);
+            },
+            readOnly: readonly));
   }
 
   Widget _buildStringField(
@@ -403,6 +403,7 @@ class _SettingsTabState extends State<SettingsTab> {
     final String currentValue = hasUpdatedValue
         ? _updatedValues[path].toString()
         : settings['value'].toString();
+    final readonly = settings['readonly'];
     return Padding(
       padding: EdgeInsets.only(
           left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
@@ -425,6 +426,7 @@ class _SettingsTabState extends State<SettingsTab> {
           filled: hasUpdatedValue,
         ),
         obscureText: settings['type'] == 'password',
+        readOnly: readonly,
         onFieldSubmitted: (String value) {
           if (settings['type'] == 'password') {
             var bytes = utf8.encode(value);
@@ -445,6 +447,7 @@ class _SettingsTabState extends State<SettingsTab> {
     final String currentValue = hasUpdatedValue
         ? _updatedValues[path].toString()
         : settings['value'].toString();
+    final readonly = settings['readonly'];
     return Padding(
       padding: EdgeInsets.all(0),
       child: Container(
@@ -456,9 +459,11 @@ class _SettingsTabState extends State<SettingsTab> {
           value: _updatedValues.containsKey(path)
               ? _updatedValues[path]
               : settings['value'],
-          onChanged: (value) {
-            _updateValue(path, settings['value'], currentValue, value);
-          },
+          onChanged: readonly
+              ? null
+              : (value) {
+                  _updateValue(path, settings['value'], currentValue, value);
+                },
         ),
       ),
     );
@@ -470,6 +475,7 @@ class _SettingsTabState extends State<SettingsTab> {
     final String currentValue = hasUpdatedValue
         ? _updatedValues[path].toString()
         : settings['value'].toString();
+    final readonly = settings['readonly'];
     return Padding(
       padding: EdgeInsets.only(
           left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
@@ -509,6 +515,7 @@ class _SettingsTabState extends State<SettingsTab> {
         onFieldSubmitted: (String value) {
           _updateValue(path, settings['value'], currentValue, value);
         },
+        readOnly: readonly,
       ),
     );
   }
@@ -519,40 +526,42 @@ class _SettingsTabState extends State<SettingsTab> {
     final String currentValue = hasUpdatedValue
         ? _updatedValues[path].toString()
         : settings['value'].toString();
+    final readonly = settings['readonly'];
     return Padding(
-      padding: EdgeInsets.only(
-          left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
-      child: DropdownButtonFormField<String>(
-        hint: Text(settings['description']),
-        decoration: InputDecoration(
-          labelText: settings['name'],
-          border: const OutlineInputBorder(),
-          fillColor: hasUpdatedValue ? Colors.red.withOpacity(0.1) : null,
-          filled: hasUpdatedValue,
-          suffixIcon: hasUpdatedValue
-              ? IconButton(
-                  icon: const Icon(Icons.replay),
-                  onPressed: () {
-                    setState(() {
-                      _updatedValues.remove(path);
-                    });
-                  },
-                )
-              : null,
-        ),
-        value: currentValue,
-        onChanged: (String? value) {
-          _updateValue(path, settings['value'], currentValue, value);
-        },
-        items:
-            settings['values'].map<DropdownMenuItem<String>>((dynamic value) {
-          return DropdownMenuItem<String>(
-            value: value.toString(),
-            child: Text(value.toString()),
-          );
-        }).toList(),
-      ),
-    );
+        padding: EdgeInsets.only(
+            left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
+        child: DropdownButtonFormField<String>(
+          hint: Text(settings['description']),
+          decoration: InputDecoration(
+            labelText: settings['name'],
+            border: const OutlineInputBorder(),
+            fillColor: hasUpdatedValue ? Colors.red.withOpacity(0.1) : null,
+            filled: hasUpdatedValue,
+            suffixIcon: hasUpdatedValue
+                ? IconButton(
+                    icon: const Icon(Icons.replay),
+                    onPressed: () {
+                      setState(() {
+                        _updatedValues.remove(path);
+                      });
+                    },
+                  )
+                : null,
+          ),
+          value: currentValue,
+          onChanged: readonly
+              ? null
+              : (String? value) {
+                  _updateValue(path, settings['value'], currentValue, value);
+                },
+          items:
+              settings['values'].map<DropdownMenuItem<String>>((dynamic value) {
+            return DropdownMenuItem<String>(
+              value: value.toString(),
+              child: Text(value.toString()),
+            );
+          }).toList(),
+        ));
   }
 
   void _updateValue(String path, dynamic originalValue, dynamic currentValue,
