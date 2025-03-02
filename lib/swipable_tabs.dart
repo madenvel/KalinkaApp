@@ -179,7 +179,9 @@ class _SwipableTabsState extends State<SwipableTabs>
               fit: BoxFit.cover,
               height: double.infinity,
               width: double.infinity,
-              color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.8),
+              color: Theme.of(context)
+                  .scaffoldBackgroundColor
+                  .withValues(alpha: 0.8),
               colorBlendMode: BlendMode.darken,
               filterQuality: FilterQuality.low,
             ))

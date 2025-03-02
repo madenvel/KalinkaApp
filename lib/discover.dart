@@ -84,8 +84,6 @@ class _DiscoverState extends State<Discover> {
             itemBuilder: (context, index) {
               return _buildSectionList(context, index);
             });
-      default:
-        return const SizedBox.shrink();
     }
   }
 

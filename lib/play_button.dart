@@ -59,7 +59,7 @@ class PlayButton extends StatelessWidget {
                 break;
             }
           },
-          color: Theme.of(context).indicatorColor.withOpacity(0.7),
+          color: Theme.of(context).indicatorColor.withValues(alpha: 0.7),
           splashColor: Colors.white,
           padding: const EdgeInsets.all(8),
           shape: const CircleBorder(),

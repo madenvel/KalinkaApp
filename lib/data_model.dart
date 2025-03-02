@@ -13,8 +13,6 @@ extension PlayerStateTypeExtension on PlayerStateType {
         return 'BUFFERING';
       case PlayerStateType.error:
         return 'ERROR';
-      default:
-        throw Exception('Invalid PlayerStateType');
     }
   }
 
