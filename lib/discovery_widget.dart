@@ -121,7 +121,8 @@ class _DiscoveryWidgetState extends State<DiscoveryWidget> {
       Align(
         alignment: Alignment.bottomLeft,
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.only(
+              left: 8.0, right: 8.0, top: 8.0, bottom: 32.0),
           child: _buildHelpCard(context),
         ),
       )
