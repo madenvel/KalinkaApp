@@ -93,6 +93,8 @@ class _NowPlayingState extends State<NowPlaying> {
     double sampleRate =
         (playerStateProvider.state.audioInfo?.sampleRate ?? 0) / 1000;
     int bitDepth = playerStateProvider.state.audioInfo?.bitsPerSample ?? 0;
+    String decoderType =
+        playerStateProvider.state.mimeType?.split('/')[1].toUpperCase() ?? '';
     return Row(
       children: [
         item != null
@@ -118,7 +120,7 @@ class _NowPlayingState extends State<NowPlaying> {
           child: Padding(
             padding: const EdgeInsets.all(4.0),
             child: Text(
-              'FLAC ${formatFrequency(sampleRate)}kHz / $bitDepth bit',
+              '$decoderType ${formatFrequency(sampleRate)}kHz / $bitDepth bit',
               style:
                   const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,

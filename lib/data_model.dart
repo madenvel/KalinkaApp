@@ -93,6 +93,7 @@ class PlayerState {
   int? position;
   String? message;
   AudioInfo? audioInfo;
+  String? mimeType;
 
   PlayerState(
       {this.state,
@@ -100,7 +101,8 @@ class PlayerState {
       this.index = 0,
       this.position = 0,
       this.message,
-      this.audioInfo});
+      this.audioInfo,
+      this.mimeType});
 
   factory PlayerState.fromJson(Map<String, dynamic> json) => PlayerState(
         state: json.containsKey('state')
@@ -115,6 +117,7 @@ class PlayerState {
         audioInfo: json["audio_info"] == null
             ? null
             : AudioInfo.fromJson(json["audio_info"]),
+        mimeType: json["mime_type"],
       );
 
   Map<String, dynamic> toJson() => {
@@ -124,6 +127,7 @@ class PlayerState {
         "position": position,
         "message": message,
         "audio_info": audioInfo?.toJson(),
+        "mime_type": mimeType,
       };
 
   void copyFrom(PlayerState other) {
@@ -133,6 +137,7 @@ class PlayerState {
     position = other.position ?? position;
     message = other.message ?? message;
     audioInfo = other.audioInfo ?? audioInfo;
+    mimeType = other.mimeType ?? mimeType;
   }
 }
 
