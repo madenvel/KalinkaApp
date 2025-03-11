@@ -13,14 +13,23 @@ class SoundwaveWidget extends StatefulWidget {
   State<SoundwaveWidget> createState() => _SoundwaveWidgetState();
 }
 
-class _SoundwaveWidgetState extends State<SoundwaveWidget> {
+class _SoundwaveWidgetState extends State<SoundwaveWidget>
+    with WidgetsBindingObserver {
   late Timer _timer;
   final _counter = ValueNotifier<int>(0);
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    setupTimer();
+  }
+
+  void setupTimer() {
     _timer = Timer.periodic(const Duration(milliseconds: 25), (timer) {
+      if (!mounted) {
+        return;
+      }
       if (context.read<PlayerStateProvider>().state.state !=
           PlayerStateType.playing) {
         return;
@@ -31,8 +40,18 @@ class _SoundwaveWidgetState extends State<SoundwaveWidget> {
 
   @override
   void dispose() {
-    super.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive) {
+      _timer.cancel();
+    } else if (state == AppLifecycleState.resumed) {
+      setupTimer();
+    }
   }
 
   @override

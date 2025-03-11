@@ -10,7 +10,7 @@ import 'search.dart';
 import 'swipable_tabs.dart';
 
 void main() {
-  runApp(const RpiMusic());
+  runApp(const KalinkaMusic());
 }
 
 class MyCustomScrollBehavior extends MaterialScrollBehavior {
@@ -22,8 +22,8 @@ class MyCustomScrollBehavior extends MaterialScrollBehavior {
       };
 }
 
-class RpiMusic extends StatelessWidget {
-  const RpiMusic({super.key});
+class KalinkaMusic extends StatelessWidget {
+  const KalinkaMusic({super.key});
 
   // This widget is the root of your application.
   @override
@@ -39,7 +39,6 @@ class RpiMusic extends StatelessWidget {
           ChangeNotifierProvider(create: (context) => TrackListProvider()),
           ChangeNotifierProvider(create: (context) => PlayerStateProvider()),
           ChangeNotifierProvider(create: (context) => PlaybackModeProvider()),
-          ChangeNotifierProvider(create: (context) => TrackPositionProvider()),
           ChangeNotifierProvider(create: (context) => UserFavoritesProvider()),
           ChangeNotifierProvider(create: (context) => SearchResultsProvider()),
           ChangeNotifierProvider(create: (context) => GenreFilterProvider()),
@@ -58,7 +57,6 @@ class RpiMusic extends StatelessWidget {
               }
             },
           ),
-          ChangeNotifierProvider(create: (context) => VolumeControlProvider()),
           ChangeNotifierProvider(
               create: (context) => ConnectionSettingsProvider()),
           ChangeNotifierProvider(create: (context) => UserPlaylistProvider())

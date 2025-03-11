@@ -26,7 +26,7 @@ class _PlaybarState extends State<Playbar> {
       CarouselSliderController();
   int _currentPageIndex = 0;
 
-  double? _calculateRelativeProgress() {
+  double? _calculateRelativeProgress(BuildContext context) {
     int position = context.watch<TrackPositionProvider>().position;
     PlayerState state = context.read<PlayerStateProvider>().state;
     int duration = state.audioInfo?.durationMs ?? 0;
@@ -61,7 +61,7 @@ class _PlaybarState extends State<Playbar> {
   Widget build(BuildContext context) {
     return InkWell(
         child: Container(
-            width: MediaQuery.of(context).size.width,
+            width: double.infinity,
             color: Theme.of(context).bottomNavigationBarTheme.backgroundColor,
             child: Column(children: [
               const Divider(height: 0),
@@ -69,10 +69,15 @@ class _PlaybarState extends State<Playbar> {
                 padding: const EdgeInsets.only(top: 8.0, bottom: 6.0),
                 child: _buildTile(context),
               ),
-              LinearProgressIndicator(
-                  value: _calculateRelativeProgress(),
-                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue)),
+              ChangeNotifierProvider(
+                  create: (context) => TrackPositionProvider(),
+                  builder: (context, child) => RepaintBoundary(
+                      child: LinearProgressIndicator(
+                          value: _calculateRelativeProgress(context),
+                          backgroundColor:
+                              Theme.of(context).scaffoldBackgroundColor,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              Colors.blue)))),
               const Divider(height: 0)
             ])),
         onTap: () {
@@ -138,16 +143,22 @@ class _PlaybarState extends State<Playbar> {
     return SizedBox(
         width: 48,
         height: 48,
-        child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: CachedNetworkImage(
-              fit: BoxFit.contain,
-              cacheManager: KalinkaMusicCacheManager.instance,
-              imageUrl: imgSource,
-              placeholder: (context, url) =>
-                  const Icon(Icons.music_note, size: 48.0),
-              errorWidget: (context, url, error) => const Icon(Icons.error),
-            )));
+        child: CachedNetworkImage(
+          fit: BoxFit.contain,
+          cacheManager: KalinkaMusicCacheManager.instance,
+          imageUrl: imgSource,
+          imageBuilder: (context, imageProvider) => Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              image: DecorationImage(
+                image: imageProvider,
+              ),
+            ),
+          ),
+          placeholder: (context, url) =>
+              const Icon(Icons.music_note, size: 48.0),
+          errorWidget: (context, url, error) => const Icon(Icons.error),
+        ));
   }
 
   Widget _buildCarousel(BuildContext context, TrackListProvider provider) {

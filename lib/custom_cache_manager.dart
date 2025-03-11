@@ -4,8 +4,9 @@ class KalinkaMusicCacheManager {
   static const key = 'KalinkaAlbumArtCache';
   static final CacheManager instance = CacheManager(Config(
     key,
-    stalePeriod: const Duration(days: 31),
-    maxNrOfCacheObjects: 2000,
+    stalePeriod: const Duration(days: 1),
+    maxNrOfCacheObjects: 100,
     repo: JsonCacheInfoRepository(databaseName: key),
+    fileService: HttpFileService(),
   ));
 }
