@@ -1,178 +1,233 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:kalinka/custom_cache_manager.dart';
-import 'package:kalinka/data_model.dart';
 
-import 'text_card_colors.dart';
+class ImagePlaceholder extends StatelessWidget {
+  final double? width;
+  final double? height;
+  final double borderRadius;
+  final Color color;
 
-class ListCard extends StatefulWidget {
-  final BrowseItem browseItem;
-  final GestureTapCallback? onTap;
-  final double textLabelHeight;
-
-  const ListCard(
+  const ImagePlaceholder(
       {super.key,
-      required this.browseItem,
-      this.onTap,
-      this.textLabelHeight = 64.0});
+      this.width,
+      this.height,
+      this.borderRadius = 12.0,
+      this.color = Colors.grey});
 
-  @override
-  State<ListCard> createState() => _ListCardState();
-}
-
-class _ListCardState extends State<ListCard> {
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      return InkWell(
-          onTap: widget.onTap, child: _buildCard(context, constraints));
-    });
-  }
-
-  Widget _buildCard(BuildContext context, BoxConstraints constraints) {
-    BrowseItem item = widget.browseItem;
-    String? image;
-    if (item.image != null) {
-      image = item.image!.large ?? item.image!.small ?? item.image!.thumbnail;
-    }
-
-    var adjustToTextHeight = image != null ? widget.textLabelHeight : 0;
-
-    Size size = Size(
-        (constraints.maxHeight - adjustToTextHeight) /
-            imageRatioForBrowseType(),
-        constraints.maxHeight - adjustToTextHeight);
-    switch (widget.browseItem.browseType) {
-      case 'album':
-      case 'playlist':
-        return _buildImageCard(context, size);
-      case 'catalog':
-        return _buildCatalogCard(context, size);
-      // case 'track':
-      //   return _buildAlbumCard(context, constraints);
-    }
-
-    return Container();
-  }
-
-  Widget _buildImageCard(BuildContext context, Size size) {
     return Container(
-        width: size.width,
-        height: size.height,
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _buildItemImage(_getFallbackIcon(), size),
-          widget.browseItem.image != null
-              ? _buildText()
-              : const SizedBox.shrink()
-        ]));
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(borderRadius),
+      ),
+    );
   }
+}
 
-  Widget _buildCatalogCard(BuildContext context, Size size) {
-    return _buildItemImage(_getFallbackIcon(), size);
-  }
+class ImageCard extends StatelessWidget {
+  final String? imageUrl;
+  final String? title;
+  final String? subtitle;
+  final TextStyle? titleStyle;
+  final TextStyle? subtitleStyle;
+  final Widget? textVertLeading;
+  final Widget? textVertTrailing;
+  final EdgeInsets contentPadding;
+  final double aspectRatio;
+  final GestureTapCallback? onTap;
 
-  Widget _buildText() {
-    BrowseItem item = widget.browseItem;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const SizedBox(height: 4),
-      Text(item.name ?? 'Unknown title',
-          style: TextStyle(fontWeight: FontWeight.bold),
-          overflow: TextOverflow.ellipsis),
-      item.subname != null
-          ? Text(item.subname!, overflow: TextOverflow.ellipsis)
-          : const SizedBox.shrink(),
-      const SizedBox(height: 4),
-    ]);
-  }
+  const ImageCard(
+      {super.key,
+      this.imageUrl,
+      this.title,
+      this.subtitle,
+      this.onTap,
+      this.titleStyle,
+      this.subtitleStyle,
+      this.textVertLeading,
+      this.textVertTrailing,
+      this.contentPadding = const EdgeInsets.all(8.0),
+      this.aspectRatio = 1.0});
 
-  IconData _getFallbackIcon() {
-    final String browseItemType = widget.browseItem.url.split('/')[1];
-    switch (browseItemType) {
-      case 'artist':
-        return Icons.person;
-      case 'album':
-        return Icons.album;
-      case 'track':
-        return Icons.music_note;
-      case 'playlist':
-        return Icons.playlist_play;
-      default:
-        return Icons.help;
-    }
-  }
-
-  double imageRatioForBrowseType() {
-    switch (widget.browseItem.browseType) {
-      case 'catalog':
-      case 'playlist':
-        return 0.475;
-      case 'album':
-      case 'track':
-        return 1.0;
-    }
-
-    return 1.0;
-  }
-
-  Widget _buildItemImage(IconData fallbackIcon, Size size) {
-    BrowseItem item = widget.browseItem;
-    String? image;
-    if (item.image != null) {
-      image = item.image!.large ?? item.image!.small ?? item.image!.thumbnail;
-    }
-
-    return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: SizedBox(
-            width: size.width,
-            height: size.height,
-            child: image == null
-                ? _buildTextIcon(context, widget.browseItem.name ?? 'Unknown')
-                : CachedNetworkImage(
-                    cacheManager: KalinkaMusicCacheManager.instance,
-                    fit: BoxFit.fill,
-                    imageUrl: image,
-                    placeholder: (context, url) =>
-                        FittedBox(child: Icon(fallbackIcon)),
-                    errorWidget: (context, url, error) =>
-                        const Icon(Icons.error, size: 50.0),
-                  )));
-  }
-
-  Widget _buildTextIcon(BuildContext context, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
-      child: Container(
-          decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: TextCardColors.generateGradientColors(text),
-                  tileMode: TileMode.mirror)),
-          child: Center(
-              child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(text,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 18.0,
-                  fontWeight: FontWeight.bold,
-                  shadows: <Shadow>[
-                    Shadow(
-                      offset: Offset(0.0, 0.0),
-                      blurRadius: 4.0,
-                      color: Color.fromARGB(255, 0, 0, 0),
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: RepaintBoundary(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12.0),
+          onTap: onTap,
+          child: Padding(
+            padding: contentPadding,
+            child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (imageUrl != null)
+                    AspectRatio(
+                      aspectRatio: aspectRatio,
+                      child: Stack(children: [
+                        // Positioned.fill(
+                        //     child: ImageFiltered(
+                        //   imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        //   child: CachedNetworkImage(
+                        //     fit: BoxFit.cover,
+                        //     placeholder: (context, url) =>
+                        //         Container(color: Colors.grey),
+                        //     imageUrl: imageUrl!,
+                        //     cacheManager: KalinkaMusicCacheManager.instance,
+                        //   ),
+                        // )),
+                        Positioned.fill(
+                            child: CachedNetworkImage(
+                                imageUrl: imageUrl!,
+                                cacheManager: KalinkaMusicCacheManager.instance,
+                                fit: BoxFit.cover,
+                                imageBuilder: (context, imageProvider) =>
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                        image: DecorationImage(
+                                          image: imageProvider,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                placeholder: (context, url) =>
+                                    const ImagePlaceholder()))
+                      ]),
                     ),
-                    Shadow(
-                      offset: Offset(3.0, 3.0),
-                      blurRadius: 8.0,
-                      color: Color.fromARGB(125, 0, 0, 0),
-                    ),
-                  ],
-                )),
-          ))),
+                  const Spacer(),
+                  if (title != null && subtitle != null)
+                    Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (textVertLeading != null) textVertLeading!,
+                          Text(title!,
+                              overflow: TextOverflow.ellipsis,
+                              style: titleStyle),
+                          Text(
+                            subtitle!,
+                            overflow: TextOverflow.ellipsis,
+                            style: subtitleStyle,
+                          ),
+                          if (textVertTrailing != null) textVertTrailing!,
+                        ]),
+                ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class CategoryCard extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final TextStyle? titleStyle;
+  final TextStyle? subtitleStyle;
+  final Widget? textVertLeading;
+  final Widget? textVertTrailing;
+  final EdgeInsets contentPadding;
+  final GestureTapCallback? onTap;
+  final List<Color> gradientColors;
+  final IconData? icon; // Optional icon to enhance visual appeal
+  final double aspectRatio;
+
+  const CategoryCard({
+    super.key,
+    required this.title,
+    required this.gradientColors,
+    this.subtitle,
+    this.onTap,
+    this.titleStyle,
+    this.subtitleStyle,
+    this.textVertLeading,
+    this.textVertTrailing,
+    this.contentPadding = const EdgeInsets.all(8.0),
+    this.icon,
+    this.aspectRatio = 1.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: RepaintBoundary(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12.0),
+          onTap: onTap,
+          child: Padding(
+            padding: contentPadding,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Positioned(
+                    left: 0,
+                    right: 0,
+                    top: 0,
+                    child: AspectRatio(
+                      aspectRatio: aspectRatio,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: gradientColors,
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    )),
+                Positioned(
+                  // left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            overflow: TextOverflow.ellipsis,
+                            style: titleStyle?.copyWith(
+                              shadows: [
+                                Shadow(
+                                  offset: Offset(2.0, 2.0),
+                                  blurRadius: 3.0,
+                                  color: Colors.black,
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (subtitle != null)
+                            Text(
+                              subtitle!,
+                              overflow: TextOverflow.ellipsis,
+                              style: subtitleStyle?.copyWith(
+                                shadows: [
+                                  Shadow(
+                                    offset: Offset(2.0, 2.0),
+                                    blurRadius: 3.0,
+                                    color: Colors.black,
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ]),
+                  ),
+                )
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

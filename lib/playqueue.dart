@@ -8,41 +8,8 @@ import 'custom_cache_manager.dart';
 import 'data_model.dart';
 import 'soundwave.dart';
 
-class PlayQueue extends StatefulWidget {
+class PlayQueue extends StatelessWidget {
   const PlayQueue({super.key});
-
-  @override
-  State<PlayQueue> createState() => _PlayQueueState();
-}
-
-class _PlayQueueState extends State<PlayQueue>
-    with SingleTickerProviderStateMixin {
-  _PlayQueueState();
-
-  @override
-  void initState() {
-    super.initState();
-    controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    )
-      ..forward()
-      ..repeat(reverse: false);
-
-    animation = Tween<double>(begin: 0.0, end: 1.0).animate(controller);
-  }
-
-  late String stateChangeSubscription;
-  late String tracksChangeSubscription;
-
-  late AnimationController controller;
-  late Animation<double> animation;
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,27 +37,14 @@ class _PlayQueueState extends State<PlayQueue>
                           fontWeight: FontWeight.bold, fontSize: 15.0)))
               : const SizedBox.shrink(),
           ListTile(
-              leading: ClipRRect(
-                  borderRadius: BorderRadius.circular(4.0),
-                  child: SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: Stack(children: [
-                        Opacity(
-                            opacity: index == currentTrackIndex ? 0.3 : 1.0,
-                            child: CachedNetworkImage(
-                                fit: BoxFit.contain,
-                                cacheManager: KalinkaMusicCacheManager.instance,
-                                imageUrl:
-                                    tracks[index].album?.image?.small ?? '',
-                                placeholder: (context, url) =>
-                                    const Icon(Icons.music_note, size: 50.0),
-                                errorWidget: (context, url, error) =>
-                                    const Icon(Icons.error, size: 50.0))),
-                        index == currentTrackIndex
-                            ? const Center(child: SoundwaveWidget())
-                            : const SizedBox.shrink()
-                      ]))),
+              leading: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: RepaintBoundary(
+                    child: ImageWithIndicator(
+                        imageUrl: tracks[index].album?.image?.thumbnail,
+                        showIndicator: index == currentTrackIndex),
+                  )),
               title: Text(
                 tracks[index].title,
                 overflow: TextOverflow.ellipsis,
@@ -118,5 +72,39 @@ class _PlayQueueState extends State<PlayQueue>
         ]);
       },
     );
+  }
+}
+
+class ImageWithIndicator extends StatelessWidget {
+  final String? imageUrl;
+  final double size;
+  final bool showIndicator;
+
+  const ImageWithIndicator(
+      {super.key, this.imageUrl, this.size = 48, this.showIndicator = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(children: [
+      Positioned.fill(
+          child: CachedNetworkImage(
+              fit: BoxFit.cover,
+              cacheManager: KalinkaMusicCacheManager.instance,
+              imageUrl: imageUrl ?? '',
+              imageBuilder: (context, imageProvider) => Container(
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      image: DecorationImage(
+                          colorFilter: showIndicator
+                              ? ColorFilter.mode(
+                                  Colors.grey, BlendMode.modulate)
+                              : null,
+                          image: imageProvider))),
+              placeholder: (context, url) =>
+                  const Icon(Icons.music_note, size: 48.0),
+              errorWidget: (context, url, error) =>
+                  const Icon(Icons.error, size: 48.0))),
+      if (showIndicator) const Center(child: SoundwaveWidget())
+    ]);
   }
 }

@@ -66,6 +66,13 @@ class EventListener {
 
   final logger = Logger();
   final Map<EventType, Map<String, Function(List<dynamic>)>> _callbacks = {};
+
+  // Cached state to allow hot listener registration
+  DateTime? _lastPlayerStateUpdate;
+  PlayerState? _latestPlayerState;
+  List<Track> _latestTrackList = [];
+  PlaybackMode? _latestPlaybackMode;
+
   late CancelToken _cancelToken;
   bool _isRunning = false;
   bool get isRunning => _isRunning;
@@ -77,6 +84,19 @@ class EventListener {
         _callbacks[eventType] = {};
       }
       _callbacks[eventType]![uuid] = callbacks[eventType]!;
+      if (_lastPlayerStateUpdate != null &&
+          callbacks.containsKey(EventType.StateReplay)) {
+        if (_latestPlayerState != null) {
+          var updatedPlayerState = _latestPlayerState!.copyWith(
+            position: _latestPlayerState!.position! +
+                DateTime.now()
+                    .difference(_lastPlayerStateUpdate!)
+                    .inMilliseconds,
+          );
+          callbacks[EventType.StateReplay]!(
+              [updatedPlayerState, _latestTrackList, _latestPlaybackMode]);
+        }
+      }
     }
 
     return uuid;
@@ -158,12 +178,21 @@ class EventListener {
   List<dynamic> _parseArgs(EventType eventType, List<dynamic> args) {
     switch (eventType) {
       case EventType.StateChanged:
-        return [PlayerState.fromJson(args[0])];
+        _latestPlayerState = PlayerState.fromJson(args[0]);
+        _lastPlayerStateUpdate = DateTime.now();
+        return [_latestPlayerState];
       case EventType.RequestMoreTracks:
         return [];
       case EventType.TracksAdded:
-        return [args[0].map((e) => Track.fromJson(e)).toList()];
+        final List<Track> addedTracks =
+            args[0].map((e) => Track.fromJson(e)).toList().cast<Track>();
+        _latestTrackList.addAll(addedTracks);
+        return [addedTracks];
       case EventType.TracksRemoved:
+        int len = args[0].length;
+        for (var i = 0; i < len; ++i) {
+          _latestTrackList.removeAt(args[0][i]);
+        }
         return args;
       case EventType.VolumeChanged:
         return args;
@@ -172,13 +201,15 @@ class EventListener {
       case EventType.FavoriteRemoved:
         return [FavoriteRemoved.fromJson(args[0])];
       case EventType.StateReplay:
-        return [
-          PlayerState.fromJson(args[0]),
-          TrackList.fromJson(args[1]),
-          args.length > 2 ? PlaybackMode.fromJson(args[2]) : null
-        ];
+        _latestPlayerState = PlayerState.fromJson(args[0]);
+        _latestTrackList = TrackList.fromJson(args[1]).items;
+        _latestPlaybackMode =
+            args.length > 2 ? PlaybackMode.fromJson(args[2]) : null;
+        _lastPlayerStateUpdate = DateTime.now();
+        return [_latestPlayerState, _latestTrackList, _latestPlaybackMode];
       case EventType.PlaybackModeChanged:
-        return [PlaybackMode.fromJson(args[0])];
+        _latestPlaybackMode = PlaybackMode.fromJson(args[0]);
+        return [_latestPlaybackMode];
       default:
         throw Exception("Invalid event arguments");
     }

@@ -244,19 +244,16 @@ class _BrowsePage extends State<BrowsePage> {
         final fallbackIcon = _getFallbackIcon(item);
         return ListTile(
           leading: item.image != null
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(4.0),
-                  child: CachedNetworkImage(
-                    cacheManager: KalinkaMusicCacheManager.instance,
-                    imageUrl: item.image!.small ?? item.image!.thumbnail ?? '',
-                    width: 50 / imageRatioForBrowseType(item),
-                    height: 50,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) =>
-                        FittedBox(child: Icon(fallbackIcon)),
-                    errorWidget: (context, url, error) =>
-                        const Icon(Icons.error, size: 50.0),
-                  ),
+              ? CachedNetworkImage(
+                  cacheManager: KalinkaMusicCacheManager.instance,
+                  imageUrl: item.image!.small ?? item.image!.thumbnail ?? '',
+                  width: 50 / imageRatioForBrowseType(item),
+                  height: 50,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) =>
+                      FittedBox(child: Icon(fallbackIcon)),
+                  errorWidget: (context, url, error) =>
+                      const Icon(Icons.error, size: 50.0),
                 )
               : null,
           title: item.image != null
@@ -473,21 +470,19 @@ class _BrowsePage extends State<BrowsePage> {
       return Container(color: Colors.grey);
     }
 
-    return ClipRect(
-        child: ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: CachedNetworkImage(
-              cacheManager: KalinkaMusicCacheManager.instance,
-              imageUrl: imageUrl,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: height,
-              color: Theme.of(context)
-                  .scaffoldBackgroundColor
-                  .withValues(alpha: 0.6),
-              colorBlendMode: BlendMode.darken,
-              filterQuality: FilterQuality.low,
-            )));
+    return ImageFiltered(
+        imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: CachedNetworkImage(
+          cacheManager: KalinkaMusicCacheManager.instance,
+          imageUrl: imageUrl,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: height,
+          color:
+              Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.6),
+          colorBlendMode: BlendMode.darken,
+          filterQuality: FilterQuality.low,
+        ));
   }
 
   Widget _buildAlbumHeader() {

@@ -42,7 +42,7 @@ class TrackListProvider with ChangeNotifier {
       },
       EventType.StateReplay: (args) {
         _trackList.clear();
-        _trackList.addAll((args[1] as TrackList).items);
+        _trackList.addAll(args[1] as List<Track>);
         _isLoading = false;
         notifyListeners();
       }
@@ -230,6 +230,7 @@ class TrackPositionProvider with ChangeNotifier {
 
   @override
   void dispose() {
+    _clearProgressTimer();
     _eventListener.unregisterCallback(subscriptionId);
     _appLifecycleListener.dispose();
     super.dispose();
@@ -491,7 +492,8 @@ class DiscoverSectionProvider with ChangeNotifier {
     _sectionItemsCountTotal.addAll(List.generate(_sections.length, (_) => 0));
     List<Future<void>> futures = [];
     for (int i = 0; i < _sections.length; ++i) {
-      if (!(_sections[i].canBrowse)) {
+      if (!(_sections[i].canBrowse) ||
+          _sections[i].catalog?.previewConfig?.type == PreviewType.none) {
         _previews.add([]);
         continue;
       }
@@ -499,7 +501,7 @@ class DiscoverSectionProvider with ChangeNotifier {
       futures.add(KalinkaPlayerProxy()
           .browse(url,
               offset: 0,
-              limit: 12,
+              limit: _sections[i].catalog?.previewConfig?.itemsCount ?? 10,
               genreIds: _sections[i].catalog?.canGenreFilter ?? false
                   ? genreIds
                   : null)

@@ -139,6 +139,26 @@ class PlayerState {
     audioInfo = other.audioInfo ?? audioInfo;
     mimeType = other.mimeType ?? mimeType;
   }
+
+  PlayerState copyWith({
+    PlayerStateType? state,
+    Track? currentTrack,
+    int? index,
+    int? position,
+    String? message,
+    AudioInfo? audioInfo,
+    String? mimeType,
+  }) {
+    return PlayerState(
+      state: state ?? this.state,
+      currentTrack: currentTrack ?? this.currentTrack,
+      index: index ?? this.index,
+      position: position ?? this.position,
+      message: message ?? this.message,
+      audioInfo: audioInfo ?? this.audioInfo,
+      mimeType: mimeType ?? this.mimeType,
+    );
+  }
 }
 
 class Track {
@@ -185,7 +205,7 @@ class Album {
   final int? duration;
   final int? trackCount;
   final AlbumImage? image;
-  final Artist? genre;
+  final Genre? genre;
   final Artist? artist;
 
   Album({
@@ -205,7 +225,7 @@ class Album {
         trackCount: json["track_count"],
         image:
             json["image"] == null ? null : AlbumImage.fromJson(json["image"]),
-        genre: json["genre"] == null ? null : Artist.fromJson(json["genre"]),
+        genre: json["genre"] == null ? null : Genre.fromJson(json["genre"]),
         artist: json["artist"] == null ? null : Artist.fromJson(json["artist"]),
       );
 
@@ -330,12 +350,103 @@ class Playlist {
       };
 }
 
+enum PreviewType { imageText, textOnly, carousel, none }
+
+extension PreviewTypeExtension on PreviewType {
+  String toValue() {
+    switch (this) {
+      case PreviewType.imageText:
+        return 'image';
+      case PreviewType.textOnly:
+        return 'text';
+      case PreviewType.carousel:
+        return 'carousel';
+      case PreviewType.none:
+        return 'none';
+    }
+  }
+
+  static PreviewType fromValue(String value) {
+    switch (value) {
+      case 'image':
+        return PreviewType.imageText;
+      case 'text':
+        return PreviewType.textOnly;
+      case 'carousel':
+        return PreviewType.carousel;
+      case 'none':
+        return PreviewType.none;
+      default:
+        throw Exception('Invalid PreviewType value: $value');
+    }
+  }
+}
+
+enum CardSize { small, large }
+
+extension CardSizeExtension on CardSize {
+  String toValue() {
+    switch (this) {
+      case CardSize.small:
+        return 'small';
+      case CardSize.large:
+        return 'large';
+    }
+  }
+
+  static CardSize fromValue(String value) {
+    switch (value) {
+      case 'small':
+        return CardSize.small;
+      case 'large':
+        return CardSize.large;
+      default:
+        throw Exception('Invalid CardSize value: $value');
+    }
+  }
+}
+
+class Preview {
+  final int? itemsCount;
+  final PreviewType type;
+  final int? rowsCount;
+  final double? aspectRatio;
+  final CardSize? cardSize;
+
+  Preview({
+    this.itemsCount,
+    required this.type,
+    this.rowsCount,
+    this.aspectRatio,
+    this.cardSize,
+  });
+
+  factory Preview.fromJson(Map<String, dynamic> json) => Preview(
+        itemsCount: json["items_count"],
+        type: PreviewTypeExtension.fromValue(json["type"]),
+        rowsCount: json["rows_count"],
+        aspectRatio: json["aspect_ratio"]?.toDouble(),
+        cardSize: json["card_size"] == null
+            ? null
+            : CardSizeExtension.fromValue(json["card_size"]),
+      );
+
+  Map<String, dynamic> toJson() => {
+        "items_count": itemsCount,
+        "type": type.toValue(),
+        "rows_count": rowsCount,
+        "aspect_ratio": aspectRatio,
+        "card_size": cardSize?.toValue(),
+      };
+}
+
 class Catalog {
   final String id;
   final String title;
   final AlbumImage? image;
   final String? description;
   final bool canGenreFilter;
+  final Preview? previewConfig;
 
   Catalog({
     required this.id,
@@ -343,6 +454,7 @@ class Catalog {
     required this.canGenreFilter,
     this.image,
     this.description,
+    this.previewConfig,
   });
 
   factory Catalog.fromJson(Map<String, dynamic> json) => Catalog(
@@ -352,6 +464,9 @@ class Catalog {
             json["image"] == null ? null : AlbumImage.fromJson(json["image"]),
         description: json["description"],
         canGenreFilter: json["can_genre_filter"],
+        previewConfig: json["preview_config"] == null
+            ? null
+            : Preview.fromJson(json["preview_config"]),
       );
 
   Map<String, dynamic> toJson() => {
@@ -359,6 +474,8 @@ class Catalog {
         "title": title,
         "image": image?.toJson(),
         "description": description,
+        "can_genre_filter": canGenreFilter,
+        "preview_config": previewConfig?.toJson(),
       };
 }
 
