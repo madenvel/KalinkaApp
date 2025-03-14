@@ -161,6 +161,15 @@ class KalinkaPlayerProxy {
     });
   }
 
+  Future<BrowseItemsList> browseItem(BrowseItem item,
+      {int offset = 0, int limit = 10, List<String>? genreIds}) {
+    if (item.canBrowse) {
+      return browse(item.url, offset: offset, limit: limit, genreIds: genreIds);
+    }
+
+    return Future.value(BrowseItemsList(0, 0, 0, []));
+  }
+
   Future<BrowseItem> getMetadata(String query) async {
     final url = _buildUri('/get$query');
     return client.get(url).then((response) {
