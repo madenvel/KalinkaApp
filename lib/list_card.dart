@@ -55,6 +55,12 @@ class ImageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, constraints) {
+      return _buildWidget(context, constraints);
+    });
+  }
+
+  Widget _buildWidget(BuildContext context, BoxConstraints constraints) {
     return Material(
       color: Colors.transparent,
       child: RepaintBoundary(
@@ -69,38 +75,22 @@ class ImageCard extends StatelessWidget {
                 children: [
                   if (imageUrl != null)
                     AspectRatio(
-                      aspectRatio: aspectRatio,
-                      child: Stack(children: [
-                        // Positioned.fill(
-                        //     child: ImageFiltered(
-                        //   imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        //   child: CachedNetworkImage(
-                        //     fit: BoxFit.cover,
-                        //     placeholder: (context, url) =>
-                        //         Container(color: Colors.grey),
-                        //     imageUrl: imageUrl!,
-                        //     cacheManager: KalinkaMusicCacheManager.instance,
-                        //   ),
-                        // )),
-                        Positioned.fill(
-                            child: CachedNetworkImage(
-                                imageUrl: imageUrl!,
-                                cacheManager: KalinkaMusicCacheManager.instance,
-                                fit: BoxFit.cover,
-                                imageBuilder: (context, imageProvider) =>
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(12),
-                                        image: DecorationImage(
-                                          image: imageProvider,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
+                        aspectRatio: aspectRatio,
+                        child: CachedNetworkImage(
+                            imageUrl: imageUrl!,
+                            cacheManager: KalinkaMusicCacheManager.instance,
+                            fit: BoxFit.cover,
+                            imageBuilder: (context, imageProvider) => Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    image: DecorationImage(
+                                      image: imageProvider,
+                                      fit: BoxFit.cover,
                                     ),
-                                placeholder: (context, url) =>
-                                    const ImagePlaceholder()))
-                      ]),
-                    ),
+                                  ),
+                                ),
+                            placeholder: (context, url) =>
+                                const ImagePlaceholder())),
                   const Spacer(),
                   if (title != null && subtitle != null)
                     Column(
@@ -135,7 +125,6 @@ class CategoryCard extends StatelessWidget {
   final EdgeInsets contentPadding;
   final GestureTapCallback? onTap;
   final List<Color> gradientColors;
-  final IconData? icon; // Optional icon to enhance visual appeal
   final double aspectRatio;
 
   const CategoryCard({
@@ -149,12 +138,17 @@ class CategoryCard extends StatelessWidget {
     this.textVertLeading,
     this.textVertTrailing,
     this.contentPadding = const EdgeInsets.all(8.0),
-    this.icon,
     this.aspectRatio = 1.0,
   });
 
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, constraints) {
+      return buildWidget(context, constraints);
+    });
+  }
+
+  Widget buildWidget(BuildContext context, BoxConstraints constraints) {
     return Material(
       color: Colors.transparent,
       child: RepaintBoundary(
@@ -170,21 +164,20 @@ class CategoryCard extends StatelessWidget {
                     left: 0,
                     right: 0,
                     top: 0,
-                    child: AspectRatio(
-                      aspectRatio: aspectRatio,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: gradientColors,
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      height:
+                          (constraints.maxWidth - contentPadding.horizontal) *
+                              aspectRatio,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: gradientColors,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     )),
                 Positioned(
-                  // left: 0,
                   top: 0,
                   bottom: 0,
                   child: Padding(
@@ -193,17 +186,22 @@ class CategoryCard extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            title,
-                            overflow: TextOverflow.ellipsis,
-                            style: titleStyle?.copyWith(
-                              shadows: [
-                                Shadow(
-                                  offset: Offset(2.0, 2.0),
-                                  blurRadius: 3.0,
-                                  color: Colors.black,
-                                ),
-                              ],
+                          SizedBox(
+                            width: constraints.maxWidth * 0.8,
+                            child: Text(
+                              title,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: titleStyle?.copyWith(
+                                shadows: [
+                                  Shadow(
+                                    offset: Offset(2.0, 2.0),
+                                    blurRadius: 3.0,
+                                    color: Colors.black,
+                                  ),
+                                ],
+                              ),
+                              maxLines: 2,
                             ),
                           ),
                           if (subtitle != null)
@@ -226,6 +224,81 @@ class CategoryCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class PlaceholderCard extends StatelessWidget {
+  final Widget? textVertLeading;
+  final Widget? textVertTrailing;
+  final EdgeInsets contentPadding;
+  final double aspectRatio;
+  final bool roomForText;
+
+  const PlaceholderCard(
+      {super.key,
+      this.textVertLeading,
+      this.textVertTrailing,
+      this.contentPadding = const EdgeInsets.all(8.0),
+      this.aspectRatio = 1.0,
+      this.roomForText = true});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, constraints) {
+      return _buildWidget(context, constraints);
+    });
+  }
+
+  Widget _buildWidget(BuildContext context, BoxConstraints constraints) {
+    return Material(
+      color: Colors.transparent,
+      child: RepaintBoundary(
+        child: Padding(
+          padding: contentPadding,
+          child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AspectRatio(
+                  aspectRatio: aspectRatio,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                if (roomForText) ...[
+                  const Spacer(),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (textVertLeading != null) textVertLeading!,
+                      Container(
+                        width: constraints.maxWidth * 0.7,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: Colors.grey,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        width: constraints.maxWidth * 0.6,
+                        height: 15,
+                        decoration: BoxDecoration(
+                          color: Colors.grey,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      if (textVertTrailing != null) textVertTrailing!,
+                    ],
+                  ),
+                ],
+              ]),
         ),
       ),
     );

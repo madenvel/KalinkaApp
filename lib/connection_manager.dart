@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:kalinka/browse_item_cache.dart';
 import 'package:kalinka/service_discovery.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
@@ -45,6 +46,7 @@ class _ConnectionManagerState extends State<ConnectionManager> {
       EventType.NetworkDisconnected: (args) {
         logger.d('Disconnected!!!');
         setState(() {
+          BrowseItemCache().invalidate();
           _connected = false;
         });
         final provider = context.read<ConnectionSettingsProvider>();
