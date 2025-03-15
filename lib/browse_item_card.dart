@@ -9,6 +9,7 @@ class BrowseItemCard extends StatelessWidget {
   final double contentPadding;
   final double imageAspectRatio;
   final PreviewType previewTypeHint;
+  final BoxConstraints constraints;
 
   const BrowseItemCard({
     super.key,
@@ -16,6 +17,7 @@ class BrowseItemCard extends StatelessWidget {
     this.onTap,
     this.imageAspectRatio = 1.0,
     this.contentPadding = 8.0,
+    required this.constraints,
     this.previewTypeHint = PreviewType.imageText,
   });
 
@@ -33,6 +35,7 @@ class BrowseItemCard extends StatelessWidget {
         aspectRatio: 1.0 / imageAspectRatio,
         contentPadding: EdgeInsets.all(contentPadding),
         roomForText: (previewTypeHint != PreviewType.textOnly),
+        constraints: constraints,
       );
     }
 
@@ -53,6 +56,7 @@ class BrowseItemCard extends StatelessWidget {
             textVertTrailing: textVertTrailing,
             aspectRatio: 1.0 / imageAspectRatio,
             contentPadding: EdgeInsets.all(contentPadding),
+            constraints: constraints,
             onTap: () => onTap?.call(item!))
         : CategoryCard(
             key: ValueKey(item!.id),
@@ -60,8 +64,8 @@ class BrowseItemCard extends StatelessWidget {
             onTap: () => onTap?.call(item!),
             titleStyle:
                 const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            gradientColors:
-                TextCardColors.generateGradientColors(item!.name ?? ''),
+            color: TextCardColors.generateColor(item!.name ?? ''),
+            constraints: constraints,
             aspectRatio: imageAspectRatio);
   }
 }
