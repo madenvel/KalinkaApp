@@ -245,7 +245,8 @@ class _SettingsTabState extends State<SettingsTab> {
           children.add(buildTopLevelDynamicOption(context, value, i, key));
           i++;
         } catch (e) {
-          logger.e('Error building dynamic option: $e');
+          logger.e(
+              'Error building dynamic option for key=$key, value=$value: $e');
         }
       });
     }

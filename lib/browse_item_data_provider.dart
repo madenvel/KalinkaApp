@@ -80,8 +80,6 @@ class BrowseItemsDataProvider extends ChangeNotifier {
       return;
     }
     _isLoading = true;
-    print(
-        'Fetching page ${_cacheEntry.items.length}, genreFilter: ${genreFilter.length} for url: ${_parentItem.url}');
     proxy
         .browseItem(_parentItem,
             offset: _cacheEntry.items.length,
@@ -91,7 +89,6 @@ class BrowseItemsDataProvider extends ChangeNotifier {
       if (_isDisposed) {
         return;
       }
-      print('Fetched ${result.items.length} items for url: ${_parentItem.url}');
       _cacheEntry.items.addAll(result.items);
       _cacheEntry.totalCount = result.total;
       _isLoading = false;
