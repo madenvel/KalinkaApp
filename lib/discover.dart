@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemsDataProvider;
-import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
 import 'package:provider/provider.dart';
 import 'package:kalinka/genre_select_filter.dart';
