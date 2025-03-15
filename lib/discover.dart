@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemsDataProvider;
+import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
 import 'package:provider/provider.dart';
 import 'package:kalinka/genre_select_filter.dart';
@@ -42,44 +43,51 @@ class _DiscoverState extends State<Discover> {
         child: Navigator(
             key: navigatorKey,
             onGenerateRoute: (settings) => MaterialPageRoute(builder: (_) {
-                  return Scaffold(
-                    appBar: AppBar(
-                        title: const Row(children: [
-                          Icon(Icons.explore),
-                          SizedBox(width: 8),
-                          Text('Discover')
-                        ]),
-                        actions: <Widget>[
-                          const GenreFilterButton(),
-                          IconButton(
-                              icon: const Icon(Icons.settings),
-                              onPressed: () {
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => SettingsTab()));
-                              })
-                        ]),
-                    body: _buildBody(context),
-                  );
+                  return _buildWithProviders();
                 })));
   }
 
-  Widget _buildBody(BuildContext context) {
+  BrowseItemsDataProvider _createProvider() {
+    return BrowseItemsDataProvider(
+      parentItem: BrowseItem(
+          id: 'root', url: '/catalog', canBrowse: true, canAdd: false),
+      itemsPerRequest: 10,
+    );
+  }
+
+  Widget _buildWithProviders() {
     return ChangeNotifierProvider<BrowseItemsDataProvider>(
-        create: (context) => BrowseItemsDataProvider(
-              parentItem: BrowseItem(
-                  id: 'root', url: '/catalog', canBrowse: true, canAdd: false),
-              itemsPerRequest: 10,
-            ),
-        child:
-            Consumer<BrowseItemsDataProvider>(builder: (context, provider, _) {
-          return ListView.separated(
-              separatorBuilder: (context, index) => const SizedBox(height: 8),
-              itemCount: provider.maybeItemCount,
-              itemBuilder: (context, index) =>
-                  _buildSection(context, provider.getItem(index).item));
-        }));
+        create: (context) => _createProvider(),
+        child: Scaffold(
+          appBar: AppBar(
+              title: const Row(children: [
+                Icon(Icons.explore),
+                SizedBox(width: 8),
+                Text('Discover')
+              ]),
+              actions: <Widget>[
+                const GenreFilterButton(),
+                IconButton(
+                    icon: const Icon(Icons.settings),
+                    onPressed: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => SettingsTab()));
+                    })
+              ]),
+          body: _buildBody(context),
+        ));
+  }
+
+  Widget _buildBody(BuildContext context) {
+    return Consumer<BrowseItemsDataProvider>(builder: (context, provider, _) {
+      return ListView.separated(
+          separatorBuilder: (context, index) => const SizedBox(height: 16),
+          itemCount: provider.maybeItemCount,
+          itemBuilder: (context, index) =>
+              _buildSection(context, provider.getItem(index).item));
+    });
   }
 
   Widget _buildSection(BuildContext context, BrowseItem? section) {

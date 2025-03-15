@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kalinka/browse.dart' show BrowsePage;
-import 'package:kalinka/browse2.dart' show BrowseItemView;
+import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
 import 'package:kalinka/data_model.dart' show BrowseItem;
 import 'package:kalinka/large_image_preview_card.dart'
     show LargeImagePreviewCard;
@@ -17,7 +17,8 @@ class PreviewSectionCard extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) {
         if (item.browseType == 'catalog') {
-          return BrowseItemView(parentItem: item);
+          return BrowseItemView(
+              parentItem: item, onTap: (item) => _onTap(context, item));
         }
 
         return BrowsePage(parentItem: item);
@@ -77,16 +78,10 @@ class PreviewSectionCard extends StatelessWidget {
                   onPressed: () {
                     if (item.canBrowse) {
                       Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) => BrowseItemView(
-                            parentItem: item,
-                            onTap: (item) {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        BrowsePage(parentItem: item)),
-                              );
-                            }),
-                      ));
+                          builder: (context) => BrowseItemView(
+                                parentItem: item,
+                                onTap: (item) => _onTap(context, item),
+                              )));
                     }
                   })
           ]),

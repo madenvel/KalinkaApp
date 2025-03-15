@@ -3,7 +3,13 @@ import 'package:kalinka/browse_item_card.dart' show BrowseItemCard;
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemsDataProvider;
 import 'package:kalinka/data_model.dart';
-import 'package:provider/provider.dart' show ChangeNotifierProvider, Consumer;
+import 'package:kalinka/data_provider.dart' show GenreFilterProvider;
+import 'package:provider/provider.dart'
+    show
+        ChangeNotifierProvider,
+        ChangeNotifierProxyProvider,
+        Consumer,
+        ReadContext;
 
 typedef BrowseItemTapCallback = void Function(BrowseItem item);
 
@@ -47,9 +53,16 @@ class SectionPreviewGrid extends StatelessWidget {
     final int itemsCount =
         section!.catalog?.previewConfig?.itemsCount ?? 5 * crossAxisCount;
 
-    return ChangeNotifierProvider(
+    return ChangeNotifierProxyProvider<GenreFilterProvider,
+            BrowseItemsDataProvider>(
         create: (context) => BrowseItemsDataProvider(
-            parentItem: section!, itemCountLimit: itemsCount),
+            parentItem: section!,
+            itemCountLimit: itemsCount,
+            genreFilter: context.read<GenreFilterProvider>().filter),
+        update: (_, genreFilterProvider, previous) => BrowseItemsDataProvider(
+            parentItem: section!,
+            itemCountLimit: itemsCount,
+            genreFilter: genreFilterProvider.filter),
         child: Consumer(
             builder: (context, BrowseItemsDataProvider dataProvider, child) {
           return _buildGridContent(

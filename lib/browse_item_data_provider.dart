@@ -8,7 +8,6 @@ import 'package:kalinka/kalinkaplayer_proxy.dart';
 
 class BrowseItemsDataProvider extends ChangeNotifier {
   final BrowseItem _parentItem;
-  // final List<BrowseItem> _browseItems = [];
   late BrowseItemCacheEntry _cacheEntry;
   final int itemsPerRequest;
   final int? itemCountLimit;
@@ -16,7 +15,8 @@ class BrowseItemsDataProvider extends ChangeNotifier {
   final proxy = KalinkaPlayerProxy();
   final cache = BrowseItemCache();
 
-  // int _totalItemCount = 30;
+  final List<String> genreFilter;
+
   bool _isLoading = false;
   bool _isDisposed = false;
   DateTime? _lastError;
@@ -38,6 +38,7 @@ class BrowseItemsDataProvider extends ChangeNotifier {
 
   BrowseItemsDataProvider(
       {required BrowseItem parentItem,
+      this.genreFilter = const [],
       this.itemsPerRequest = 30,
       this.itemCountLimit})
       : _parentItem = parentItem {
@@ -79,13 +80,18 @@ class BrowseItemsDataProvider extends ChangeNotifier {
       return;
     }
     _isLoading = true;
+    print(
+        'Fetching page ${_cacheEntry.items.length}, genreFilter: ${genreFilter.length} for url: ${_parentItem.url}');
     proxy
         .browseItem(_parentItem,
-            offset: _cacheEntry.items.length, limit: _getItemCountToFetch())
+            offset: _cacheEntry.items.length,
+            limit: _getItemCountToFetch(),
+            genreIds: genreFilter)
         .then((result) {
       if (_isDisposed) {
         return;
       }
+      print('Fetched ${result.items.length} items for url: ${_parentItem.url}');
       _cacheEntry.items.addAll(result.items);
       _cacheEntry.totalCount = result.total;
       _isLoading = false;

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:kalinka/browse_item_card.dart' show BrowseItemCard;
 import 'package:kalinka/data_model.dart';
+import 'package:kalinka/data_provider.dart' show GenreFilterProvider;
+import 'package:kalinka/genre_select_filter.dart' show GenreFilterButton;
 import 'package:provider/provider.dart';
 
 import 'browse_item_data_provider.dart';
@@ -16,9 +18,21 @@ class BrowseItemView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(parentItem.name ?? 'Unknown'),
+        actions: [
+          if (parentItem.browseType == 'catalog') const GenreFilterButton()
+        ],
+        leadingWidth: 30,
       ),
-      body: ChangeNotifierProvider<BrowseItemsDataProvider>(
-        create: (context) => BrowseItemsDataProvider(parentItem: parentItem),
+      body: ChangeNotifierProxyProvider<GenreFilterProvider,
+          BrowseItemsDataProvider>(
+        create: (context) => BrowseItemsDataProvider(
+            parentItem: parentItem,
+            genreFilter: context.read<GenreFilterProvider>().filter),
+        update: (_, genreFilterProvider, dataProvider) {
+          return BrowseItemsDataProvider(
+              parentItem: parentItem,
+              genreFilter: context.read<GenreFilterProvider>().filter);
+        },
         child: Consumer<BrowseItemsDataProvider>(
             builder: (context, dataProvider, child) => LayoutBuilder(
                 builder: (context, constraints) =>
