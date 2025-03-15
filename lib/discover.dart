@@ -81,11 +81,23 @@ class _DiscoverState extends State<Discover> {
 
   Widget _buildBody(BuildContext context) {
     return Consumer<BrowseItemsDataProvider>(builder: (context, provider, _) {
-      return ListView.separated(
-          separatorBuilder: (context, index) => const SizedBox(height: 16),
-          itemCount: provider.maybeItemCount,
-          itemBuilder: (context, index) =>
-              _buildSection(context, provider.getItem(index).item));
+      return SingleChildScrollView(
+          child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: ListView.separated(
+                physics: const NeverScrollableScrollPhysics(),
+                hitTestBehavior: HitTestBehavior.deferToChild,
+                shrinkWrap: true,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 16),
+                itemCount: provider.maybeItemCount,
+                itemBuilder: (context, index) =>
+                    _buildSection(context, provider.getItem(index).item)),
+          )
+        ],
+      ));
     });
   }
 

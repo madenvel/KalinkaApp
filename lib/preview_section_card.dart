@@ -33,21 +33,21 @@ class PreviewSectionCard extends StatelessWidget {
         section?.image?.thumbnail;
     final hasImage = image != null && image.isNotEmpty;
     return Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
-        ),
-        child: (section == null)
-            ? _buildSectionPlaceholder(context, const SectionPreviewGrid())
-            : _buildSectionPreview(
-                context,
-                section,
-                hasImage
-                    ? LargeImagePreviewCard(
-                        section: section!, contentPadding: contentPadding)
-                    : SectionPreviewGrid(
-                        section: section,
-                        onTap: (item) => _onTap(context, item)),
-                seeAll: !hasImage));
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      child: (section == null)
+          ? _buildSectionPlaceholder(context, const SectionPreviewGrid())
+          : _buildSectionPreview(
+              context,
+              section,
+              hasImage
+                  ? LargeImagePreviewCard(
+                      section: section!, contentPadding: contentPadding)
+                  : SectionPreviewGrid(
+                      section: section, onTap: (item) => _onTap(context, item)),
+              seeAll: !hasImage),
+    );
   }
 
   Widget _buildSectionPreview(

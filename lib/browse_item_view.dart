@@ -71,6 +71,7 @@ class BrowseItemView extends StatelessWidget {
           contentPadding: contentPadding,
           imageAspectRatio: imageAspectRatio,
           previewTypeHint: previewType,
+          constraints: BoxConstraints.tight(Size(imageWidth, cardHeight)),
         );
       },
     );

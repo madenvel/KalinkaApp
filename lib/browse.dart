@@ -145,9 +145,8 @@ class _BrowsePage extends State<BrowsePage> {
         extendBody: true,
         appBar: AppBar(
           backgroundColor: widget.coloredAppBar
-              ? TextCardColors.generateGradientColors(
-                      widget.parentItem.name ?? 'Unknown')
-                  .first
+              ? TextCardColors.generateColor(
+                  widget.parentItem.name ?? 'Unknown')
               : null,
           forceMaterialTransparency: !isCatalog ? _appBarTitle == null : false,
           title: isCatalog
@@ -282,11 +281,7 @@ class _BrowsePage extends State<BrowsePage> {
         padding: const EdgeInsets.only(left: 8, right: 8, top: 16, bottom: 16),
         decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: TextCardColors.generateGradientColors(text),
-                tileMode: TileMode.mirror)),
+            color: TextCardColors.generateColor(text)),
         child: Text(text,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
       ),

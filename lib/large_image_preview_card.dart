@@ -21,35 +21,33 @@ class LargeImagePreviewCard extends StatelessWidget {
     final imageUrl = section.image?.large ?? section.image?.small;
 
     return Material(
-      color: Colors.transparent,
-      child: RepaintBoundary(
-        child: InkWell(
-            borderRadius: BorderRadius.circular(12.0),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                    builder: (context) => BrowsePage(parentItem: section)),
-              );
-            },
-            child: Padding(
-              padding: EdgeInsets.all(contentPadding),
-              child: CachedNetworkImage(
-                height: cardSize + contentPadding * 2,
-                cacheManager: KalinkaMusicCacheManager.instance,
-                imageUrl: imageUrl,
-                imageBuilder: (context, imageProvider) => Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    image: DecorationImage(
-                      image: imageProvider,
-                      fit: BoxFit.fitWidth,
-                    ),
+      type: MaterialType.transparency,
+      child: InkWell(
+          borderRadius: BorderRadius.circular(12.0),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                  builder: (context) => BrowsePage(parentItem: section)),
+            );
+          },
+          child: Padding(
+            padding: EdgeInsets.all(contentPadding),
+            child: CachedNetworkImage(
+              height: cardSize + contentPadding * 2,
+              cacheManager: KalinkaMusicCacheManager.instance,
+              imageUrl: imageUrl,
+              imageBuilder: (context, imageProvider) => Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  image: DecorationImage(
+                    image: imageProvider,
+                    fit: BoxFit.fitWidth,
                   ),
                 ),
-                placeholder: (context, url) => ImagePlaceholder(),
               ),
-            )),
-      ),
+              placeholder: (context, url) => ImagePlaceholder(),
+            ),
+          )),
     );
   }
 

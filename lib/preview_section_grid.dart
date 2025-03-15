@@ -5,11 +5,7 @@ import 'package:kalinka/browse_item_data_provider.dart'
 import 'package:kalinka/data_model.dart';
 import 'package:kalinka/data_provider.dart' show GenreFilterProvider;
 import 'package:provider/provider.dart'
-    show
-        ChangeNotifierProvider,
-        ChangeNotifierProxyProvider,
-        Consumer,
-        ReadContext;
+    show ChangeNotifierProxyProvider, Consumer, ReadContext;
 
 typedef BrowseItemTapCallback = void Function(BrowseItem item);
 
@@ -80,24 +76,28 @@ class SectionPreviewGrid extends StatelessWidget {
       required double cardSize,
       required int crossAxisCount,
       required double cardSizeRatio}) {
-    return SizedBox(
-        height: sectionHeight,
-        child: GridView.builder(
-          padding: EdgeInsets.all(0),
-          scrollDirection: Axis.horizontal,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            mainAxisExtent: cardSize,
-          ),
-          itemCount: dataProvider != null ? dataProvider.maybeItemCount : 10,
-          itemBuilder: (context, index) {
-            final BrowseItem? item = dataProvider?.getItem(index).item;
-            return BrowseItemCard(
-                item: item,
-                onTap: item != null ? onTap : null,
-                imageAspectRatio: cardSizeRatio);
-          },
-        ));
+    return RepaintBoundary(
+      child: SizedBox(
+          height: sectionHeight,
+          child: GridView.builder(
+            padding: EdgeInsets.all(0),
+            scrollDirection: Axis.horizontal,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              mainAxisExtent: cardSize,
+            ),
+            itemCount: dataProvider != null ? dataProvider.maybeItemCount : 10,
+            itemBuilder: (context, index) {
+              final BrowseItem? item = dataProvider?.getItem(index).item;
+              return BrowseItemCard(
+                  item: item,
+                  onTap: item != null ? onTap : null,
+                  constraints:
+                      BoxConstraints.tight(Size(cardSize, sectionHeight)),
+                  imageAspectRatio: cardSizeRatio);
+            },
+          )),
+    );
   }
 
   Widget _buildEmptyGrid(BuildContext context) {
