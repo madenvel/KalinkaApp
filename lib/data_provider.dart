@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:kalinka/browse_item_cache.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -235,14 +236,6 @@ class TrackPositionProvider with ChangeNotifier {
     _appLifecycleListener.dispose();
     super.dispose();
   }
-}
-
-class DateTimeProvider {
-  final DateTime _dateTime = DateTime.now();
-
-  DateTime get dateTime => _dateTime;
-
-  DateTimeProvider();
 }
 
 class FavoriteInfo {
@@ -569,12 +562,14 @@ class ConnectionSettingsProvider with ChangeNotifier {
 class GenreFilterProvider with ChangeNotifier {
   final List<Genre> _genres = [];
   final List<String> _filter = [];
-  bool _isLoaded = false;
+  final Set<String> _filterUpdate = {};
+  late Completer _isLoaded;
   late String subscriptionId;
 
   List<Genre> get genres => _genres;
   List<String> get filter => _filter;
-  get isLoaded => _isLoaded;
+  Set<String> get filterUpdate => _filterUpdate;
+  Future get isLoaded => _isLoaded.future;
 
   GenreFilterProvider() {
     _init();
@@ -582,12 +577,13 @@ class GenreFilterProvider with ChangeNotifier {
   }
 
   void _init() async {
-    _isLoaded = false;
+    _isLoaded = Completer();
     _genres.clear();
     _filter.clear();
+    _filterUpdate.clear();
     KalinkaPlayerProxy().getGenres().then((value) {
       _genres.addAll(value.items);
-      _isLoaded = true;
+      _isLoaded.complete();
       notifyListeners();
     });
   }
@@ -600,7 +596,18 @@ class GenreFilterProvider with ChangeNotifier {
     });
   }
 
-  void performFilterChange() {
+  void notifyFilterUpdateChange() {
+    notifyListeners();
+  }
+
+  void commitFilterChange() {
+    if (_filter.toSet().containsAll(_filterUpdate) &&
+        _filterUpdate.toSet().containsAll(_filter)) {
+      return;
+    }
+    _filter.clear();
+    _filter.addAll(_filterUpdate);
+    BrowseItemCache().invalidate();
     notifyListeners();
   }
 

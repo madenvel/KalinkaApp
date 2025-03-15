@@ -35,7 +35,6 @@ class KalinkaMusic extends StatelessWidget {
             fontSize: 14, fontWeight: FontWeight.w400, color: Colors.grey));
     return MultiProvider(
         providers: [
-          Provider<DateTimeProvider>(create: (context) => DateTimeProvider()),
           ChangeNotifierProvider(create: (context) => TrackListProvider()),
           ChangeNotifierProvider(create: (context) => PlayerStateProvider()),
           ChangeNotifierProvider(create: (context) => PlaybackModeProvider()),
