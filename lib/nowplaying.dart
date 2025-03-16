@@ -255,9 +255,6 @@ class _NowPlayingState extends State<NowPlaying> {
         context.select<PlayerStateProvider, PlayerStateType?>(
             (stateProvider) => stateProvider.state.state);
 
-    PlaybackModeProvider playbackModeProvider =
-        context.watch<PlaybackModeProvider>();
-
     if (state == null) {
       return const SizedBox.shrink();
     }
@@ -307,26 +304,34 @@ class _NowPlayingState extends State<NowPlaying> {
             }),
       ]),
       Positioned(
-          right: 0,
-          child: IconButton(
-            icon: Icon(_getRepeatIcon(playbackModeProvider)),
-            iconSize: 36,
-            onPressed: () {
-              var repeatSingle = playbackModeProvider.repeatSingle;
-              var repeatAll = playbackModeProvider.repeatAll;
-              if (!repeatSingle && !repeatAll) {
-                repeatAll = true;
-              } else if (repeatAll && !repeatSingle) {
-                repeatAll = false;
-                repeatSingle = true;
-              } else {
-                repeatAll = false;
-                repeatSingle = false;
-              }
-              KalinkaPlayerProxy().setPlaybackMode(
-                  repeatOne: repeatSingle, repeatAll: repeatAll);
-            },
-          ))
+        right: 0,
+        child: ChangeNotifierProvider(
+          create: (_) => PlaybackModeProvider(),
+          child: Consumer<PlaybackModeProvider>(
+            builder: (_, playbackModeProvider, __) => IconButton(
+              icon: Icon(_getRepeatIcon(playbackModeProvider)),
+              iconSize: 36,
+              onPressed: () {
+                var repeatSingle = playbackModeProvider.repeatSingle;
+                var repeatAll = playbackModeProvider.repeatAll;
+                if (!repeatSingle && !repeatAll) {
+                  repeatAll = true;
+                } else if (repeatAll && !repeatSingle) {
+                  repeatAll = false;
+                  repeatSingle = true;
+                } else {
+                  repeatAll = false;
+                  repeatSingle = false;
+                }
+                KalinkaPlayerProxy().setPlaybackMode(
+                  repeatOne: repeatSingle,
+                  repeatAll: repeatAll,
+                );
+              },
+            ),
+          ),
+        ),
+      )
     ]);
   }
 
