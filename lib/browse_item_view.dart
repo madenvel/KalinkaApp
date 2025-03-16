@@ -24,16 +24,17 @@ class BrowseItemView extends StatelessWidget {
         leadingWidth: 30,
       ),
       body: ChangeNotifierProxyProvider<GenreFilterProvider,
-          BrowseItemsDataProvider>(
-        create: (context) => BrowseItemsDataProvider(
-            parentItem: parentItem,
-            genreFilter: context.read<GenreFilterProvider>().filter),
+          BrowseItemDataProvider>(
+        create: (context) => BrowseItemDataProvider(parentItem: parentItem),
         update: (_, genreFilterProvider, dataProvider) {
-          return BrowseItemsDataProvider(
-              parentItem: parentItem,
-              genreFilter: context.read<GenreFilterProvider>().filter);
+          if (dataProvider == null) {
+            return BrowseItemDataProvider(parentItem: parentItem)
+              ..maybeUpdateGenreFilter(genreFilterProvider.filter);
+          }
+          dataProvider.maybeUpdateGenreFilter(genreFilterProvider.filter);
+          return dataProvider;
         },
-        child: Consumer<BrowseItemsDataProvider>(
+        child: Consumer<BrowseItemDataProvider>(
             builder: (context, dataProvider, child) => LayoutBuilder(
                 builder: (context, constraints) =>
                     _buildGrid(context, constraints, dataProvider))),
@@ -42,7 +43,7 @@ class BrowseItemView extends StatelessWidget {
   }
 
   Widget _buildGrid(BuildContext context, BoxConstraints constraints,
-      BrowseItemsDataProvider provider) {
+      BrowseItemDataProvider provider) {
     final int crossAxisCount = calculateCrossAxisCount(constraints);
     final double imageWidth = constraints.maxWidth / crossAxisCount;
     final PreviewType previewType =

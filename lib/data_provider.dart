@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:kalinka/browse_item_cache.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -562,13 +561,11 @@ class ConnectionSettingsProvider with ChangeNotifier {
 class GenreFilterProvider with ChangeNotifier {
   final List<Genre> _genres = [];
   final List<String> _filter = [];
-  final Set<String> _filterUpdate = {};
   late Completer _isLoaded;
   late String subscriptionId;
 
   List<Genre> get genres => _genres;
   List<String> get filter => _filter;
-  Set<String> get filterUpdate => _filterUpdate;
   Future get isLoaded => _isLoaded.future;
 
   GenreFilterProvider() {
@@ -580,7 +577,6 @@ class GenreFilterProvider with ChangeNotifier {
     _isLoaded = Completer();
     _genres.clear();
     _filter.clear();
-    _filterUpdate.clear();
     KalinkaPlayerProxy().getGenres().then((value) {
       _genres.addAll(value.items);
       _isLoaded.complete();
@@ -596,18 +592,7 @@ class GenreFilterProvider with ChangeNotifier {
     });
   }
 
-  void notifyFilterUpdateChange() {
-    notifyListeners();
-  }
-
   void commitFilterChange() {
-    if (_filter.toSet().containsAll(_filterUpdate) &&
-        _filterUpdate.toSet().containsAll(_filter)) {
-      return;
-    }
-    _filter.clear();
-    _filter.addAll(_filterUpdate);
-    BrowseItemCache().invalidate();
     notifyListeners();
   }
 

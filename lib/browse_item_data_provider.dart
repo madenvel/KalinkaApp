@@ -1,25 +1,24 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 import 'package:kalinka/browse_item_cache.dart';
 import 'package:kalinka/browse_item_data.dart';
 import 'package:kalinka/data_model.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 
-class BrowseItemsDataProvider extends ChangeNotifier {
-  final BrowseItem _parentItem;
+class BrowseItemDataProvider extends ChangeNotifier {
+  final BrowseItem parentItem;
   late BrowseItemCacheEntry _cacheEntry;
   final int itemsPerRequest;
   final int? itemCountLimit;
+  final Set<String> _genreFilter = {};
+  bool fetchInProgress = false;
 
   final proxy = KalinkaPlayerProxy();
   final cache = BrowseItemCache();
 
-  final List<String> genreFilter;
-
-  bool _isLoading = false;
   bool _isDisposed = false;
-  DateTime? _lastError;
 
   int get totalItemCount => itemCountLimit != null
       ? math.min(_cacheEntry.totalCount, itemCountLimit!)
@@ -34,19 +33,13 @@ class BrowseItemsDataProvider extends ChangeNotifier {
               : itemsPerRequest
           : 0);
 
-  BrowseItem get parentItem => _parentItem;
-
-  BrowseItemsDataProvider(
-      {required BrowseItem parentItem,
-      this.genreFilter = const [],
+  BrowseItemDataProvider(
+      {required this.parentItem,
       this.itemsPerRequest = 30,
-      this.itemCountLimit})
-      : _parentItem = parentItem {
+      this.itemCountLimit}) {
     _cacheEntry = cache.getEntry(parentItem.url);
+    _genreFilter.addAll(_cacheEntry.genreFilter);
 
-    if (_cacheEntry.totalCount == 0) {
-      _cacheEntry.totalCount = 30;
-    }
     assert(itemsPerRequest > 0);
     assert(itemCountLimit == null || itemCountLimit! > 0);
   }
@@ -55,6 +48,18 @@ class BrowseItemsDataProvider extends ChangeNotifier {
   void dispose() {
     _isDisposed = true;
     super.dispose();
+  }
+
+  void maybeUpdateGenreFilter(List<String> newGenreFilter) {
+    if (_cacheEntry.isGenreFilterChanged(newGenreFilter)) {
+      _cacheEntry.updateGenreFilter(newGenreFilter);
+    }
+
+    if (!setEquals(_genreFilter, _cacheEntry.genreFilter)) {
+      _genreFilter.clear();
+      _genreFilter.addAll(_cacheEntry.genreFilter);
+      notifyListeners();
+    }
   }
 
   BrowseItemData getItem(int index) {
@@ -71,35 +76,20 @@ class BrowseItemsDataProvider extends ChangeNotifier {
         loadingState: BrowseItemLoadingState.loaded);
   }
 
-  Future<void> _fetchPage() async {
-    if (_isLoading || _cacheEntry.items.length >= _getTotalItemCount()) {
+  void _fetchPage() {
+    if (fetchInProgress) {
       return;
     }
-    if (_lastError != null &&
-        DateTime.now().difference(_lastError!) < Duration(seconds: 5)) {
-      return;
-    }
-    _isLoading = true;
-    proxy
-        .browseItem(_parentItem,
-            offset: _cacheEntry.items.length,
-            limit: _getItemCountToFetch(),
-            genreIds: genreFilter)
-        .then((result) {
-      if (_isDisposed) {
-        return;
+    fetchInProgress = true;
+    _cacheEntry
+        .fetchPage(parent: parentItem, limit: _getItemCountToFetch())
+        .whenComplete(() {
+      fetchInProgress = false;
+      // Due to async nature of the call
+      // provider might be disposed before the requeset is completed
+      if (!_isDisposed) {
+        notifyListeners();
       }
-      _cacheEntry.items.addAll(result.items);
-      _cacheEntry.totalCount = result.total;
-      _isLoading = false;
-      notifyListeners();
-    }).catchError((error) {
-      if (_isDisposed) {
-        return;
-      }
-      _isLoading = false;
-      _lastError = DateTime.now();
-      notifyListeners();
     });
   }
 

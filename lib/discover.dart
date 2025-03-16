@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kalinka/browse_item_data_provider.dart'
-    show BrowseItemsDataProvider;
+    show BrowseItemDataProvider;
 import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
 import 'package:provider/provider.dart';
 import 'package:kalinka/genre_select_filter.dart';
@@ -46,8 +46,8 @@ class _DiscoverState extends State<Discover> {
                 })));
   }
 
-  BrowseItemsDataProvider _createProvider() {
-    return BrowseItemsDataProvider(
+  BrowseItemDataProvider _createProvider() {
+    return BrowseItemDataProvider(
       parentItem: BrowseItem(
           id: 'root', url: '/catalog', canBrowse: true, canAdd: false),
       itemsPerRequest: 10,
@@ -55,7 +55,7 @@ class _DiscoverState extends State<Discover> {
   }
 
   Widget _buildWithProviders() {
-    return ChangeNotifierProvider<BrowseItemsDataProvider>(
+    return ChangeNotifierProvider<BrowseItemDataProvider>(
         create: (context) => _createProvider(),
         child: Scaffold(
           appBar: AppBar(
@@ -80,7 +80,7 @@ class _DiscoverState extends State<Discover> {
   }
 
   Widget _buildBody(BuildContext context) {
-    return Consumer<BrowseItemsDataProvider>(builder: (context, provider, _) {
+    return Consumer<BrowseItemDataProvider>(builder: (context, provider, _) {
       return SingleChildScrollView(
           child: Column(
         mainAxisSize: MainAxisSize.min,

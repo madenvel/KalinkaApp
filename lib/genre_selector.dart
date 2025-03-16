@@ -7,31 +7,18 @@ class GenreSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (bool didPop, _) async {
-        if (didPop) {
-          return;
-        }
-        if (context.mounted) {
-          context.read<GenreFilterProvider>().commitFilterChange();
-          Navigator.pop(context);
-        }
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Select Genres'),
-          actions: [
-            IconButton(
-                icon: const Icon(Icons.check),
-                onPressed: () {
-                  context.read<GenreFilterProvider>().commitFilterChange();
-                  Navigator.pop(context);
-                })
-          ],
-        ),
-        body: _buildGenreSelectorList(context),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Select Genres'),
+        actions: [
+          IconButton(
+              icon: const Icon(Icons.check),
+              onPressed: () {
+                Navigator.pop(context);
+              })
+        ],
       ),
+      body: _buildGenreSelectorList(context),
     );
   }
 
@@ -51,16 +38,15 @@ class GenreSelector extends StatelessWidget {
               itemBuilder: (context, index) {
                 return SwitchListTile(
                   title: Text(provider.genres[index].name),
-                  value: provider.filterUpdate
-                          .contains(provider.genres[index].id) ||
-                      provider.filterUpdate.isEmpty,
+                  value: provider.filter.contains(provider.genres[index].id) ||
+                      provider.filter.isEmpty,
                   onChanged: (value) {
-                    if (value == true || provider.filterUpdate.isEmpty) {
-                      provider.filterUpdate.add(provider.genres[index].id);
+                    if (value == true || provider.filter.isEmpty) {
+                      provider.filter.add(provider.genres[index].id);
                     } else {
-                      provider.filterUpdate.remove(provider.genres[index].id);
+                      provider.filter.remove(provider.genres[index].id);
                     }
-                    provider.notifyFilterUpdateChange();
+                    provider.commitFilterChange();
                   },
                   controlAffinity: ListTileControlAffinity.leading,
                 );
