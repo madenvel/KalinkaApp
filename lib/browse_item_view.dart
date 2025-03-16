@@ -10,8 +10,10 @@ import 'browse_item_data_provider.dart';
 class BrowseItemView extends StatelessWidget {
   final BrowseItem parentItem;
   final Function(BrowseItem)? onTap;
+  final double padding;
 
-  const BrowseItemView({super.key, required this.parentItem, this.onTap});
+  const BrowseItemView(
+      {super.key, required this.parentItem, this.onTap, this.padding = 8.0});
 
   @override
   Widget build(BuildContext context) {
@@ -36,8 +38,13 @@ class BrowseItemView extends StatelessWidget {
         },
         child: Consumer<BrowseItemDataProvider>(
             builder: (context, dataProvider, child) => LayoutBuilder(
-                builder: (context, constraints) =>
-                    _buildGrid(context, constraints, dataProvider))),
+                builder: (context, constraints) => Padding(
+                    padding: EdgeInsets.symmetric(horizontal: padding),
+                    child: _buildGrid(
+                        context,
+                        constraints
+                            .deflate(EdgeInsets.symmetric(horizontal: padding)),
+                        dataProvider)))),
       ),
     );
   }
