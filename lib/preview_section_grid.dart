@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:kalinka/browse_item_card.dart' show BrowseItemCard;
 import 'package:kalinka/browse_item_data_provider.dart'
-    show BrowseItemsDataProvider;
+    show BrowseItemDataProvider;
 import 'package:kalinka/data_model.dart';
 import 'package:kalinka/data_provider.dart' show GenreFilterProvider;
 import 'package:provider/provider.dart'
-    show ChangeNotifierProxyProvider, Consumer, ReadContext;
+    show ChangeNotifierProxyProvider, Consumer;
 
 typedef BrowseItemTapCallback = void Function(BrowseItem item);
 
@@ -50,17 +50,19 @@ class SectionPreviewGrid extends StatelessWidget {
         section!.catalog?.previewConfig?.itemsCount ?? 5 * crossAxisCount;
 
     return ChangeNotifierProxyProvider<GenreFilterProvider,
-            BrowseItemsDataProvider>(
-        create: (context) => BrowseItemsDataProvider(
-            parentItem: section!,
-            itemCountLimit: itemsCount,
-            genreFilter: context.read<GenreFilterProvider>().filter),
-        update: (_, genreFilterProvider, previous) => BrowseItemsDataProvider(
-            parentItem: section!,
-            itemCountLimit: itemsCount,
-            genreFilter: genreFilterProvider.filter),
+            BrowseItemDataProvider>(
+        create: (context) => BrowseItemDataProvider(
+            parentItem: section!, itemCountLimit: itemsCount),
+        update: (_, genreFilterProvider, dataProvider) {
+          if (dataProvider == null) {
+            return BrowseItemDataProvider(parentItem: section!)
+              ..maybeUpdateGenreFilter(genreFilterProvider.filter);
+          }
+          dataProvider.maybeUpdateGenreFilter(genreFilterProvider.filter);
+          return dataProvider;
+        },
         child: Consumer(
-            builder: (context, BrowseItemsDataProvider dataProvider, child) {
+            builder: (context, BrowseItemDataProvider dataProvider, child) {
           return _buildGridContent(
               dataProvider: dataProvider,
               sectionHeight: sectionHeight,
@@ -71,7 +73,7 @@ class SectionPreviewGrid extends StatelessWidget {
   }
 
   Widget _buildGridContent(
-      {BrowseItemsDataProvider? dataProvider,
+      {BrowseItemDataProvider? dataProvider,
       required double sectionHeight,
       required double cardSize,
       required int crossAxisCount,
@@ -90,11 +92,14 @@ class SectionPreviewGrid extends StatelessWidget {
             itemBuilder: (context, index) {
               final BrowseItem? item = dataProvider?.getItem(index).item;
               return BrowseItemCard(
-                  item: item,
-                  onTap: item != null ? onTap : null,
-                  constraints:
-                      BoxConstraints.tight(Size(cardSize, sectionHeight)),
-                  imageAspectRatio: cardSizeRatio);
+                item: item,
+                onTap: item != null ? onTap : null,
+                constraints:
+                    BoxConstraints.tight(Size(cardSize, sectionHeight)),
+                imageAspectRatio: cardSizeRatio,
+                previewTypeHint: section?.catalog?.previewConfig?.type ??
+                    PreviewType.imageText,
+              );
             },
           )),
     );
