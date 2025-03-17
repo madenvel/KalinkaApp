@@ -74,7 +74,7 @@ class MainActivity : FlutterActivity() {
     private fun showNotificationControls(host: String, port: Int): Boolean {
         Log.i(LOGTAG, "showNotificationControls called")
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            val intent = Intent(this, RpiMusicService::class.java)
+            val intent = Intent(this, KalinkaMusicService::class.java)
             intent.putExtra("host", host)
             intent.putExtra("port", port)
             startForegroundService(intent)
@@ -88,7 +88,7 @@ class MainActivity : FlutterActivity() {
     private fun hideNotificationControls(): Boolean {
         Log.i(LOGTAG, "hideNotificationControls called")
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            var intent = Intent(this, RpiMusicService::class.java)
+            var intent = Intent(this, KalinkaMusicService::class.java)
             stopService(intent)
         }
         return true
