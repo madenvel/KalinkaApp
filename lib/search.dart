@@ -1,11 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/services.dart';
+import 'package:kalinka/search_results_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/bottom_menu.dart';
 import 'package:kalinka/custom_list_tile.dart';
 import 'package:kalinka/data_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 
@@ -20,118 +18,7 @@ class Search extends StatefulWidget {
 }
 
 class _SearchState extends State<Search> {
-  final List<BrowseItem> previousSearch = [];
-  SearchType searchType = SearchType.album;
-  String searchText = '';
-  final _textFieldController = TextEditingController();
-  late SharedPreferences persistentStorage;
-  final ScrollController _searchListScrollController = ScrollController();
-
   final navigatorKey = GlobalKey<NavigatorState>();
-
-  @override
-  void dispose() {
-    _textFieldController.dispose();
-    _searchListScrollController.dispose();
-    super.dispose();
-  }
-
-  void _performSearch(query) async {
-    if (query.isEmpty) {
-      return;
-    }
-    SearchResultsProvider searchResults = context.read<SearchResultsProvider>();
-    searchResults.search(_textFieldController.text, searchType, 50);
-  }
-
-  void _clearSearchText() {
-    setState(() {
-      _textFieldController.clear();
-      persistentStorage.setString('searchText', '');
-    });
-  }
-
-  void _addToPreviousSearch(BrowseItem item) {
-    if (previousSearch.indexWhere((element) => element.id == item.id) == -1) {
-      previousSearch.insert(0, item);
-      persistentStorage.setStringList('previousSearches',
-          previousSearch.map((e) => json.encode(e)).toList());
-    }
-  }
-
-  void _updateSelectedChip(SearchType selected) {
-    setState(() {
-      searchType = selected;
-      persistentStorage.setString('selectedChip', searchType.toStringValue());
-      _performSearch(_textFieldController.text);
-    });
-  }
-
-  void _clearHistory() {
-    setState(() {
-      previousSearch.clear();
-      persistentStorage.setStringList('previousSearches', []);
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _initPersistentState();
-    _searchListScrollController.addListener(() {
-      if (!mounted) {
-        return;
-      }
-      if (_searchListScrollController.position.pixels >=
-          _searchListScrollController.position.maxScrollExtent) {
-        SearchResultsProvider searchResults =
-            context.read<SearchResultsProvider>();
-        if (searchResults.results.last == null) {
-          return;
-        }
-        searchResults.loadMoreItems(10);
-      }
-    });
-    context.read<SearchResultsProvider>().addListener(onSearchResultsChanged);
-  }
-
-  @override
-  void deactivate() {
-    super.deactivate();
-    context
-        .read<SearchResultsProvider>()
-        .removeListener(onSearchResultsChanged);
-  }
-
-  void onSearchResultsChanged() {
-    if (!mounted) {
-      return;
-    }
-    setState(() {});
-  }
-
-  void _initPersistentState() async {
-    SharedPreferences.getInstance().then((ps) {
-      persistentStorage = ps;
-      setState(() {
-        List<String> previousSearches =
-            persistentStorage.getStringList('previousSearches') ?? [];
-        for (var element in previousSearches) {
-          previousSearch.add(BrowseItem.fromJson(json.decode(element)));
-        }
-        SearchResultsProvider searchResults =
-            context.read<SearchResultsProvider>();
-        _textFieldController.text = searchResults.query;
-        if (searchResults.query.isEmpty) {
-          searchType = SearchTypeExtension.fromStringValue(
-              persistentStorage.getString('selectedChip') ??
-                  SearchType.album.toStringValue());
-        } else {
-          searchType = searchResults.searchType;
-        }
-      });
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,11 +37,39 @@ class _SearchState extends State<Search> {
         child: Navigator(
             key: navigatorKey,
             onGenerateRoute: (settings) {
-              return MaterialPageRoute(builder: (_) => _buildSearchPage());
+              return MaterialPageRoute(builder: (_) => _buildProviders());
             }));
   }
 
-  Widget _buildSearchPage() {
+  Widget _buildProviders() {
+    return MultiProvider(
+        providers: [
+          ChangeNotifierProvider<TextEditingController>(
+              create: (_) => TextEditingController()),
+          ChangeNotifierProvider<SearchTypeProvider>(
+              create: (_) => SearchTypeProvider()),
+          ChangeNotifierProvider<SavedSearchProvider>(
+            create: (_) => SavedSearchProvider(),
+          )
+        ],
+        child: ChangeNotifierProxyProvider2<TextEditingController,
+                SearchTypeProvider, SearchResultsProvider>(
+            create: (_) => SearchResultsProvider(),
+            update:
+                (_, textController, searchTypeProvider, searchResultsProvider) {
+              if (searchResultsProvider == null) {
+                return SearchResultsProvider();
+              }
+              return searchResultsProvider
+                ..updateSearchQuery(
+                    textController.text, searchTypeProvider.searchType);
+            },
+            builder: (context, _) => _buildSearchPage(context)));
+  }
+
+  Widget _buildSearchPage(BuildContext context) {
+    final textFieldController = context.watch<TextEditingController>();
+    final searchTypeProvider = context.watch<SearchTypeProvider>();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -167,36 +82,33 @@ class _SearchState extends State<Search> {
         Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
-              controller: _textFieldController,
+              controller: textFieldController,
               decoration: InputDecoration(
                 border: const OutlineInputBorder(),
                 labelText: 'Search for albums, artists, tracks, playlists',
-                suffixIcon: _textFieldController.text.isNotEmpty
+                suffixIcon: textFieldController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear),
                         onPressed: () {
-                          _clearSearchText();
+                          textFieldController.clear();
                         })
                     : null,
               ),
-              onSubmitted: (text) {
-                _performSearch(text);
-              },
             )),
-        _textFieldController.text.isNotEmpty
-            ? _buildChipGroup()
+        textFieldController.text.isNotEmpty
+            ? _buildChipGroup(searchTypeProvider)
             : const SizedBox.shrink(),
         const SizedBox(height: 8),
         Expanded(
-          child: _textFieldController.text.isEmpty
-              ? _buildSearchHistory()
-              : _buildSearchResults(),
+          child: textFieldController.text.isEmpty
+              ? _buildSearchHistory(context)
+              : _buildSearchResults(context),
         ),
       ],
     );
   }
 
-  Widget _buildChipGroup() {
+  Widget _buildChipGroup(SearchTypeProvider provider) {
     final List<String> searchTypesStr = [
       'Albums',
       'Artists',
@@ -219,33 +131,52 @@ class _SearchState extends State<Search> {
                   padding: const EdgeInsets.only(left: 4, right: 4),
                   child: FilterChip(
                     label: Text(searchTypesStr[index]),
-                    selected: searchType == searchTypes[index],
+                    selected: provider.searchType == searchTypes[index],
                     onSelected: (isSelected) {
                       if (isSelected) {
-                        _updateSelectedChip(searchTypes[index]);
+                        provider.updateSearchType(searchTypes[index]);
                       }
                     },
                   ));
             })));
   }
 
-  Widget _buildSearchResults() {
-    SearchResultsProvider searchResults =
-        context.watch<SearchResultsProvider>();
+  Widget _buildSearchResults(BuildContext context) {
+    final provider = context.watch<SearchResultsProvider>();
+    final savedSearchProvider = context.read<SavedSearchProvider>();
     return ListView.separated(
-        controller: _searchListScrollController,
         padding: EdgeInsets.zero,
-        itemCount: searchResults.results.length,
+        itemCount: provider.maybeCount,
         separatorBuilder: (context, index) => const Divider(height: 1),
         itemBuilder: (context, index) {
-          BrowseItem? item = searchResults.results.elementAtOrNull(index);
+          BrowseItem? item = provider.getItem(index);
           if (item == null) {
-            return const Center(child: CircularProgressIndicator());
+            return ListTile(
+              leading: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.grey,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              title: Container(
+                height: 16,
+                width: 100,
+                color: Colors.grey,
+                margin: const EdgeInsets.only(bottom: 4),
+              ),
+              subtitle: Container(
+                height: 14,
+                width: 60,
+                color: Colors.grey,
+              ),
+            );
           }
           return CustomListTile(
               browseItem: item,
               onTap: () {
-                _addToPreviousSearch(item);
+                savedSearchProvider.addSearch(item);
                 if (item.canBrowse) {
                   Navigator.of(context).push(
                     MaterialPageRoute(
@@ -270,60 +201,70 @@ class _SearchState extends State<Search> {
         });
   }
 
-  Widget _buildSearchHistory() {
+  Widget _buildSearchHistory(BuildContext context) {
+    final savedSearchProvider = context.watch<SavedSearchProvider>();
+
+    return FutureBuilder(
+        future: savedSearchProvider.ready,
+        builder: (_, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            return _buildSearchHistoryContent(savedSearchProvider);
+          }
+          return const SizedBox.shrink();
+        });
+  }
+
+  Widget _buildSearchHistoryContent(SavedSearchProvider provider) {
     return Column(children: [
-      previousSearch.isNotEmpty
-          ? Row(children: [
-              const Padding(
-                  padding: EdgeInsets.only(left: 15, top: 4, bottom: 4),
-                  child: Text('Previous searches',
-                      style: TextStyle(fontWeight: FontWeight.bold))),
-              const Spacer(),
-              Padding(
-                  padding: const EdgeInsets.only(right: 15, top: 4, bottom: 4),
-                  child: ElevatedButton(
-                      child: const Text('Delete All',
-                          style: TextStyle(color: Colors.red)),
-                      onPressed: () {
-                        _clearHistory();
-                      })),
-            ])
+      provider.savedSearches.isNotEmpty
+          ? _buildSearchHistoryHeader(provider)
           : const SizedBox.shrink(),
       Expanded(
           child: ListView.separated(
         padding: EdgeInsets.zero,
-        itemCount: previousSearch.length,
+        itemCount: provider.savedSearches.length,
         separatorBuilder: (context, index) => const Divider(height: 1),
         itemBuilder: (context, index) {
+          final browseItem = provider.savedSearches[index];
           return CustomListTile(
-              browseItem: previousSearch[index],
+              browseItem: browseItem,
               trailing: IconButton(
                   icon: const Icon(Icons.clear),
                   onPressed: () {
-                    setState(() {
-                      previousSearch.removeAt(index);
-                      persistentStorage.setStringList('previousSearches',
-                          previousSearch.map((e) => json.encode(e)).toList());
-                    });
+                    provider.removeSearchAt(index);
                   }),
               onTap: () {
-                BrowseItem item = previousSearch[index];
-                if (item.canBrowse) {
+                if (browseItem.canBrowse) {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                        builder: (context) => BrowsePage(parentItem: item)),
+                        builder: (context) =>
+                            BrowsePage(parentItem: browseItem)),
                   );
-                } else if (item.canAdd) {
-                  _playTrack(context, item.id);
+                } else if (browseItem.canAdd) {
+                  _playTrack(context, browseItem.id);
                 }
-                previousSearch.removeAt(index);
-                previousSearch.insert(0, item);
-                persistentStorage.setStringList('previousSearches',
-                    previousSearch.map((e) => json.encode(e)).toList());
-                setState(() {});
+                provider.moveToTop(index);
               });
         },
       ))
+    ]);
+  }
+
+  Widget _buildSearchHistoryHeader(SavedSearchProvider provider) {
+    return Row(children: [
+      const Padding(
+          padding: EdgeInsets.only(left: 15, top: 4, bottom: 4),
+          child: Text('Previous searches',
+              style: TextStyle(fontWeight: FontWeight.bold))),
+      const Spacer(),
+      Padding(
+          padding: const EdgeInsets.only(right: 15, top: 4, bottom: 4),
+          child: ElevatedButton(
+              child:
+                  const Text('Delete All', style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                provider.clearHistory();
+              })),
     ]);
   }
 

@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'data_model.dart';
 import 'event_listener.dart';
 import 'kalinkaplayer_proxy.dart';
-import 'lazy_list.dart';
 
 class TrackListProvider with ChangeNotifier {
   final List<Track> _trackList = [];
@@ -394,38 +393,6 @@ class UserFavoritesProvider with ChangeNotifier {
   void dispose() {
     EventListener().unregisterCallback(subscriptionId);
     super.dispose();
-  }
-}
-
-class SearchResultsProvider extends LazyLoadingList with ChangeNotifier {
-  String _query = '';
-  SearchType _searchType = SearchType.track;
-
-  String get query => _query;
-  SearchType get searchType => _searchType;
-
-  @override
-  Future<BrowseItemsList> performRequest(int offset, int limit) {
-    return KalinkaPlayerProxy()
-        .search(_searchType, _query, offset: offset, limit: limit);
-  }
-
-  @override
-  void onLoading() {
-    notifyListeners();
-  }
-
-  @override
-  void onLoaded() {
-    notifyListeners();
-  }
-
-  Future<void> search(
-      String query, SearchType searchType, int chunkSize) async {
-    _query = query;
-    _searchType = searchType;
-    reset();
-    return loadMoreItems(chunkSize);
   }
 }
 

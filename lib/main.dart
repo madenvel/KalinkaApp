@@ -38,7 +38,6 @@ class KalinkaMusic extends StatelessWidget {
           ChangeNotifierProvider(create: (context) => TrackListProvider()),
           ChangeNotifierProvider(create: (context) => PlayerStateProvider()),
           ChangeNotifierProvider(create: (context) => UserFavoritesProvider()),
-          ChangeNotifierProvider(create: (context) => SearchResultsProvider()),
           ChangeNotifierProvider(create: (context) => GenreFilterProvider()),
           ChangeNotifierProvider(
               create: (context) => ConnectionSettingsProvider()),
