@@ -150,22 +150,33 @@ class CustomListTile extends StatelessWidget {
       rounded = true;
     }
 
-    return ClipRRect(
-        borderRadius: BorderRadius.circular(rounded ? size / 2 : 4),
-        child: Container(
-            width: size,
-            height: size,
-            color: Colors.grey,
-            child: image == null
-                ? Icon(fallbackIcon, size: size)
-                : CachedNetworkImage(
-                    fit: BoxFit.cover,
-                    cacheManager: KalinkaMusicCacheManager.instance,
-                    imageUrl: image,
-                    placeholder: (context, url) =>
-                        Icon(fallbackIcon, size: size),
-                    errorWidget: (context, url, error) =>
-                        Icon(Icons.error, size: size),
-                  )));
+    return SizedBox(
+        width: size,
+        height: size,
+        child: image == null
+            ? Container(
+                decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(rounded ? size / 2 : 4),
+                    color: Colors.grey),
+                child: Icon(fallbackIcon, size: size * 0.9))
+            : CachedNetworkImage(
+                cacheManager: KalinkaMusicCacheManager.instance,
+                imageBuilder: (context, imageProvider) => Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(rounded ? size / 2 : 4),
+                    image: DecorationImage(
+                        image: imageProvider, fit: BoxFit.cover),
+                  ),
+                ),
+                imageUrl: image,
+                placeholder: (context, url) => Container(
+                    decoration: BoxDecoration(
+                        borderRadius:
+                            BorderRadius.circular(rounded ? size / 2 : 4),
+                        color: Colors.grey),
+                    child: Icon(fallbackIcon, size: size * 0.9)),
+                errorWidget: (context, url, error) =>
+                    Icon(Icons.error, size: size),
+              ));
   }
 }
