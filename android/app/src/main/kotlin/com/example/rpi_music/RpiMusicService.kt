@@ -20,9 +20,9 @@ import io.flutter.Log
 import java.net.URL
 
 
-class RpiMusicService : Service(), EventCallback {
+class KalinkaMusicService : Service(), EventCallback {
 
-    private val LOGTAG: String = "RpiMusicService"
+    private val LOGTAG: String = "KalinkaMusicService"
     private val NOTIFICATION_CHANNEL_ID = "RpiMusicNotificationChannel"
     private val NOTIFICATION: Int = 1001
 

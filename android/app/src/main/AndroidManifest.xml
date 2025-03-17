@@ -38,7 +38,7 @@
             android:name="flutterEmbedding"
             android:value="2" />
         <service
-            android:name=".RpiMusicService"
+            android:name=".KalinkaMusicService"
             android:foregroundServiceType="mediaPlayback"
             android:exported="false" />
     </application>
