@@ -41,7 +41,7 @@ class KalinkaMusicService : Service(), EventCallback {
         mNM.createNotificationChannel(
             NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
-                "RpiMusic Playback Controls",
+                "KalinkaApp Playback Controls",
                 NotificationManager.IMPORTANCE_LOW
             )
         )
