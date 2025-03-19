@@ -220,10 +220,7 @@ class _NowPlayingState extends State<NowPlaying> {
 
   Widget _buildVolumeControl(BuildContext context) {
     return Consumer<VolumeControlProvider>(builder: (context, provider, child) {
-      if (provider.supported == false) {
-        return const SizedBox.shrink();
-      }
-
+      final bool supported = provider.supported;
       return Row(mainAxisSize: MainAxisSize.max, children: [
         const Icon(Icons.volume_down),
         Expanded(
@@ -232,17 +229,22 @@ class _NowPlayingState extends State<NowPlaying> {
             value: provider.volume,
             min: 0,
             max: provider.maxVolume.toDouble(),
-            onChangeStart: (double value) {
-              provider.blockNotifications = true;
-            },
-            onChanged: (double value) {
-              provider.volume = value;
-              setState(() {});
-            },
-            onChangeEnd: (double value) {
-              provider.volume = value;
-              provider.blockNotifications = false;
-            },
+            onChangeStart: supported
+                ? (double value) {
+                    provider.blockNotifications = true;
+                  }
+                : null,
+            onChanged: supported
+                ? (double value) {
+                    provider.volume = value;
+                  }
+                : null,
+            onChangeEnd: supported
+                ? (double value) {
+                    provider.volume = value;
+                    provider.blockNotifications = false;
+                  }
+                : null,
           )),
         ),
         const Icon(Icons.volume_up)

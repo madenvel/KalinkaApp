@@ -424,6 +424,7 @@ class VolumeControlProvider with ChangeNotifier {
     if (_currentVolume.toInt() != _realVolume) {
       _realVolume = _currentVolume.toInt();
       KalinkaPlayerProxy().setVolume(_realVolume);
+      notifyListeners();
     }
   }
 
