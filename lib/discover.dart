@@ -25,8 +25,6 @@ class _DiscoverState extends State<Discover> {
 
   @override
   Widget build(BuildContext context) {
-    // Keep this one for dynamic resize of the content to work when screen size changes
-    // MediaQuery.of(context).size;
     return PopScope(
         canPop: false,
         onPopInvokedWithResult: (bool didPop, _) {

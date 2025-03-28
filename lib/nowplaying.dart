@@ -66,7 +66,6 @@ class _NowPlayingState extends State<NowPlaying> {
             builder: (context, child) =>
                 RepaintBoundary(child: _buildProgressBarWidget(context))),
         _buildButtonsBar(context),
-        //TODO: Should this be moved to upper level to avoid rebuilding?
         ChangeNotifierProvider(
           create: (context) => VolumeControlProvider(),
           builder: (context, child) => _buildVolumeControl(context),
