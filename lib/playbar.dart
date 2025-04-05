@@ -78,7 +78,7 @@ class _PlaybarState extends State<Playbar> {
                           backgroundColor:
                               Theme.of(context).scaffoldBackgroundColor,
                           valueColor: const AlwaysStoppedAnimation<Color>(
-                              KalinkaColors.playButtonColor)))),
+                              KalinkaColors.primaryButtonColor)))),
               const Divider(height: 0)
             ])),
         onTap: () {
