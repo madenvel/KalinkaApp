@@ -2,14 +2,16 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
-import 'package:kalinka/discovery_widget.dart';
 import 'package:kalinka/event_listener.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:kalinka/service_discovery.dart';
+import 'package:kalinka/service_discovery_widget.dart'
+    show ServiceDiscoveryWidget;
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'colors.dart';
 
 class SettingsTab extends StatefulWidget {
   const SettingsTab({super.key});
@@ -22,8 +24,6 @@ class _SettingsTabState extends State<SettingsTab> {
   String _appVersion = '...';
   String _appBuildNumber = '';
 
-  static const double valueOffset = 16.0;
-
   bool _dynamicOptionsLoaded = false;
   Map<String, dynamic> _dynamicOptions = {};
   final Map<String, dynamic> _updatedValues = {};
@@ -31,6 +31,7 @@ class _SettingsTabState extends State<SettingsTab> {
 
   final EventListener _eventListener = EventListener();
   late String subscriptionId;
+  bool _isConnected = false;
 
   final logger = Logger();
 
@@ -49,9 +50,20 @@ class _SettingsTabState extends State<SettingsTab> {
 
     subscriptionId = _eventListener.registerCallback({
       EventType.NetworkDisconnected: (_) {
+        setState(() {
+          _isConnected = false;
+        });
         Navigator.pop(context);
+      },
+      EventType.NetworkConnected: (_) {
+        setState(() {
+          _isConnected = true;
+        });
       }
     });
+
+    // Check initial connection status
+    _isConnected = _eventListener.isRunning;
   }
 
   @override
@@ -63,65 +75,78 @@ class _SettingsTabState extends State<SettingsTab> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (bool didPop, _) async {
-          if (didPop) {
-            return;
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, _) async {
+        if (didPop) {
+          return;
+        }
+        if (_updatedValues.isNotEmpty) {
+          final waitForRestart = await _showSaveDialog() ?? false;
+          if (waitForRestart) {
+            await _showRestartDialog();
           }
-          if (_updatedValues.isNotEmpty) {
-            final waitForRestart = await _showSaveDialog() ?? false;
-            if (waitForRestart) {
-              await _showRestartDialog();
-            }
-          }
-          if (context.mounted) {
-            Navigator.pop(context);
-          }
-        },
-        child: Scaffold(
-            appBar: AppBar(
-              title: const Text('Settings'),
-              actions: [
-                if (_updatedValues.isNotEmpty)
-                  IconButton(
-                    icon: const Icon(Icons.restore),
-                    onPressed: () async {
-                      final shouldRevert = await showDialog<bool>(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: const Text('Revert Changes'),
-                            content: const Text(
-                                'Do you want to revert all changes?'),
-                            actionsAlignment: MainAxisAlignment.spaceBetween,
-                            actions: <Widget>[
-                              TextButton(
-                                child: const Text('Cancel'),
-                                onPressed: () {
-                                  Navigator.of(context).pop(false);
-                                },
-                              ),
-                              TextButton(
-                                child: const Text('Yes'),
-                                onPressed: () {
-                                  Navigator.of(context).pop(true);
-                                },
-                              ),
-                            ],
-                          );
-                        },
+        }
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Settings'),
+          actions: [
+            if (_updatedValues.isNotEmpty)
+              IconButton(
+                icon: const Icon(Icons.restore),
+                onPressed: () async {
+                  final shouldRevert = await showDialog<bool>(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: const Text('Revert Changes'),
+                        content:
+                            const Text('Do you want to revert all changes?'),
+                        actionsAlignment: MainAxisAlignment.spaceBetween,
+                        actions: <Widget>[
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  KalinkaColors.secondaryButtonColor,
+                              foregroundColor: KalinkaColors.buttonTextColor,
+                            ),
+                            child: const Text('Cancel'),
+                            onPressed: () {
+                              Navigator.of(context).pop(false);
+                            },
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: KalinkaColors.primaryButtonColor,
+                              foregroundColor: KalinkaColors.buttonTextColor,
+                            ),
+                            child: const Text('Yes'),
+                            onPressed: () {
+                              Navigator.of(context).pop(true);
+                            },
+                          ),
+                        ],
                       );
-                      if (shouldRevert == true) {
-                        setState(() {
-                          _updatedValues.clear();
-                        });
-                      }
                     },
-                  ),
-              ],
-            ),
-            body: SingleChildScrollView(
-                child: Container(child: buildBody(context)))));
+                  );
+                  if (shouldRevert == true) {
+                    setState(() {
+                      _updatedValues.clear();
+                    });
+                  }
+                },
+              ),
+          ],
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(16.0),
+          children: _buildSettings(context),
+        ),
+      ),
+    );
   }
 
   Future<bool?> _showSaveDialog() {
@@ -142,13 +167,21 @@ class _SettingsTabState extends State<SettingsTab> {
             ),
           ),
           actions: <Widget>[
-            TextButton(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: KalinkaColors.secondaryButtonColor,
+                foregroundColor: KalinkaColors.buttonTextColor,
+              ),
               child: const Text('Discard'),
               onPressed: () {
                 Navigator.of(context).pop(false);
               },
             ),
-            TextButton(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: KalinkaColors.primaryButtonColor,
+                foregroundColor: KalinkaColors.buttonTextColor,
+              ),
               child: const Text('Save'),
               onPressed: () async {
                 await KalinkaPlayerProxy().saveSettings(_updatedValues);
@@ -196,103 +229,326 @@ class _SettingsTabState extends State<SettingsTab> {
     });
   }
 
-  Widget buildBody(BuildContext context) {
+  List<Widget> _buildSettings(BuildContext context) {
     final connectionSettings = context.read<ConnectionSettingsProvider>();
-    final List<ExpansionPanel> children = [
-      ExpansionPanelRadio(
-        value: 0,
-        headerBuilder: (BuildContext context, bool isExpanded) {
-          return ListTile(
-            title: Text('Device ${connectionSettings.name}'),
-            subtitle:
-                Text('${connectionSettings.host}:${connectionSettings.port}'),
-          );
-        },
-        body: Align(
-          alignment: Alignment.centerLeft,
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
+    final List<Widget> settingsWidgets = [];
+
+    // Connection Status section
+    settingsWidgets.add(_buildSectionHeader('Connection Status'));
+    settingsWidgets.add(
+      Card(
+        margin: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: ListTile(
+          title: const Text('Connected'),
+          trailing: _isConnected
+              ? const Icon(Icons.check_circle, color: Colors.green)
+              : const Icon(Icons.cancel, color: Colors.red),
+          subtitle:
+              Text(_isConnected ? 'Device is online' : 'Device is offline'),
+        ),
+      ),
+    );
+
+    // Current Streamer section
+    settingsWidgets.add(_buildSectionHeader('Streamer'));
+    settingsWidgets.add(
+      Card(
+        margin: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Current Streamer',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                connectionSettings.name,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text('${connectionSettings.host}:${connectionSettings.port}'),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: KalinkaColors.primaryButtonColor,
+                    foregroundColor: KalinkaColors.buttonTextColor,
+                    padding: const EdgeInsets.symmetric(vertical: 16.0),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
                         builder: (context) => ChangeNotifierProvider(
-                            create: (context) => ServiceDiscoveryDataProvider(),
-                            child: DiscoveryWidget(
-                              onServiceSelected: (name, host, port) {
-                                connectionSettings.setDevice(name, host, port);
-                                Navigator.pop(context);
-                              },
-                              onCancel: () {
-                                Navigator.pop(context);
-                              },
-                            ))));
-              },
-              child: const Text('Connect new device'),
-            ),
+                          create: (context) => ServiceDiscoveryDataProvider(),
+                          child: const ServiceDiscoveryWidget(),
+                        ),
+                      ),
+                    ).then((item) {
+                      if (item != null) {
+                        connectionSettings.setDevice(
+                            item.name, item.ipAddress, item.port);
+                      }
+                    });
+                  },
+                  child: const Text(
+                    'CHANGE STREAMER',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        canTapOnHeader: true,
       ),
-    ];
+    );
+
+    // Dynamic settings sections
     if (_dynamicOptionsLoaded &&
         _dynamicOptions.isNotEmpty &&
         _dynamicOptions['type'] == 'section') {
-      int i = 2;
       _dynamicOptions['elements'].forEach((key, value) {
         try {
-          children.add(buildTopLevelDynamicOption(context, value, i, key));
-          i++;
+          if (value['type'] == 'section') {
+            settingsWidgets.add(_buildDynamicSection(context, value, key));
+          }
         } catch (e) {
           logger.e(
               'Error building dynamic option for key=$key, value=$value: $e');
         }
       });
     }
-    children.add(ExpansionPanelRadio(
-        value: 1,
-        headerBuilder: (BuildContext context, bool isExpanded) {
-          return ListTile(
-            title: const Text('About'),
-            subtitle: isExpanded
-                ? null
-                : Text('Version: $_appVersion build $_appBuildNumber'),
-          );
-        },
-        body: Column(children: [
-          Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 8, bottom: 8, left: 16),
-                child: Text('Version: $_appVersion build $_appBuildNumber'),
-              )),
-          const SizedBox(height: 16)
-        ]),
-        canTapOnHeader: true));
-    return ExpansionPanelList.radio(children: children);
+
+    // About section
+    settingsWidgets.add(_buildSectionHeader('About'));
+    settingsWidgets.add(
+      Card(
+        margin: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Version: $_appVersion'),
+              Text('Build: $_appBuildNumber'),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    return settingsWidgets;
   }
 
-  ExpansionPanel buildTopLevelDynamicOption(BuildContext context,
-      Map<String, dynamic> settings, int index, String path) {
-    return ExpansionPanelRadio(
-      value: index,
-      headerBuilder: (BuildContext context, bool isExpanded) {
-        return ListTile(
-          title: Text(settings['name'] ?? 'Unknown Section'),
-          subtitle: Text(settings['description'] ?? ''),
-        );
-      },
-      body: buildDynamicOption(context, settings, 0, path),
-      canTapOnHeader: true,
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.secondary,
+        ),
+      ),
     );
   }
 
-  Widget buildDynamicOption(BuildContext context, Map<String, dynamic> settings,
-      int level, String path) {
+  Widget _buildDynamicSection(
+      BuildContext context, Map<String, dynamic> settings, String path) {
+    List<Widget> sectionWidgets = [];
+
+    // Add section header
+    sectionWidgets
+        .add(_buildSectionHeader(settings['name'] ?? 'Unknown Section'));
+
+    // Build section elements card
+    List<Widget> cardItems = [];
+
+    settings['elements'].forEach((key, value) {
+      try {
+        if (value['type'] == 'section') {
+          // Handle nested section
+          sectionWidgets.add(_buildNestedSection(context, value, '$path.$key'));
+        } else {
+          // Add setting item to the current card
+          if (cardItems.isNotEmpty) {
+            cardItems.add(const Divider(height: 1));
+          }
+          cardItems.add(_buildSettingItem(context, value, '$path.$key'));
+        }
+      } catch (e) {
+        logger
+            .e('Error building dynamic option for key=$key, value=$value: $e');
+      }
+    });
+
+    if (cardItems.isNotEmpty) {
+      sectionWidgets.add(
+        Card(
+          margin: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Column(children: cardItems),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: sectionWidgets,
+    );
+  }
+
+  Widget _buildNestedSection(
+      BuildContext context, Map<String, dynamic> settings, String path) {
+    return Card(
+      margin: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _navigateToNestedSettings(context, settings, path),
+        child: ListTile(
+          title: Text(settings['name'] ?? 'Unknown Section'),
+          subtitle: Text(settings['description'] ?? ''),
+          trailing: const Icon(Icons.chevron_right),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToNestedSettings(
+      BuildContext context, Map<String, dynamic> settings, String path) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => _NestedSettingsScreen(
+          title: settings['name'] ?? 'Settings',
+          settings: settings,
+          basePath: path,
+          onUpdateValue: _updateValue,
+          updatedValues: _updatedValues,
+          invalidInputPaths: _invalidInputPaths,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingItem(
+      BuildContext context, Map<String, dynamic> settings, String path) {
+    // Get display value for the setting
+    final String displayValue = _getDisplayValue(settings, path);
+
+    return InkWell(
+      onTap: () => _showSettingEditor(context, settings, path),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    settings['description'] ?? 'Unknown Setting',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    displayValue,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: _updatedValues.containsKey(path)
+                          ? Theme.of(context).colorScheme.error
+                          : Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getDisplayValue(Map<String, dynamic> settings, String path) {
+    final bool hasUpdatedValue = _updatedValues.containsKey(path);
+    final dynamic value =
+        hasUpdatedValue ? _updatedValues[path] : settings['value'];
+
     switch (settings['type']) {
-      case 'section':
-        return _buildSection(context, settings, level, path);
+      case 'boolean':
+        return value == true ? 'Enabled' : 'Disabled';
+      case 'password':
+        return '••••••••';
+      case 'enum':
+        return value.toString();
+      default:
+        return value?.toString() ?? '';
+    }
+  }
+
+  void _showSettingEditor(
+      BuildContext context, Map<String, dynamic> settings, String path) {
+    // Replace bottom sheet with dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            settings['description'] ?? 'Edit Setting',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: _buildEditorWidget(context, settings, path),
+          actions: <Widget>[
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: KalinkaColors.secondaryButtonColor,
+                foregroundColor: KalinkaColors.buttonTextColor,
+              ),
+              child: const Text('CANCEL'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: KalinkaColors.primaryButtonColor,
+                foregroundColor: KalinkaColors.buttonTextColor,
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('CHANGE'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildEditorWidget(
+      BuildContext context, Map<String, dynamic> settings, String path) {
+    switch (settings['type']) {
       case 'integer':
         return _buildIntegerField(context, settings, path);
       case 'string':
@@ -309,47 +565,6 @@ class _SettingsTabState extends State<SettingsTab> {
     }
   }
 
-  Widget _buildSection(BuildContext context, Map<String, dynamic> settings,
-      int level, String path) {
-    List<Widget> children = [];
-
-    if (level > 0) {
-      final tile = ListTile(
-        contentPadding: EdgeInsets.only(left: 8.0, right: 8.0),
-        title: Text(settings['name'] ?? 'Unknown Section'),
-        subtitle: Text(settings['description']),
-        visualDensity: VisualDensity.compact,
-      );
-      children.add(tile);
-    }
-
-    bool hasSections = false;
-
-    settings['elements'].forEach((key, value) {
-      if (value['type'] == 'section') {
-        hasSections = true;
-      }
-      children.add(buildDynamicOption(context, value, level + 1, '$path.$key'));
-    });
-
-    final widget = Column(
-        crossAxisAlignment: CrossAxisAlignment.start, children: children);
-    return Card(
-        color: hasSections ? _getCardColor(level) : Theme.of(context).cardColor,
-        child: widget);
-  }
-
-  Color _getCardColor(int level) {
-    switch (level % 3) {
-      case 1:
-        return Colors.grey[850]!;
-      case 2:
-        return Theme.of(context).cardColor;
-      default:
-        return Theme.of(context).cardColor;
-    }
-  }
-
   Widget _buildIntegerField(
       BuildContext context, Map<String, dynamic> settings, String path) {
     final bool hasUpdatedValue = _updatedValues.containsKey(path);
@@ -357,58 +572,9 @@ class _SettingsTabState extends State<SettingsTab> {
         ? _updatedValues[path].toString()
         : settings['value'].toString();
     final readonly = settings['readonly'];
-    return Padding(
-        padding: EdgeInsets.only(
-            left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
-        child: TextFormField(
-            controller: TextEditingController(text: currentValue),
-            decoration: InputDecoration(
-                labelText: settings['description'],
-                border: const OutlineInputBorder(),
-                suffixIcon: hasUpdatedValue
-                    ? IconButton(
-                        icon: const Icon(Icons.replay),
-                        onPressed: () {
-                          setState(() {
-                            _updatedValues.remove(path);
-                          });
-                        },
-                      )
-                    : null,
-                fillColor:
-                    hasUpdatedValue ? Colors.red.withValues(alpha: 0.1) : null,
-                filled: hasUpdatedValue),
-            keyboardType: TextInputType.number,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            validator: (String? value) {
-              final int? parsed = int.tryParse(value ?? '');
-              if (value == null || value.isEmpty || parsed == null) {
-                _invalidInputPaths.add(path);
-                return 'Please enter a number';
-              }
-              if (parsed < 0) {
-                _invalidInputPaths.add(path);
-                return "Can't be negative";
-              }
-              _invalidInputPaths.remove(path);
-              return null;
-            },
-            onFieldSubmitted: (String value) {
-              _updateValue(path, settings['value'], currentValue, value);
-            },
-            readOnly: readonly));
-  }
 
-  Widget _buildStringField(
-      BuildContext context, Map<String, dynamic> settings, String path) {
-    final bool hasUpdatedValue = _updatedValues.containsKey(path);
-    final String currentValue = hasUpdatedValue
-        ? _updatedValues[path].toString()
-        : settings['value'].toString();
-    final readonly = settings['readonly'];
-    return Padding(
-      padding: EdgeInsets.only(
-          left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
+    return SizedBox(
+      width: double.maxFinite,
       child: TextFormField(
         controller: TextEditingController(text: currentValue),
         decoration: InputDecoration(
@@ -420,25 +586,78 @@ class _SettingsTabState extends State<SettingsTab> {
                   onPressed: () {
                     setState(() {
                       _updatedValues.remove(path);
+                      Navigator.pop(context);
                     });
                   },
                 )
               : null,
-          fillColor: hasUpdatedValue ? Colors.red.withValues(alpha: 0.1) : null,
-          filled: hasUpdatedValue,
+        ),
+        keyboardType: TextInputType.number,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        validator: (String? value) {
+          final int? parsed = int.tryParse(value ?? '');
+          if (value == null || value.isEmpty || parsed == null) {
+            return 'Please enter a number';
+          }
+          if (parsed < 0) {
+            return "Can't be negative";
+          }
+          return null;
+        },
+        onChanged: readonly
+            ? null
+            : (value) {
+                final int? parsed = int.tryParse(value);
+                if (parsed != null) {
+                  _updateValue(path, settings['value'], currentValue, parsed);
+                }
+              },
+        readOnly: readonly,
+      ),
+    );
+  }
+
+  Widget _buildStringField(
+      BuildContext context, Map<String, dynamic> settings, String path) {
+    final bool hasUpdatedValue = _updatedValues.containsKey(path);
+    final String currentValue = hasUpdatedValue
+        ? _updatedValues[path].toString()
+        : settings['value'].toString();
+    final readonly = settings['readonly'];
+
+    return SizedBox(
+      width: double.maxFinite,
+      child: TextFormField(
+        controller: TextEditingController(text: currentValue),
+        decoration: InputDecoration(
+          labelText: settings['description'],
+          border: const OutlineInputBorder(),
+          suffixIcon: hasUpdatedValue
+              ? IconButton(
+                  icon: const Icon(Icons.replay),
+                  onPressed: () {
+                    setState(() {
+                      _updatedValues.remove(path);
+                      Navigator.pop(context);
+                    });
+                  },
+                )
+              : null,
         ),
         obscureText: settings['type'] == 'password',
+        onChanged: readonly
+            ? null
+            : (value) {
+                if (settings['type'] == 'password') {
+                  var bytes = utf8.encode(value);
+                  var digest = md5.convert(bytes);
+                  _updateValue(
+                      path, settings['value'], currentValue, digest.toString());
+                } else {
+                  _updateValue(path, settings['value'], currentValue, value);
+                }
+              },
         readOnly: readonly,
-        onFieldSubmitted: (String value) {
-          if (settings['type'] == 'password') {
-            var bytes = utf8.encode(value);
-            var digest = md5.convert(bytes);
-            _updateValue(
-                path, settings['value'], currentValue, digest.toString());
-          } else {
-            _updateValue(path, settings['value'], currentValue, value);
-          }
-        },
       ),
     );
   }
@@ -446,28 +665,39 @@ class _SettingsTabState extends State<SettingsTab> {
   Widget _buildBooleanField(
       BuildContext context, Map<String, dynamic> settings, String path) {
     final bool hasUpdatedValue = _updatedValues.containsKey(path);
-    final String currentValue = hasUpdatedValue
-        ? _updatedValues[path].toString()
-        : settings['value'].toString();
+    final bool currentValue =
+        hasUpdatedValue ? _updatedValues[path] : settings['value'];
     final readonly = settings['readonly'];
-    return Padding(
-      padding: EdgeInsets.all(0),
-      child: Container(
-        color: hasUpdatedValue ? Colors.red.withValues(alpha: 0.1) : null,
-        child: SwitchListTile(
-          contentPadding: EdgeInsets.only(
-              left: valueOffset, right: valueOffset, top: 8.0, bottom: 8.0),
-          title: Text(settings['description']),
-          value: _updatedValues.containsKey(path)
-              ? _updatedValues[path]
-              : settings['value'],
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Expanded(
+          child: Text(
+            settings['description'],
+            style: const TextStyle(fontSize: 16),
+          ),
+        ),
+        Switch(
+          value: currentValue,
           onChanged: readonly
               ? null
               : (value) {
-                  _updateValue(path, settings['value'], currentValue, value);
+                  setState(() {
+                    _updateValue(path, settings['value'], currentValue, value);
+                  });
                 },
         ),
-      ),
+        if (hasUpdatedValue)
+          IconButton(
+            icon: const Icon(Icons.replay),
+            onPressed: () {
+              setState(() {
+                _updatedValues.remove(path);
+              });
+            },
+          ),
+      ],
     );
   }
 
@@ -478,9 +708,9 @@ class _SettingsTabState extends State<SettingsTab> {
         ? _updatedValues[path].toString()
         : settings['value'].toString();
     final readonly = settings['readonly'];
-    return Padding(
-      padding: EdgeInsets.only(
-          left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
+
+    return SizedBox(
+      width: double.maxFinite,
       child: TextFormField(
         controller: TextEditingController(text: currentValue),
         decoration: InputDecoration(
@@ -492,31 +722,32 @@ class _SettingsTabState extends State<SettingsTab> {
                   onPressed: () {
                     setState(() {
                       _updatedValues.remove(path);
+                      Navigator.pop(context);
                     });
                   },
                 )
               : null,
-          fillColor: hasUpdatedValue ? Colors.red.withValues(alpha: 0.1) : null,
-          filled: hasUpdatedValue,
         ),
-        keyboardType: TextInputType.numberWithOptions(decimal: true),
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
         autovalidateMode: AutovalidateMode.onUserInteraction,
         validator: (String? value) {
           final double? parsed = double.tryParse(value ?? '');
           if (value == null || value.isEmpty || parsed == null) {
-            _invalidInputPaths.add(path);
             return 'Please enter a valid number';
           }
           if (parsed < 0) {
-            _invalidInputPaths.add(path);
             return "Can't be negative";
           }
-          _invalidInputPaths.remove(path);
           return null;
         },
-        onFieldSubmitted: (String value) {
-          _updateValue(path, settings['value'], currentValue, value);
-        },
+        onChanged: readonly
+            ? null
+            : (value) {
+                final double? parsed = double.tryParse(value);
+                if (parsed != null) {
+                  _updateValue(path, settings['value'], currentValue, parsed);
+                }
+              },
         readOnly: readonly,
       ),
     );
@@ -529,61 +760,579 @@ class _SettingsTabState extends State<SettingsTab> {
         ? _updatedValues[path].toString()
         : settings['value'].toString();
     final readonly = settings['readonly'];
-    return Padding(
-        padding: EdgeInsets.only(
-            left: valueOffset, bottom: 8.0, right: 16.0, top: 16.0),
-        child: DropdownButtonFormField<String>(
-          hint: Text(settings['description']),
-          decoration: InputDecoration(
-            labelText: settings['name'],
-            border: const OutlineInputBorder(),
-            fillColor:
-                hasUpdatedValue ? Colors.red.withValues(alpha: 0.1) : null,
-            filled: hasUpdatedValue,
-            suffixIcon: hasUpdatedValue
-                ? IconButton(
-                    icon: const Icon(Icons.replay),
-                    onPressed: () {
-                      setState(() {
-                        _updatedValues.remove(path);
-                      });
-                    },
-                  )
-                : null,
+
+    return SizedBox(
+      width: double.maxFinite,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            settings['description'],
+            style: const TextStyle(fontSize: 16),
           ),
-          value: currentValue,
-          onChanged: readonly
-              ? null
-              : (String? value) {
-                  _updateValue(path, settings['value'], currentValue, value);
-                },
-          items:
-              settings['values'].map<DropdownMenuItem<String>>((dynamic value) {
-            return DropdownMenuItem<String>(
-              value: value.toString(),
-              child: Text(value.toString()),
-            );
-          }).toList(),
-        ));
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              suffixIcon: hasUpdatedValue
+                  ? IconButton(
+                      icon: const Icon(Icons.replay),
+                      onPressed: () {
+                        setState(() {
+                          _updatedValues.remove(path);
+                          Navigator.pop(context);
+                        });
+                      },
+                    )
+                  : null,
+            ),
+            value: currentValue,
+            onChanged: readonly
+                ? null
+                : (String? value) {
+                    if (value != null) {
+                      setState(() {
+                        _updateValue(
+                            path, settings['value'], currentValue, value);
+                      });
+                    }
+                  },
+            items: settings['values']
+                .map<DropdownMenuItem<String>>((dynamic value) {
+              return DropdownMenuItem<String>(
+                value: value.toString(),
+                child: Text(value.toString()),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
   }
 
   void _updateValue(String path, dynamic originalValue, dynamic currentValue,
       dynamic newValue) {
-    if (_invalidInputPaths.contains(path) ||
-        newValue.toString() == currentValue.toString()) {
+    if (newValue.toString() == currentValue.toString()) {
       return;
     }
-    logger.i(
-        'Original value: $originalValue, current: $currentValue, new: $newValue');
+
     setState(() {
       if (originalValue.toString() == newValue.toString()) {
-        logger.i('Removing $path from updated values');
         _updatedValues.remove(path);
       } else {
-        logger.i('Updating $path to $newValue');
         _updatedValues[path] = newValue;
       }
-      _invalidInputPaths.remove(path);
     });
+  }
+}
+
+// Nested settings screen for handling nested sections
+class _NestedSettingsScreen extends StatefulWidget {
+  final String title;
+  final Map<String, dynamic> settings;
+  final String basePath;
+  final Function(String, dynamic, dynamic, dynamic) onUpdateValue;
+  final Map<String, dynamic> updatedValues;
+  final Set<String> invalidInputPaths;
+
+  const _NestedSettingsScreen({
+    required this.title,
+    required this.settings,
+    required this.basePath,
+    required this.onUpdateValue,
+    required this.updatedValues,
+    required this.invalidInputPaths,
+  });
+
+  @override
+  State<_NestedSettingsScreen> createState() => _NestedSettingsScreenState();
+}
+
+class _NestedSettingsScreenState extends State<_NestedSettingsScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: _buildNestedSettings(),
+      ),
+    );
+  }
+
+  List<Widget> _buildNestedSettings() {
+    final List<Widget> settingsWidgets = [];
+    final Map<String, List<Widget>> sectionItems = {};
+
+    // Group settings by section or create individual items
+    widget.settings['elements'].forEach((key, value) {
+      final String path = '${widget.basePath}.$key';
+
+      if (value['type'] == 'section') {
+        // Handle nested section
+        settingsWidgets
+            .add(_buildSectionHeader(value['name'] ?? 'Unknown Section'));
+        settingsWidgets.add(_buildNestedSection(value, path));
+      } else {
+        // Group by non-section settings
+        if (!sectionItems.containsKey('default')) {
+          sectionItems['default'] = [];
+        }
+
+        if (sectionItems['default']!.isNotEmpty) {
+          sectionItems['default']!.add(const Divider(height: 1));
+        }
+
+        sectionItems['default']!.add(_buildSettingItem(value, path));
+      }
+    });
+
+    // Add the default group card if it has items
+    if (sectionItems.containsKey('default') &&
+        sectionItems['default']!.isNotEmpty) {
+      settingsWidgets.add(
+        Card(
+          margin: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Column(children: sectionItems['default']!),
+        ),
+      );
+    }
+
+    return settingsWidgets;
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.secondary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNestedSection(Map<String, dynamic> settings, String path) {
+    return Card(
+      margin: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => _NestedSettingsScreen(
+              title: settings['name'] ?? 'Settings',
+              settings: settings,
+              basePath: path,
+              onUpdateValue: widget.onUpdateValue,
+              updatedValues: widget.updatedValues,
+              invalidInputPaths: widget.invalidInputPaths,
+            ),
+          ),
+        ),
+        child: ListTile(
+          title: Text(settings['name'] ?? 'Unknown Section'),
+          subtitle: Text(settings['description'] ?? ''),
+          trailing: const Icon(Icons.chevron_right),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingItem(Map<String, dynamic> settings, String path) {
+    // Get display value
+    final String displayValue = _getDisplayValue(settings, path);
+
+    return InkWell(
+      onTap: () => _showSettingEditor(settings, path),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    settings['description'] ?? 'Unknown Setting',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    displayValue,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: widget.updatedValues.containsKey(path)
+                          ? Theme.of(context).colorScheme.error
+                          : Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getDisplayValue(Map<String, dynamic> settings, String path) {
+    final bool hasUpdatedValue = widget.updatedValues.containsKey(path);
+    final dynamic value =
+        hasUpdatedValue ? widget.updatedValues[path] : settings['value'];
+
+    switch (settings['type']) {
+      case 'boolean':
+        return value == true ? 'Enabled' : 'Disabled';
+      case 'password':
+        return '••••••••';
+      case 'enum':
+        return value.toString();
+      default:
+        return value?.toString() ?? '';
+    }
+  }
+
+  void _showSettingEditor(Map<String, dynamic> settings, String path) {
+    // Replace bottom sheet with dialog for nested settings too
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: Text(
+              settings['description'] ?? 'Edit Setting',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: _buildEditorWidget(settings, path, setDialogState),
+            actions: <Widget>[
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: KalinkaColors.secondaryButtonColor,
+                  foregroundColor: KalinkaColors.buttonTextColor,
+                ),
+                child: const Text('CANCEL'),
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                },
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: KalinkaColors.primaryButtonColor,
+                  foregroundColor: KalinkaColors.buttonTextColor,
+                ),
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                },
+                child: const Text('CHANGE'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEditorWidget(
+      Map<String, dynamic> settings, String path, StateSetter setDialogState) {
+    switch (settings['type']) {
+      case 'integer':
+        return _buildIntegerField(settings, path, setDialogState);
+      case 'string':
+      case 'password':
+        return _buildStringField(settings, path, setDialogState);
+      case 'boolean':
+        return _buildBooleanField(settings, path, setDialogState);
+      case 'number':
+        return _buildNumberField(settings, path, setDialogState);
+      case 'enum':
+        return _buildEnumField(settings, path, setDialogState);
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildIntegerField(
+      Map<String, dynamic> settings, String path, StateSetter setDialogState) {
+    final bool hasUpdatedValue = widget.updatedValues.containsKey(path);
+    final String currentValue = hasUpdatedValue
+        ? widget.updatedValues[path].toString()
+        : settings['value'].toString();
+    final readonly = settings['readonly'];
+
+    return SizedBox(
+      width: double.maxFinite,
+      child: TextFormField(
+        controller: TextEditingController(text: currentValue),
+        decoration: InputDecoration(
+          labelText: settings['description'],
+          border: const OutlineInputBorder(),
+          suffixIcon: hasUpdatedValue
+              ? IconButton(
+                  icon: const Icon(Icons.replay),
+                  onPressed: () {
+                    setState(() {
+                      widget.onUpdateValue(path, settings['value'],
+                          currentValue, settings['value']);
+                      Navigator.pop(context);
+                    });
+                  },
+                )
+              : null,
+        ),
+        keyboardType: TextInputType.number,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        validator: (String? value) {
+          final int? parsed = int.tryParse(value ?? '');
+          if (value == null || value.isEmpty || parsed == null) {
+            return 'Please enter a number';
+          }
+          if (parsed < 0) {
+            return "Can't be negative";
+          }
+          return null;
+        },
+        onChanged: readonly
+            ? null
+            : (value) {
+                final int? parsed = int.tryParse(value);
+                if (parsed != null) {
+                  setState(() {
+                    widget.onUpdateValue(
+                        path, settings['value'], currentValue, parsed);
+                    setDialogState(() {});
+                  });
+                }
+              },
+        readOnly: readonly,
+      ),
+    );
+  }
+
+  // Similar modifications for the other field type methods...
+  Widget _buildStringField(
+      Map<String, dynamic> settings, String path, StateSetter setDialogState) {
+    // ...with similar changes as the integer field
+    final bool hasUpdatedValue = widget.updatedValues.containsKey(path);
+    final String currentValue = hasUpdatedValue
+        ? widget.updatedValues[path].toString()
+        : settings['value'].toString();
+    final readonly = settings['readonly'];
+
+    return SizedBox(
+      width: double.maxFinite,
+      child: TextFormField(
+        controller: TextEditingController(text: currentValue),
+        decoration: InputDecoration(
+          labelText: settings['description'],
+          border: const OutlineInputBorder(),
+          suffixIcon: hasUpdatedValue
+              ? IconButton(
+                  icon: const Icon(Icons.replay),
+                  onPressed: () {
+                    setState(() {
+                      widget.onUpdateValue(path, settings['value'],
+                          currentValue, settings['value']);
+                      Navigator.pop(context);
+                    });
+                  },
+                )
+              : null,
+        ),
+        obscureText: settings['type'] == 'password',
+        onChanged: readonly
+            ? null
+            : (value) {
+                setState(() {
+                  if (settings['type'] == 'password') {
+                    var bytes = utf8.encode(value);
+                    var digest = md5.convert(bytes);
+                    widget.onUpdateValue(path, settings['value'], currentValue,
+                        digest.toString());
+                  } else {
+                    widget.onUpdateValue(
+                        path, settings['value'], currentValue, value);
+                  }
+                  setDialogState(() {});
+                });
+              },
+        readOnly: readonly,
+      ),
+    );
+  }
+
+  Widget _buildBooleanField(
+      Map<String, dynamic> settings, String path, StateSetter setDialogState) {
+    final bool hasUpdatedValue = widget.updatedValues.containsKey(path);
+    final bool currentValue =
+        hasUpdatedValue ? widget.updatedValues[path] : settings['value'];
+    final readonly = settings['readonly'];
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Expanded(
+          child: Text(
+            settings['description'],
+            style: const TextStyle(fontSize: 16),
+          ),
+        ),
+        Switch(
+          value: currentValue,
+          onChanged: readonly
+              ? null
+              : (value) {
+                  setState(() {
+                    widget.onUpdateValue(
+                        path, settings['value'], currentValue, value);
+                    setDialogState(() {});
+                  });
+                },
+        ),
+        if (hasUpdatedValue)
+          IconButton(
+            icon: const Icon(Icons.replay),
+            onPressed: () {
+              setState(() {
+                widget.onUpdateValue(
+                    path, settings['value'], currentValue, settings['value']);
+                setDialogState(() {});
+              });
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildNumberField(
+      Map<String, dynamic> settings, String path, StateSetter setDialogState) {
+    // ...with similar changes as the integer field
+    final bool hasUpdatedValue = widget.updatedValues.containsKey(path);
+    final String currentValue = hasUpdatedValue
+        ? widget.updatedValues[path].toString()
+        : settings['value'].toString();
+    final readonly = settings['readonly'];
+
+    return SizedBox(
+      width: double.maxFinite,
+      child: TextFormField(
+        controller: TextEditingController(text: currentValue),
+        decoration: InputDecoration(
+          labelText: settings['description'],
+          border: const OutlineInputBorder(),
+          suffixIcon: hasUpdatedValue
+              ? IconButton(
+                  icon: const Icon(Icons.replay),
+                  onPressed: () {
+                    setState(() {
+                      widget.onUpdateValue(path, settings['value'],
+                          currentValue, settings['value']);
+                      Navigator.pop(context);
+                    });
+                  },
+                )
+              : null,
+        ),
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        validator: (String? value) {
+          final double? parsed = double.tryParse(value ?? '');
+          if (value == null || value.isEmpty || parsed == null) {
+            return 'Please enter a valid number';
+          }
+          if (parsed < 0) {
+            return "Can't be negative";
+          }
+          return null;
+        },
+        onChanged: readonly
+            ? null
+            : (value) {
+                final double? parsed = double.tryParse(value);
+                if (parsed != null) {
+                  setState(() {
+                    widget.onUpdateValue(
+                        path, settings['value'], currentValue, parsed);
+                    setDialogState(() {});
+                  });
+                }
+              },
+        readOnly: readonly,
+      ),
+    );
+  }
+
+  Widget _buildEnumField(
+      Map<String, dynamic> settings, String path, StateSetter setDialogState) {
+    // ...with similar changes as the integer field
+    final bool hasUpdatedValue = widget.updatedValues.containsKey(path);
+    final String currentValue = hasUpdatedValue
+        ? widget.updatedValues[path].toString()
+        : settings['value'].toString();
+    final readonly = settings['readonly'];
+
+    return SizedBox(
+      width: double.maxFinite,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            settings['description'],
+            style: const TextStyle(fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              suffixIcon: hasUpdatedValue
+                  ? IconButton(
+                      icon: const Icon(Icons.replay),
+                      onPressed: () {
+                        setState(() {
+                          widget.onUpdateValue(path, settings['value'],
+                              currentValue, settings['value']);
+                          setDialogState(() {});
+                        });
+                      },
+                    )
+                  : null,
+            ),
+            value: currentValue,
+            onChanged: readonly
+                ? null
+                : (String? value) {
+                    if (value != null) {
+                      setState(() {
+                        widget.onUpdateValue(
+                            path, settings['value'], currentValue, value);
+                        setDialogState(() {});
+                      });
+                    }
+                  },
+            items: settings['values']
+                .map<DropdownMenuItem<String>>((dynamic value) {
+              return DropdownMenuItem<String>(
+                value: value.toString(),
+                child: Text(value.toString()),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
   }
 }
