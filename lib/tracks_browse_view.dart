@@ -224,7 +224,7 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
             _replaceAndPlay(widget.browseItem.url, 0);
           },
           style: IconButton.styleFrom(
-            backgroundColor: KalinkaColors.playButtonColor,
+            backgroundColor: KalinkaColors.primaryButtonColor,
             padding: const EdgeInsets.all(8),
           ),
           tooltip: 'Play',
