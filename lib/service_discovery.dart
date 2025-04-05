@@ -2,30 +2,40 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:bonsoir/bonsoir.dart';
+import 'package:logger/logger.dart' show Logger;
 
 class ServiceDiscoveryDataProvider with ChangeNotifier {
   final String type = '_kalinkaplayer._tcp';
+  final logger = Logger();
 
   BonsoirDiscovery? _discovery;
   StreamSubscription<BonsoirDiscoveryEvent>? _discoverySubscription;
+  bool _isLoading = false;
+  Timer? _discoveryTimer;
+  bool _disposed = false;
 
   final List<ResolvedBonsoirService> _services = [];
   final List<BonsoirService> _unresolvedServices = [];
+
   List<ResolvedBonsoirService> get services => _services;
+  bool get isLoading => _isLoading;
 
   Completer<void>? _startCompleter;
 
-  Future<void> start() async {
+  Future<void> start({Duration timeout = const Duration(minutes: 2)}) async {
     if (_startCompleter != null) {
       await _startCompleter!.future;
       return;
     }
+    logger.i(
+        'Starting discovery for type: $type with ${timeout.inSeconds}s timeout');
 
     _startCompleter = Completer<void>();
     try {
       _discovery = BonsoirDiscovery(type: type);
       _services.clear();
       await _discovery!.ready;
+      _isLoading = true;
       notifyListeners();
 
       _discoverySubscription = _discovery!.eventStream!.listen((event) {
@@ -53,6 +63,14 @@ class ServiceDiscoveryDataProvider with ChangeNotifier {
       });
 
       await _discovery!.start();
+
+      // Set up timer to automatically stop discovery after timeout
+      _discoveryTimer?.cancel();
+      _discoveryTimer = Timer(timeout, () {
+        logger.i('Discovery timeout reached after ${timeout.inSeconds}s');
+        stop();
+      });
+
       _startCompleter!.complete();
     } catch (e) {
       _startCompleter!.completeError(e);
@@ -63,6 +81,8 @@ class ServiceDiscoveryDataProvider with ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
+    _discoveryTimer?.cancel();
     stop();
     super.dispose();
   }
@@ -72,9 +92,17 @@ class ServiceDiscoveryDataProvider with ChangeNotifier {
       await _startCompleter!.future;
     }
 
+    _discoveryTimer?.cancel();
+    _discoveryTimer = null;
+
     await _discovery?.stop();
     await _discoverySubscription?.cancel();
+    _isLoading = false;
     _discoverySubscription = null;
     _discovery = null;
+    _unresolvedServices.clear();
+    if (!_disposed) {
+      notifyListeners();
+    }
   }
 }
