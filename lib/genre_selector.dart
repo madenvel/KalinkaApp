@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kalinka/colors.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_provider.dart';
 
@@ -48,6 +49,7 @@ class GenreSelector extends StatelessWidget {
                     }
                     provider.commitFilterChange();
                   },
+                  activeColor: KalinkaColors.switchMainColor,
                   controlAffinity: ListTileControlAffinity.leading,
                 );
               },

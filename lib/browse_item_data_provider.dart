@@ -4,18 +4,16 @@ import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 import 'package:kalinka/browse_item_cache.dart';
 import 'package:kalinka/browse_item_data.dart';
-import 'package:kalinka/data_model.dart';
-import 'package:kalinka/kalinkaplayer_proxy.dart';
+import 'package:kalinka/browse_item_data_source.dart' show BrowseItemDataSource;
 
 class BrowseItemDataProvider extends ChangeNotifier {
-  final BrowseItem parentItem;
+  final BrowseItemDataSource dataSource;
   late BrowseItemCacheEntry _cacheEntry;
   final int itemsPerRequest;
   final int? itemCountLimit;
   final Set<String> _genreFilter = {};
   bool fetchInProgress = false;
 
-  final proxy = KalinkaPlayerProxy();
   final cache = BrowseItemCache();
 
   bool _isDisposed = false;
@@ -34,10 +32,10 @@ class BrowseItemDataProvider extends ChangeNotifier {
           : 0);
 
   BrowseItemDataProvider(
-      {required this.parentItem,
+      {required this.dataSource,
       this.itemsPerRequest = 30,
       this.itemCountLimit}) {
-    _cacheEntry = cache.getEntry(parentItem.url);
+    _cacheEntry = cache.getEntry(dataSource.key);
     _genreFilter.addAll(_cacheEntry.genreFilter);
 
     assert(itemsPerRequest > 0);
@@ -77,12 +75,12 @@ class BrowseItemDataProvider extends ChangeNotifier {
   }
 
   void _fetchPage() {
-    if (fetchInProgress) {
+    if (fetchInProgress || !dataSource.isValid) {
       return;
     }
     fetchInProgress = true;
     _cacheEntry
-        .fetchPage(parent: parentItem, limit: _getItemCountToFetch())
+        .fetchPage(dataSource: dataSource, limit: _getItemCountToFetch())
         .whenComplete(() {
       fetchInProgress = false;
       // Due to async nature of the call

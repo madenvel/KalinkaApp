@@ -320,6 +320,24 @@ class KalinkaPlayerProxy {
     });
   }
 
+  Future<BrowseItemsList> suggest(
+      {required BrowseItem item,
+      required int offset,
+      required int limit}) async {
+    final url = _buildUri('/suggest/${item.browseType}', {
+      'offset': offset.toString(),
+      'limit': limit.toString(),
+      'id': item.id.toString()
+    });
+    return client.get(url).then((response) {
+      if (response.statusCode != 200) {
+        throw Exception('Failed to suggest for ${item.url}, url=$url');
+      }
+      return BrowseItemsList.fromJson(
+          json.decode(utf8.decode(response.bodyBytes)));
+    });
+  }
+
   Future<Map<String, dynamic>> getSettings() async {
     final url = _buildUri('/server/config');
     return client.get(url).then((response) {

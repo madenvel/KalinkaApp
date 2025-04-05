@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:kalinka/browse.dart' show BrowsePage;
-import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
+import 'package:kalinka/browse_item_data_source.dart' show BrowseItemDataSource;
+import 'package:kalinka/catalog_browse_item_view.dart'
+    show CatalogBrowseItemView;
 import 'package:kalinka/data_model.dart' show BrowseItem;
 import 'package:kalinka/large_image_preview_card.dart'
     show LargeImagePreviewCard;
 import 'package:kalinka/preview_section_grid.dart' show SectionPreviewGrid;
+import 'package:kalinka/tracks_browse_view.dart';
 
 class PreviewSectionCard extends StatelessWidget {
   final BrowseItem? section;
@@ -17,11 +19,11 @@ class PreviewSectionCard extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) {
         if (item.browseType == 'catalog') {
-          return BrowseItemView(
+          return CatalogBrowseItemView(
               parentItem: item, onTap: (item) => _onTap(context, item));
         }
 
-        return BrowsePage(parentItem: item);
+        return TracksBrowseView(browseItem: item);
       }),
     );
   }
@@ -32,22 +34,18 @@ class PreviewSectionCard extends StatelessWidget {
         section?.image?.small ??
         section?.image?.thumbnail;
     final hasImage = image != null && image.isNotEmpty;
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
-      ),
-      child: (section == null)
-          ? _buildSectionPlaceholder(context, const SectionPreviewGrid())
-          : _buildSectionPreview(
-              context,
-              section,
-              hasImage
-                  ? LargeImagePreviewCard(
-                      section: section!, contentPadding: contentPadding)
-                  : SectionPreviewGrid(
-                      section: section, onTap: (item) => _onTap(context, item)),
-              seeAll: !hasImage),
-    );
+    return (section == null)
+        ? _buildSectionPlaceholder(context, const SectionPreviewGrid())
+        : _buildSectionPreview(
+            context,
+            section,
+            hasImage
+                ? LargeImagePreviewCard(
+                    section: section!, contentPadding: contentPadding)
+                : SectionPreviewGrid(
+                    dataSource: BrowseItemDataSource.browse(section!),
+                    onTap: (item) => _onTap(context, item)),
+            seeAll: !hasImage);
   }
 
   Widget _buildSectionPreview(
@@ -78,7 +76,7 @@ class PreviewSectionCard extends StatelessWidget {
                   onPressed: () {
                     if (item.canBrowse) {
                       Navigator.of(context).push(MaterialPageRoute(
-                          builder: (context) => BrowseItemView(
+                          builder: (context) => CatalogBrowseItemView(
                                 parentItem: item,
                                 onTap: (item) => _onTap(context, item),
                               )));

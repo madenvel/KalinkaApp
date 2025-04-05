@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
+import 'package:kalinka/browse_item_data_source.dart'
+    show DefaultBrowseItemDataSource;
 import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
 import 'package:provider/provider.dart';
 import 'package:kalinka/genre_select_filter.dart';
@@ -46,8 +48,8 @@ class _DiscoverState extends State<Discover> {
 
   BrowseItemDataProvider _createProvider() {
     return BrowseItemDataProvider(
-      parentItem: BrowseItem(
-          id: 'root', url: '/catalog', canBrowse: true, canAdd: false),
+      dataSource: DefaultBrowseItemDataSource(BrowseItem(
+          id: 'root', url: '/catalog', canBrowse: true, canAdd: false)),
       itemsPerRequest: 10,
     );
   }
@@ -101,7 +103,7 @@ class _DiscoverState extends State<Discover> {
 
   Widget _buildSection(BuildContext context, BrowseItem? section) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child:
           PreviewSectionCard(section: section, contentPadding: contentPadding),
     );

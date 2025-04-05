@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:kalinka/colors.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/favorite_button.dart';
@@ -180,9 +181,9 @@ class _NowPlayingState extends State<NowPlaying> {
             trackShape: CustomTrackShape(),
             thumbShape: CustomThumbShape(),
             overlayShape: SliderComponentShape.noOverlay,
-            activeTrackColor: Colors.blue,
-            inactiveTrackColor: Colors.blueGrey,
-            thumbColor: Colors.blue,
+            activeTrackColor: KalinkaColors.progressBarColor,
+            inactiveTrackColor: KalinkaColors.inactiveProgressBarColor,
+            thumbColor: KalinkaColors.progressBarColor,
             trackHeight: 3,
           ),
           child: Slider(

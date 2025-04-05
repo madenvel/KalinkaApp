@@ -1,11 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart'
     show CachedNetworkImage;
 import 'package:flutter/material.dart';
-import 'package:kalinka/browse.dart' show BrowsePage;
 import 'package:kalinka/custom_cache_manager.dart'
     show KalinkaMusicCacheManager;
 import 'package:kalinka/data_model.dart' show BrowseItem, CardSize;
 import 'package:kalinka/list_card.dart' show ImagePlaceholder;
+import 'package:kalinka/tracks_browse_view.dart';
 
 class LargeImagePreviewCard extends StatelessWidget {
   final BrowseItem section;
@@ -25,9 +25,12 @@ class LargeImagePreviewCard extends StatelessWidget {
       child: InkWell(
           borderRadius: BorderRadius.circular(12.0),
           onTap: () {
+            if (!section.canAdd) {
+              return;
+            }
             Navigator.of(context).push(
               MaterialPageRoute(
-                  builder: (context) => BrowsePage(parentItem: section)),
+                  builder: (context) => TracksBrowseView(browseItem: section)),
             );
           },
           child: Padding(
