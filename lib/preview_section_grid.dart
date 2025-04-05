@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kalinka/browse_item_card.dart' show BrowseItemCard;
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
+import 'package:kalinka/browse_item_data_source.dart' show BrowseItemDataSource;
 import 'package:kalinka/data_model.dart';
 import 'package:kalinka/data_provider.dart' show GenreFilterProvider;
 import 'package:provider/provider.dart'
@@ -10,16 +11,18 @@ import 'package:provider/provider.dart'
 typedef BrowseItemTapCallback = void Function(BrowseItem item);
 
 class SectionPreviewGrid extends StatelessWidget {
-  final BrowseItem? section;
+  final BrowseItemDataSource? dataSource;
   final double contentPadding;
   final double textLabelHeight;
   final BrowseItemTapCallback? onTap;
+  final int? rowsCount;
 
   const SectionPreviewGrid({
     super.key,
-    this.section,
+    this.dataSource,
     this.contentPadding = 8.0,
     this.textLabelHeight = 52.0,
+    this.rowsCount,
     this.onTap,
   });
 
@@ -31,31 +34,30 @@ class SectionPreviewGrid extends StatelessWidget {
   }
 
   Widget _buildGrid(BuildContext context, BoxConstraints constraints) {
-    if (section == null) {
+    if (dataSource == null) {
       return _buildEmptyGrid(context);
     }
-    final sizeDescription =
-        section!.catalog?.previewConfig?.cardSize ?? CardSize.small;
+    final catalog = dataSource!.item.catalog;
+    final sizeDescription = catalog?.previewConfig?.cardSize ?? CardSize.small;
     final cardSize = calculateCardSize(context, sizeDescription);
-    final crossAxisCount = section!.catalog?.previewConfig?.rowsCount ?? 2;
-    final cardSizeRatio = section!.catalog?.previewConfig?.aspectRatio ?? 1.0;
-    final previewType =
-        section!.catalog?.previewConfig?.type ?? PreviewType.imageText;
+    final crossAxisCount = rowsCount ?? catalog?.previewConfig?.rowsCount ?? 2;
+    final cardSizeRatio = catalog?.previewConfig?.aspectRatio ?? 1.0;
+    final previewType = catalog?.previewConfig?.type ?? PreviewType.imageText;
     final imageSize = (cardSize - 2 * contentPadding) * cardSizeRatio;
     final double sectionHeight = (imageSize +
             2 * contentPadding +
             (previewType == PreviewType.textOnly ? 0 : textLabelHeight)) *
         crossAxisCount;
     final int itemsCount =
-        section!.catalog?.previewConfig?.itemsCount ?? 5 * crossAxisCount;
+        catalog?.previewConfig?.itemsCount ?? 5 * crossAxisCount;
 
     return ChangeNotifierProxyProvider<GenreFilterProvider,
             BrowseItemDataProvider>(
         create: (context) => BrowseItemDataProvider(
-            parentItem: section!, itemCountLimit: itemsCount),
+            dataSource: dataSource!, itemCountLimit: itemsCount),
         update: (_, genreFilterProvider, dataProvider) {
           if (dataProvider == null) {
-            return BrowseItemDataProvider(parentItem: section!)
+            return BrowseItemDataProvider(dataSource: dataSource!)
               ..maybeUpdateGenreFilter(genreFilterProvider.filter);
           }
           dataProvider.maybeUpdateGenreFilter(genreFilterProvider.filter);
@@ -97,8 +99,9 @@ class SectionPreviewGrid extends StatelessWidget {
                 constraints:
                     BoxConstraints.tight(Size(cardSize, sectionHeight)),
                 imageAspectRatio: cardSizeRatio,
-                previewTypeHint: section?.catalog?.previewConfig?.type ??
-                    PreviewType.imageText,
+                previewTypeHint:
+                    dataSource?.item.catalog?.previewConfig?.type ??
+                        PreviewType.imageText,
               );
             },
           )),

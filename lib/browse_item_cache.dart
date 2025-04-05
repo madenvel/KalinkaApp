@@ -1,7 +1,7 @@
 import 'dart:async' show Completer;
 
+import 'package:kalinka/browse_item_data_source.dart' show BrowseItemDataSource;
 import 'package:kalinka/data_model.dart' show BrowseItem;
-import 'package:kalinka/kalinkaplayer_proxy.dart';
 
 class BrowseItemCacheEntry {
   final List<BrowseItem> items = [];
@@ -9,10 +9,14 @@ class BrowseItemCacheEntry {
   final DateTime timestamp;
   bool _hasLoaded = false;
   Completer<void> _completer;
-
-  final KalinkaPlayerProxy proxy = KalinkaPlayerProxy();
-
   int _totalCount = 0;
+
+  // Backout time in seconds
+  static const int backoutTime = 10;
+  // Backout flag
+  // If true, the next fetch will be delayed
+  // by backoutTime seconds
+  bool _shouldBackout = false;
 
   BrowseItemCacheEntry()
       : timestamp = DateTime.now(),
@@ -43,20 +47,25 @@ class BrowseItemCacheEntry {
   }
 
   Future<void> fetchPage(
-      {required BrowseItem parent, required int limit}) async {
+      {required BrowseItemDataSource dataSource, required int limit}) async {
     if (!_completer.isCompleted) {
       return _completer.future;
     }
     _completer = Completer<void>();
 
+    if (_shouldBackout) {
+      await Future.delayed(Duration(seconds: backoutTime));
+    }
+
     final genreFilterList = genreFilter.toList();
-    proxy
-        .browseItem(parent,
-            offset: items.length, limit: limit, genreIds: genreFilterList)
+    dataSource
+        .fetch(genreFilter: genreFilterList, offset: items.length, limit: limit)
         .then((result) {
       addItems(result.items, result.total);
+      _shouldBackout = false;
       _completer.complete();
     }).catchError((error) {
+      _shouldBackout = true;
       _completer.completeError(error);
     });
     return _completer.future;

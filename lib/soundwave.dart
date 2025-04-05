@@ -26,7 +26,7 @@ class _SoundwaveWidgetState extends State<SoundwaveWidget>
   }
 
   void setupTimer() {
-    _timer = Timer.periodic(const Duration(milliseconds: 25), (timer) {
+    _timer = Timer.periodic(const Duration(milliseconds: 40), (timer) {
       if (!mounted) {
         return;
       }

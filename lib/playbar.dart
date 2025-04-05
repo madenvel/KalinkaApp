@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:kalinka/colors.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/fg_service.dart';
 import 'package:kalinka/play_button.dart';
@@ -77,7 +78,7 @@ class _PlaybarState extends State<Playbar> {
                           backgroundColor:
                               Theme.of(context).scaffoldBackgroundColor,
                           valueColor: const AlwaysStoppedAnimation<Color>(
-                              Colors.blue)))),
+                              KalinkaColors.playButtonColor)))),
               const Divider(height: 0)
             ])),
         onTap: () {
@@ -121,8 +122,7 @@ class _PlaybarState extends State<Playbar> {
             overflow: TextOverflow.ellipsis,
           ),
           Text(
-            // '${trackList[index].performer?.name ?? 'Unknown artist'} - ${trackList[index].album!.title}',
-            '${trackList[index].performer?.name ?? 'Unknown Artist'}  ·  ${trackList[index].album?.title ?? 'Unknown Album'}',
+            '${trackList[index].performer?.name ?? 'Unknown Artist'} • ${trackList[index].album?.title ?? 'Unknown Album'}',
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).listTileTheme.subtitleTextStyle,
           )

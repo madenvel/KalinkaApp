@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kalinka/browse_item_card.dart' show BrowseItemCard;
+import 'package:kalinka/browse_item_data_source.dart'
+    show DefaultBrowseItemDataSource;
 import 'package:kalinka/data_model.dart';
 import 'package:kalinka/data_provider.dart' show GenreFilterProvider;
 import 'package:kalinka/genre_select_filter.dart' show GenreFilterButton;
@@ -7,30 +9,32 @@ import 'package:provider/provider.dart';
 
 import 'browse_item_data_provider.dart';
 
-class BrowseItemView extends StatelessWidget {
+class CatalogBrowseItemView extends StatelessWidget {
   final BrowseItem parentItem;
   final Function(BrowseItem)? onTap;
   final double padding;
 
-  const BrowseItemView(
-      {super.key, required this.parentItem, this.onTap, this.padding = 8.0});
+  CatalogBrowseItemView(
+      {super.key, required this.parentItem, this.onTap, this.padding = 8.0})
+      : assert(parentItem.browseType == 'catalog',
+            'parentItem.browseType must be "catalog"');
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(parentItem.name ?? 'Unknown'),
-        actions: [
-          if (parentItem.browseType == 'catalog') const GenreFilterButton()
-        ],
+        actions: [const GenreFilterButton()],
         leadingWidth: 30,
       ),
       body: ChangeNotifierProxyProvider<GenreFilterProvider,
           BrowseItemDataProvider>(
-        create: (context) => BrowseItemDataProvider(parentItem: parentItem),
+        create: (context) => BrowseItemDataProvider(
+            dataSource: DefaultBrowseItemDataSource(parentItem)),
         update: (_, genreFilterProvider, dataProvider) {
           if (dataProvider == null) {
-            return BrowseItemDataProvider(parentItem: parentItem)
+            return BrowseItemDataProvider(
+                dataSource: DefaultBrowseItemDataSource(parentItem))
               ..maybeUpdateGenreFilter(genreFilterProvider.filter);
           }
           dataProvider.maybeUpdateGenreFilter(genreFilterProvider.filter);

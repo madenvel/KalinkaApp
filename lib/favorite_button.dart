@@ -51,9 +51,10 @@ class FavoriteButton extends StatelessWidget {
       },
       icon: Icon(
         isFavorite ? Icons.favorite : Icons.favorite_border,
-        color: isFavorite ? Colors.red : null,
+        // color: isFavorite ? Colors.redAccent : null,
         size: size,
       ),
+      tooltip: '${isFavorite ? 'Remove from' : 'Add to'} favorites',
     );
   }
 }

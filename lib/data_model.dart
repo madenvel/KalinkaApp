@@ -563,6 +563,15 @@ class BrowseItem {
     return null;
   }
 
+  int? get trackCount {
+    if (album != null) {
+      return album?.trackCount;
+    } else if (playlist != null) {
+      return playlist?.trackCount;
+    }
+    return null;
+  }
+
   bool get canFavorite {
     return album != null || track != null || artist != null || playlist != null;
   }
