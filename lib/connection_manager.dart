@@ -3,13 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kalinka/browse_item_cache.dart';
 import 'package:kalinka/service_discovery.dart';
+import 'package:kalinka/service_discovery_widget.dart'
+    show ServiceDiscoveryWidget;
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/event_listener.dart';
 import 'package:kalinka/fg_service.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
-import 'package:kalinka/discovery_widget.dart';
 
 class ConnectionManager extends StatefulWidget {
   final Widget child;
@@ -48,13 +49,13 @@ class _ConnectionManagerState extends State<ConnectionManager> {
           BrowseItemCache().invalidate();
           _connected = false;
         });
+        if (_connectionAttempts >= _maxConnectionAttempts) {
+          logger.i('Max connection attempts reached');
+          return;
+        }
         final provider = context.read<ConnectionSettingsProvider>();
         if (provider.isSet) {
-          Timer(
-              Duration(
-                  seconds: _connectionAttempts >= _maxConnectionAttempts
-                      ? 3
-                      : 1), () {
+          Timer(Duration(seconds: 1), () {
             if (!_connected) {
               logger.i('Attempting to reconnect, $_connectionAttempts');
               setState(() {
@@ -153,22 +154,17 @@ class _ConnectionManagerState extends State<ConnectionManager> {
           child: Image.asset('assets/redberry_icon.png'),
         ),
         const SizedBox(height: 16),
-        if (provider.isSet)
+        if (provider.isSet && _connectionAttempts < _maxConnectionAttempts)
           const SizedBox(
               width: 16,
               height: 16,
               child: CircularProgressIndicator(strokeWidth: 2.0))
         else
-          const SizedBox.shrink(),
-        const SizedBox(height: 16),
-        if (_connectionAttempts >= _maxConnectionAttempts || !provider.isSet)
           ElevatedButton(
-              child: const Text('Setup New Device'),
+              child: const Text('Connect To New Streamer'),
               onPressed: () {
                 _showDiscoveryScreen(context, provider);
               })
-        else
-          const SizedBox(height: 32)
       ]),
     );
   }
@@ -180,9 +176,10 @@ class _ConnectionManagerState extends State<ConnectionManager> {
         MaterialPageRoute(
             builder: (context) => ChangeNotifierProvider(
                 create: (context) => ServiceDiscoveryDataProvider(),
-                child: DiscoveryWidget(onServiceSelected: (name, host, port) {
-                  provider.setDevice(name, host, port);
-                  Navigator.pop(context);
-                }))));
+                child: ServiceDiscoveryWidget()))).then((item) {
+      if (item != null) {
+        provider.setDevice(item.name, item.ipAddress, item.port);
+      }
+    });
   }
 }
