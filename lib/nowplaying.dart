@@ -11,6 +11,21 @@ import 'custom_cache_manager.dart';
 import 'data_model.dart';
 import 'data_provider.dart';
 
+/// Constants for UI elements to avoid magic numbers
+class _NowPlayingConstants {
+  static const double horizontalPadding = 24.0;
+  static const double verticalPadding = 16.0;
+  static const double sectionSpacing = 16.0;
+  static const double standardIconSize = 26.0;
+  static const double largeIconSize = 42.0;
+  static const double playIconSize = 70.0;
+  static const double smallTextSize = 12.0;
+  static const double mediumTextSize = 14.0;
+  static const double largeTextSize = 20.0;
+  static const double cornerRadius = 8.0;
+  static const double albumArtRadius = 16.0;
+}
+
 class NowPlaying extends StatefulWidget {
   const NowPlaying({super.key});
 
@@ -22,7 +37,6 @@ class _NowPlayingState extends State<NowPlaying> {
   final logger = Logger();
   bool isSeeking = false;
   double seekValue = 0;
-  _NowPlayingState();
 
   @override
   void initState() {
@@ -33,132 +47,173 @@ class _NowPlayingState extends State<NowPlaying> {
   }
 
   void streamPositionUpdated() {
-    if (mounted) {
-      final state = context.read<PlayerStateProvider>().state;
-      if (state.state == PlayerStateType.playing && state.position != null) {
-        setState(() {
-          isSeeking = false;
-        });
-      }
+    if (!mounted) return;
+
+    final state = context.read<PlayerStateProvider>().state;
+    if (state.state == PlayerStateType.playing && state.position != null) {
+      setState(() {
+        isSeeking = false;
+      });
     }
   }
 
   @override
   void deactivate() {
-    super.deactivate();
     context.read<PlayerStateProvider>().removeListener(streamPositionUpdated);
+    super.deactivate();
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 16.0, right: 16.0),
+      padding: const EdgeInsets.symmetric(
+          horizontal: _NowPlayingConstants.horizontalPadding,
+          vertical: _NowPlayingConstants.verticalPadding),
       child: Column(children: [
-        _buildAlbumArtWidget(context),
-        const SizedBox(height: 16),
-        Container(
-          child: _buildTrackInfoWidget(context),
-        ),
-        const SizedBox(height: 16),
+        Expanded(child: _buildAlbumArtWidget(context)),
+        const SizedBox(height: _NowPlayingConstants.sectionSpacing),
+        _buildTrackInfoWidget(context),
+        const SizedBox(height: _NowPlayingConstants.sectionSpacing),
         _buildAudioInfoWidget(context),
-        const SizedBox(height: 8),
-        ChangeNotifierProvider(
-            create: (context) => TrackPositionProvider(),
-            builder: (context, child) =>
-                RepaintBoundary(child: _buildProgressBarWidget(context))),
+        const SizedBox(height: _NowPlayingConstants.sectionSpacing),
+        _buildTrackProgressSection(context),
         _buildButtonsBar(context),
-        ChangeNotifierProvider(
-          create: (context) => VolumeControlProvider(),
-          builder: (context, child) => _buildVolumeControl(context),
-        ),
-        const SizedBox(height: 16)
+        _buildVolumeSection(context),
+        const SizedBox(height: _NowPlayingConstants.sectionSpacing)
       ]),
+    );
+  }
+
+  Widget _buildTrackProgressSection(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => TrackPositionProvider(),
+      builder: (context, _) =>
+          RepaintBoundary(child: _buildProgressBarWidget(context)),
+    );
+  }
+
+  Widget _buildVolumeSection(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (context) => VolumeControlProvider(),
+      builder: (context, _) => _buildVolumeControl(context),
     );
   }
 
   BrowseItem? _getBrowseItem(
       BuildContext context, PlayerStateProvider playerStateProvider) {
-    Track? track = playerStateProvider.state.currentTrack;
-    BrowseItem? item = track != null
-        ? BrowseItem(
-            id: track.id,
-            name: track.title,
-            subname: track.performer?.name,
-            url: '/track/${track.id}',
-            canAdd: true,
-            canBrowse: false,
-            track: track)
-        : null;
+    final Track? track = playerStateProvider.state.currentTrack;
+    if (track == null) return null;
 
-    return item;
+    return BrowseItem(
+        id: track.id,
+        name: track.title,
+        subname: track.performer?.name,
+        url: '/track/${track.id}',
+        canAdd: true,
+        canBrowse: false,
+        track: track);
   }
 
   Widget _buildAudioInfoWidget(BuildContext context) {
-    PlayerStateProvider playerStateProvider =
-        context.watch<PlayerStateProvider>();
-    var item = _getBrowseItem(context, playerStateProvider);
-    double sampleRate =
-        (playerStateProvider.state.audioInfo?.sampleRate ?? 0) / 1000;
-    int bitDepth = playerStateProvider.state.audioInfo?.bitsPerSample ?? 0;
-    String decoderType =
+    final playerStateProvider = context.watch<PlayerStateProvider>();
+    final item = _getBrowseItem(context, playerStateProvider);
+
+    final audioInfo = playerStateProvider.state.audioInfo;
+    final double sampleRate = (audioInfo?.sampleRate ?? 0) / 1000;
+    final int bitDepth = audioInfo?.bitsPerSample ?? 0;
+    final String decoderType =
         playerStateProvider.state.mimeType?.split('/')[1].toUpperCase() ?? '';
+
     return Row(
       children: [
-        item != null
-            ? IconButton(
-                icon: const Icon(Icons.playlist_add),
-                iconSize: 32,
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => AddToPlaylist(
-                                items: BrowseItemsList(0, 1, 1, [item]),
-                              )));
-                })
-            : const SizedBox.shrink(),
-        const Spacer(),
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Theme.of(context).splashColor),
-            borderRadius: BorderRadius.circular(4),
+        if (item != null)
+          _makeButtonWithLabel(
+            context,
+            icon: Icons.playlist_add,
+            label: 'Add',
+            onPressed: () => _addToPlaylist(context, item),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(4.0),
-            child: Text(
-              '$decoderType ${formatFrequency(sampleRate)}kHz / $bitDepth bit',
-              style:
-                  const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ),
         const Spacer(),
-        item != null ? FavoriteButton(item: item) : const SizedBox.shrink(),
+        _buildAudioFormatBadge(context, decoderType, sampleRate, bitDepth),
+        const Spacer(),
+        if (item != null) _buildLikeButton(item),
       ],
     );
   }
 
-  String formatFrequency(double frequency) {
-    String formatted = frequency.toStringAsFixed(1);
+  void _addToPlaylist(BuildContext context, BrowseItem item) {
+    Navigator.pop(context);
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => AddToPlaylist(
+                  items: BrowseItemsList(0, 1, 1, [item]),
+                )));
+  }
 
-    if (formatted.endsWith('.0')) {
-      return formatted.substring(0, formatted.length - 2);
-    }
+  Widget _buildAudioFormatBadge(BuildContext context, String decoderType,
+      double sampleRate, int bitDepth) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).splashColor),
+        borderRadius: BorderRadius.circular(_NowPlayingConstants.cornerRadius),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+        child: Text(
+          '$decoderType ${formatFrequency(sampleRate)}kHz / $bitDepth bit',
+          style: const TextStyle(fontSize: 13.0, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
 
-    return formatted;
+  Widget _buildLikeButton(BrowseItem item) {
+    return Column(
+      children: [
+        FavoriteButton(item: item, size: _NowPlayingConstants.standardIconSize),
+        const Text('Like',
+            style: TextStyle(fontSize: _NowPlayingConstants.smallTextSize)),
+      ],
+    );
+  }
+
+  Widget _makeButtonWithLabel(BuildContext context,
+      {required IconData icon,
+      required String label,
+      String? tooltip,
+      VoidCallback? onPressed}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: Icon(icon, size: _NowPlayingConstants.standardIconSize),
+          onPressed: onPressed,
+          tooltip: tooltip,
+        ),
+        Text(
+          label,
+          style: const TextStyle(fontSize: _NowPlayingConstants.smallTextSize),
+        ),
+      ],
+    );
   }
 
   Widget _buildTrackInfoWidget(BuildContext context) {
-    PlayerState state = context.watch<PlayerStateProvider>().state;
+    final state = context.watch<PlayerStateProvider>().state;
+    final track = state.currentTrack;
+
     return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Text(state.currentTrack?.title ?? 'Unknown',
-          style: const TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
+      Text(track?.title ?? 'Unknown',
+          style: const TextStyle(
+              fontSize: _NowPlayingConstants.largeTextSize,
+              fontWeight: FontWeight.bold),
           textAlign: TextAlign.center),
+      const SizedBox(height: 8),
       Text(
-        '${state.currentTrack?.performer?.name ?? 'Unknown'}  ·  ${state.currentTrack?.album?.title ?? 'Unknown'}',
-        style: const TextStyle(fontSize: 16.0),
+        '${track?.performer?.name ?? 'Unknown'}  •  ${track?.album?.title ?? 'Unknown'}',
+        style: const TextStyle(
+            fontSize: _NowPlayingConstants.mediumTextSize, color: Colors.grey),
         textAlign: TextAlign.center,
       ),
     ]);
@@ -170,11 +225,15 @@ class _NowPlayingState extends State<NowPlaying> {
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
+  String formatFrequency(double frequency) {
+    return frequency.toStringAsFixed(1);
+  }
+
   Widget _buildProgressBarWidget(BuildContext context) {
-    int duration = context.select<PlayerStateProvider, int>((stateProvider) {
-      return stateProvider.state.audioInfo?.durationMs ?? 0;
-    });
-    int position = context.watch<TrackPositionProvider>().position;
+    final duration = context.select<PlayerStateProvider, int>(
+        (provider) => provider.state.audioInfo?.durationMs ?? 0);
+    final position = context.watch<TrackPositionProvider>().position;
+
     return Column(children: [
       SliderTheme(
           data: SliderThemeData(
@@ -184,7 +243,7 @@ class _NowPlayingState extends State<NowPlaying> {
             activeTrackColor: KalinkaColors.progressBarColor,
             inactiveTrackColor: KalinkaColors.inactiveProgressBarColor,
             thumbColor: KalinkaColors.progressBarColor,
-            trackHeight: 3,
+            trackHeight: 4,
           ),
           child: Slider(
             value: isSeeking
@@ -197,159 +256,217 @@ class _NowPlayingState extends State<NowPlaying> {
                 seekValue = value.clamp(0, duration.toDouble());
               });
             },
-            onChangeStart: (value) => {isSeeking = true},
-            onChangeEnd: (value) {
-              logger.i('Seeking to $value');
-              KalinkaPlayerProxy().seek(value.toInt()).then((value) {
-                if (value.positionMs == null || value.positionMs! < 0) {
-                  logger.w('Seek failed, position=${value.positionMs}');
-                  setState(() {
-                    isSeeking = false;
-                  });
-                }
-              });
-            },
+            onChangeStart: (_) => setState(() => isSeeking = true),
+            onChangeEnd: (value) => _handleSeek(value),
           )),
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text(_formatDuration(
-            ((isSeeking ? seekValue : position) / 1000).floor())),
-        Text(_formatDuration((duration / 1000).floor()))
-      ]),
+      _buildTimeIndicators(position, duration),
     ]);
   }
 
-  Widget _buildVolumeControl(BuildContext context) {
-    return Consumer<VolumeControlProvider>(builder: (context, provider, child) {
-      final bool supported = provider.supported;
-      return Row(mainAxisSize: MainAxisSize.max, children: [
-        const Icon(Icons.volume_down),
-        Expanded(
-          child: RepaintBoundary(
-              child: Slider(
-            value: provider.volume,
-            min: 0,
-            max: provider.maxVolume.toDouble(),
-            onChangeStart: supported
-                ? (double value) {
-                    provider.blockNotifications = true;
-                  }
-                : null,
-            onChanged: supported
-                ? (double value) {
-                    provider.volume = value;
-                  }
-                : null,
-            onChangeEnd: supported
-                ? (double value) {
-                    provider.volume = value;
-                    provider.blockNotifications = false;
-                  }
-                : null,
-          )),
-        ),
-        const Icon(Icons.volume_up)
-      ]);
+  void _handleSeek(double value) {
+    logger.i('Seeking to $value');
+    KalinkaPlayerProxy().seek(value.toInt()).then((response) {
+      if (response.positionMs == null || response.positionMs! < 0) {
+        logger.w('Seek failed, position=${response.positionMs}');
+        setState(() {
+          isSeeking = false;
+        });
+      }
     });
   }
 
+  Widget _buildTimeIndicators(int position, int duration) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            _formatDuration(
+                ((isSeeking ? seekValue : position) / 1000).floor()),
+            style: const TextStyle(
+                fontSize: _NowPlayingConstants.smallTextSize,
+                color: Colors.grey),
+          ),
+          Text(
+            _formatDuration((duration / 1000).floor()),
+            style: const TextStyle(
+                fontSize: _NowPlayingConstants.smallTextSize,
+                color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVolumeControl(BuildContext context) {
+    return Consumer<VolumeControlProvider>(
+      builder: (context, provider, _) {
+        final bool supported = provider.supported;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(mainAxisSize: MainAxisSize.max, children: [
+            const Icon(Icons.volume_down, size: 24),
+            Expanded(
+              child: RepaintBoundary(
+                  child: SliderTheme(
+                data: SliderThemeData(
+                  trackHeight: 3,
+                  thumbShape:
+                      const RoundSliderThumbShape(enabledThumbRadius: 6),
+                  overlayShape:
+                      const RoundSliderOverlayShape(overlayRadius: 14),
+                  activeTrackColor: KalinkaColors.progressBarColor,
+                  inactiveTrackColor: KalinkaColors.inactiveProgressBarColor,
+                  thumbColor: KalinkaColors.progressBarColor,
+                ),
+                child: Slider(
+                  value: provider.volume,
+                  min: 0,
+                  max: provider.maxVolume.toDouble(),
+                  onChangeStart: supported
+                      ? (_) => provider.blockNotifications = true
+                      : null,
+                  onChanged:
+                      supported ? (value) => provider.volume = value : null,
+                  onChangeEnd: supported
+                      ? (value) {
+                          provider.volume = value;
+                          provider.blockNotifications = false;
+                        }
+                      : null,
+                ),
+              )),
+            ),
+            const Icon(Icons.volume_up, size: 24)
+          ]),
+        );
+      },
+    );
+  }
+
   Widget _buildButtonsBar(BuildContext context) {
-    PlayerStateType? state =
-        context.select<PlayerStateProvider, PlayerStateType?>(
-            (stateProvider) => stateProvider.state.state);
+    final state = context.select<PlayerStateProvider, PlayerStateType?>(
+        (provider) => provider.state.state);
 
     if (state == null) {
       return const SizedBox.shrink();
     }
-    late IconData playIcon;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      child: Stack(alignment: Alignment.center, children: [
+        _buildPlaybackControls(context, state),
+        Positioned(
+          right: 0,
+          child: _buildRepeatButton(),
+        )
+      ]),
+    );
+  }
+
+  IconData _getPlaybackIcon(PlayerStateType state) {
     switch (state) {
       case PlayerStateType.playing:
-        playIcon = Icons.pause_circle_filled;
-        break;
+        return Icons.pause_circle_filled;
       case PlayerStateType.paused:
       case PlayerStateType.stopped:
-        playIcon = Icons.play_arrow;
-        break;
+        return Icons.play_arrow;
       case PlayerStateType.buffering:
-        playIcon = Icons.hourglass_empty;
-        break;
+        return Icons.hourglass_empty;
       case PlayerStateType.error:
-        playIcon = Icons.error;
-        break;
+        return Icons.error;
     }
-    return Stack(alignment: Alignment.center, children: [
-      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        IconButton(
-            icon: const Icon(Icons.fast_rewind),
-            iconSize: 36,
-            onPressed: () {
-              KalinkaPlayerProxy().previous();
-            }),
-        IconButton(
-            icon: Icon(playIcon),
-            iconSize: 78,
-            onPressed: () {
-              switch (state) {
-                case PlayerStateType.playing:
-                  KalinkaPlayerProxy().pause(paused: true);
-                  break;
-                case PlayerStateType.paused:
-                  KalinkaPlayerProxy().pause(paused: false);
-                default:
-                  KalinkaPlayerProxy().play();
-              }
-            }),
-        IconButton(
-            icon: const Icon(Icons.fast_forward),
-            iconSize: 36,
-            onPressed: () {
-              KalinkaPlayerProxy().next();
-            }),
-      ]),
-      Positioned(
-        right: 0,
-        child: ChangeNotifierProvider(
-          create: (_) => PlaybackModeProvider(),
-          child: Consumer<PlaybackModeProvider>(
-            builder: (_, playbackModeProvider, __) => IconButton(
-              icon: Icon(_getRepeatIcon(playbackModeProvider)),
-              iconSize: 36,
-              onPressed: () {
-                var repeatSingle = playbackModeProvider.repeatSingle;
-                var repeatAll = playbackModeProvider.repeatAll;
-                if (!repeatSingle && !repeatAll) {
-                  repeatAll = true;
-                } else if (repeatAll && !repeatSingle) {
-                  repeatAll = false;
-                  repeatSingle = true;
-                } else {
-                  repeatAll = false;
-                  repeatSingle = false;
-                }
-                KalinkaPlayerProxy().setPlaybackMode(
-                  repeatOne: repeatSingle,
-                  repeatAll: repeatAll,
-                );
-              },
-            ),
-          ),
+  }
+
+  Widget _buildPlaybackControls(BuildContext context, PlayerStateType state) {
+    final IconData playIcon = _getPlaybackIcon(state);
+
+    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+      IconButton(
+        icon: const Icon(Icons.fast_rewind),
+        iconSize: _NowPlayingConstants.largeIconSize,
+        onPressed: () => KalinkaPlayerProxy().previous(),
+      ),
+      const SizedBox(width: 16),
+      Container(
+        decoration: const BoxDecoration(
+          color: KalinkaColors.primaryButtonColor,
+          shape: BoxShape.circle,
         ),
-      )
+        child: IconButton(
+          icon: Icon(playIcon, color: Colors.white),
+          iconSize: _NowPlayingConstants.playIconSize,
+          onPressed: () => _handlePlayPause(state),
+        ),
+      ),
+      const SizedBox(width: 16),
+      IconButton(
+        icon: const Icon(Icons.fast_forward),
+        iconSize: _NowPlayingConstants.largeIconSize,
+        onPressed: () => KalinkaPlayerProxy().next(),
+      ),
     ]);
+  }
+
+  void _handlePlayPause(PlayerStateType state) {
+    switch (state) {
+      case PlayerStateType.playing:
+        KalinkaPlayerProxy().pause(paused: true);
+        break;
+      case PlayerStateType.paused:
+        KalinkaPlayerProxy().pause(paused: false);
+        break;
+      default:
+        KalinkaPlayerProxy().play();
+    }
+  }
+
+  Widget _buildRepeatButton() {
+    return ChangeNotifierProvider(
+      create: (_) => PlaybackModeProvider(),
+      child: Consumer<PlaybackModeProvider>(
+        builder: (_, provider, __) => IconButton(
+          icon: Icon(_getRepeatIcon(provider)),
+          iconSize: 28,
+          onPressed: () => _cycleRepeatMode(provider),
+        ),
+      ),
+    );
+  }
+
+  void _cycleRepeatMode(PlaybackModeProvider provider) {
+    var repeatSingle = provider.repeatSingle;
+    var repeatAll = provider.repeatAll;
+
+    if (!repeatSingle && !repeatAll) {
+      repeatAll = true;
+    } else if (repeatAll && !repeatSingle) {
+      repeatAll = false;
+      repeatSingle = true;
+    } else {
+      repeatAll = false;
+      repeatSingle = false;
+    }
+
+    KalinkaPlayerProxy().setPlaybackMode(
+      repeatOne: repeatSingle,
+      repeatAll: repeatAll,
+    );
   }
 
   IconData _getRepeatIcon(PlaybackModeProvider provider) {
     if (provider.repeatSingle) {
       return Icons.repeat_one;
     }
-
     if (provider.repeatAll) {
       return Icons.repeat;
     }
-
     return Icons.arrow_right_alt;
   }
 
-  _buildAlbumArtWidget(BuildContext context) {
+  Widget _buildAlbumArtWidget(BuildContext context) {
     String imageUrl = context
             .read<PlayerStateProvider>()
             .state
@@ -358,16 +475,27 @@ class _NowPlayingState extends State<NowPlaying> {
             ?.image
             ?.large ??
         '';
-    return Expanded(
-      child: FittedBox(
-        fit: BoxFit.contain,
-        child: CachedNetworkImage(
-            cacheManager: KalinkaMusicCacheManager.instance,
-            imageUrl: imageUrl,
-            placeholder: (context, url) => const Icon(Icons.album),
-            placeholderFadeInDuration: const Duration(milliseconds: 0),
-            errorWidget: (context, url, error) => const Icon(Icons.album)),
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(_NowPlayingConstants.albumArtRadius),
+      child: CachedNetworkImage(
+        cacheManager: KalinkaMusicCacheManager.instance,
+        imageUrl: imageUrl,
+        fit: BoxFit.cover,
+        placeholder: (_, __) => _buildAlbumPlaceholder(),
+        errorWidget: (_, __, ___) => _buildAlbumPlaceholder(),
       ),
+    );
+  }
+
+  Widget _buildAlbumPlaceholder() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius:
+            BorderRadius.circular(_NowPlayingConstants.albumArtRadius),
+      ),
+      child: const Icon(Icons.album, size: 80, color: Colors.grey),
     );
   }
 }
