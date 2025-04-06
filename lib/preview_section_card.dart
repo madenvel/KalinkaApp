@@ -9,18 +9,19 @@ import 'package:kalinka/preview_section_grid.dart' show SectionPreviewGrid;
 import 'package:kalinka/tracks_browse_view.dart';
 
 class PreviewSectionCard extends StatelessWidget {
-  final BrowseItem? section;
+  final BrowseItemDataSource? dataSource;
   final double contentPadding;
 
   const PreviewSectionCard(
-      {super.key, this.section, this.contentPadding = 8.0});
+      {super.key, this.dataSource, this.contentPadding = 8.0});
 
   void _onTap(BuildContext context, BrowseItem item) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) {
         if (item.browseType == 'catalog') {
           return CatalogBrowseItemView(
-              parentItem: item, onTap: (item) => _onTap(context, item));
+              dataSource: BrowseItemDataSource.browse(item),
+              onTap: (item) => _onTap(context, item));
         }
 
         return TracksBrowseView(browseItem: item);
@@ -30,6 +31,7 @@ class PreviewSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final section = dataSource?.item;
     final image = section?.image?.large ??
         section?.image?.small ??
         section?.image?.thumbnail;
@@ -41,9 +43,9 @@ class PreviewSectionCard extends StatelessWidget {
             section,
             hasImage
                 ? LargeImagePreviewCard(
-                    section: section!, contentPadding: contentPadding)
+                    section: section, contentPadding: contentPadding)
                 : SectionPreviewGrid(
-                    dataSource: BrowseItemDataSource.browse(section!),
+                    dataSource: dataSource,
                     onTap: (item) => _onTap(context, item)),
             seeAll: !hasImage);
   }
@@ -77,7 +79,7 @@ class PreviewSectionCard extends StatelessWidget {
                     if (item.canBrowse) {
                       Navigator.of(context).push(MaterialPageRoute(
                           builder: (context) => CatalogBrowseItemView(
-                                parentItem: item,
+                                dataSource: dataSource!,
                                 onTap: (item) => _onTap(context, item),
                               )));
                     }

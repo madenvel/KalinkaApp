@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kalinka/browse_item_card.dart' show BrowseItemCard;
-import 'package:kalinka/browse_item_data_source.dart'
-    show DefaultBrowseItemDataSource;
+import 'package:kalinka/browse_item_data_source.dart' show BrowseItemDataSource;
 import 'package:kalinka/data_model.dart';
 import 'package:kalinka/data_provider.dart' show GenreFilterProvider;
 import 'package:kalinka/genre_select_filter.dart' show GenreFilterButton;
@@ -10,17 +9,18 @@ import 'package:provider/provider.dart';
 import 'browse_item_data_provider.dart';
 
 class CatalogBrowseItemView extends StatelessWidget {
-  final BrowseItem parentItem;
+  final BrowseItemDataSource dataSource;
   final Function(BrowseItem)? onTap;
   final double padding;
 
   CatalogBrowseItemView(
-      {super.key, required this.parentItem, this.onTap, this.padding = 8.0})
-      : assert(parentItem.browseType == 'catalog',
+      {super.key, required this.dataSource, this.onTap, this.padding = 8.0})
+      : assert(dataSource.item.browseType == 'catalog',
             'parentItem.browseType must be "catalog"');
 
   @override
   Widget build(BuildContext context) {
+    final parentItem = dataSource.item;
     return Scaffold(
       appBar: AppBar(
         title: Text(parentItem.name ?? 'Unknown'),
@@ -29,12 +29,10 @@ class CatalogBrowseItemView extends StatelessWidget {
       ),
       body: ChangeNotifierProxyProvider<GenreFilterProvider,
           BrowseItemDataProvider>(
-        create: (context) => BrowseItemDataProvider(
-            dataSource: DefaultBrowseItemDataSource(parentItem)),
+        create: (context) => BrowseItemDataProvider(dataSource: dataSource),
         update: (_, genreFilterProvider, dataProvider) {
           if (dataProvider == null) {
-            return BrowseItemDataProvider(
-                dataSource: DefaultBrowseItemDataSource(parentItem))
+            return BrowseItemDataProvider(dataSource: dataSource)
               ..maybeUpdateGenreFilter(genreFilterProvider.filter);
           }
           dataProvider.maybeUpdateGenreFilter(genreFilterProvider.filter);
@@ -55,6 +53,7 @@ class CatalogBrowseItemView extends StatelessWidget {
 
   Widget _buildGrid(BuildContext context, BoxConstraints constraints,
       BrowseItemDataProvider provider) {
+    final parentItem = provider.dataSource.item;
     final int crossAxisCount = calculateCrossAxisCount(constraints);
     final double imageWidth = constraints.maxWidth / crossAxisCount;
     final PreviewType previewType =

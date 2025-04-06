@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
 import 'package:kalinka/browse_item_data_source.dart'
-    show DefaultBrowseItemDataSource;
+    show BrowseItemDataSource, DefaultBrowseItemDataSource;
 import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
 import 'package:provider/provider.dart';
 import 'package:kalinka/genre_select_filter.dart';
@@ -104,8 +104,10 @@ class _DiscoverState extends State<Discover> {
   Widget _buildSection(BuildContext context, BrowseItem? section) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child:
-          PreviewSectionCard(section: section, contentPadding: contentPadding),
+      child: PreviewSectionCard(
+          dataSource:
+              section != null ? BrowseItemDataSource.browse(section) : null,
+          contentPadding: contentPadding),
     );
   }
 }
