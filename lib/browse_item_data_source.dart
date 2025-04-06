@@ -60,7 +60,8 @@ class SuggestionsBrowseItemDataSource implements BrowseItemDataSource {
 
   SuggestionsBrowseItemDataSource(this.parentItem) {
     catalogItem = BrowseItem(
-      name: 'You may also like',
+      name: parentItem.name,
+      subname: parentItem.subname,
       id: parentItem.id,
       url: parentItem.url,
       canBrowse: true,

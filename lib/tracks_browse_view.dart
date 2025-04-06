@@ -2,13 +2,15 @@ import 'package:cached_network_image/cached_network_image.dart'
     show CachedNetworkImage;
 import 'package:flutter/material.dart';
 import 'package:kalinka/add_to_playlist.dart';
+import 'package:kalinka/bottom_menu.dart' show BottomMenu;
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
 import 'package:kalinka/browse_item_data_source.dart'
     show BrowseItemDataSource, DefaultBrowseItemDataSource;
 import 'package:kalinka/colors.dart';
 import 'package:kalinka/custom_cache_manager.dart';
-import 'package:kalinka/data_provider.dart' show PlayerStateProvider;
+import 'package:kalinka/data_provider.dart'
+    show PlayerStateProvider, TrackListProvider;
 import 'package:kalinka/favorite_button.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart' show KalinkaPlayerProxy;
 import 'package:kalinka/list_card.dart';
@@ -91,58 +93,58 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
     final name = browseItem.name ?? '';
     final subname = browseItem.subname ?? '';
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: _showAppBarTitle ? Text(name) : null,
-        centerTitle: true,
-        backgroundColor: _showAppBarTitle
-            ? Theme.of(context).appBarTheme.backgroundColor
-            : Colors.transparent,
-        elevation: _showAppBarTitle ? 4.0 : 0.0,
-        forceMaterialTransparency: !_showAppBarTitle,
-      ),
-      extendBodyBehindAppBar: true,
-      body: SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(
-          children: [
-            Container(
-              padding: EdgeInsets.only(
-                left: 16.0,
-                right: 16.0,
-                top: MediaQuery.of(context).padding.top + 24.0,
-                bottom: 24.0,
+    return ChangeNotifierProvider<BrowseItemDataProvider>(
+        create: (BuildContext context) {
+          return BrowseItemDataProvider(
+            dataSource: DefaultBrowseItemDataSource(browseItem),
+          );
+        },
+        builder: (context, _) => Scaffold(
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              appBar: AppBar(
+                title: _showAppBarTitle ? Text(name) : null,
+                centerTitle: true,
+                backgroundColor: _showAppBarTitle
+                    ? Theme.of(context).appBarTheme.backgroundColor
+                    : Colors.transparent,
+                elevation: _showAppBarTitle ? 4.0 : 0.0,
+                forceMaterialTransparency: !_showAppBarTitle,
               ),
-              child: Column(
-                children: [
-                  if (albumImage != null) _buildAlbumCover(context, albumImage),
-                  Padding(
-                      padding:
-                          EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0),
-                      child: _buildAlbumInfo(context, name, subname)),
-                  _buildButtonsBar(context),
-                ],
+              extendBodyBehindAppBar: true,
+              body: SingleChildScrollView(
+                controller: _scrollController,
+                child: Column(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.only(
+                        left: 16.0,
+                        right: 16.0,
+                        top: MediaQuery.of(context).padding.top + 24.0,
+                        bottom: 24.0,
+                      ),
+                      child: Column(
+                        children: [
+                          if (albumImage != null)
+                            _buildAlbumCover(context, albumImage),
+                          Padding(
+                              padding: EdgeInsets.only(
+                                  left: 16.0, right: 16.0, top: 16.0),
+                              child: _buildAlbumInfo(context, name, subname)),
+                          _buildButtonsBar(context),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: _buildTracksList(context)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: _buildSimilarItemsSection(context, albumImage),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: ChangeNotifierProvider<BrowseItemDataProvider>(
-                  create: (BuildContext context) {
-                    return BrowseItemDataProvider(
-                      dataSource: DefaultBrowseItemDataSource(browseItem),
-                    );
-                  },
-                  builder: (context, _) => _buildTracksList(context)),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: _buildSimilarItemsSection(context, albumImage),
-            ),
-          ],
-        ),
-      ),
-    );
+            ));
   }
 
   Widget _buildAlbumCover(BuildContext context, String albumImage) {
@@ -232,7 +234,7 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
         IconButton(
           icon: const Icon(Icons.play_arrow, size: 40),
           onPressed: () {
-            _replaceAndPlay(widget.browseItem.url, 0);
+            _replaceAndPlay(context, widget.browseItem.url, 0);
           },
           style: IconButton.styleFrom(
             backgroundColor: KalinkaColors.primaryButtonColor,
@@ -358,11 +360,22 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
                                 fontSize: 12,
                                 color: Theme.of(context).disabledColor)),
                       const SizedBox(width: 8),
-                      const Icon(Icons.more_vert),
+                      IconButton(
+                        icon: const Icon(Icons.more_vert),
+                        onPressed: () {
+                          showModalBottomSheet(
+                              context: context,
+                              showDragHandle: true,
+                              scrollControlDisabledMaxHeightRatio: 0.5,
+                              builder: (context) =>
+                                  BottomMenu(browseItem: item));
+                        },
+                        tooltip: 'More options',
+                      ),
                     ],
                   ),
                   onTap: () {
-                    _replaceAndPlay(widget.browseItem.url, index);
+                    _replaceAndPlay(context, widget.browseItem.url, index);
                   },
                   visualDensity: VisualDensity.standard,
                 );
@@ -516,7 +529,27 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
     );
   }
 
-  Future<void> _replaceAndPlay(String url, int index) async {
+  Future<void> _replaceAndPlay(
+      BuildContext context, String url, int index) async {
+    final provider = context.read<BrowseItemDataProvider>();
+    List<Track> trackList = context.read<TrackListProvider>().trackList;
+    bool itemsEqual = true;
+    if (trackList.length == provider.totalItemCount) {
+      for (var i = 0; i < provider.cachedCount; ++i) {
+        if (trackList[i].id != provider.getItem(i).item?.id) {
+          itemsEqual = false;
+          break;
+        }
+      }
+    } else {
+      itemsEqual = false;
+    }
+    if (itemsEqual) {
+      // If the items are equal, just play the track
+      await KalinkaPlayerProxy().play(index);
+      return;
+    }
+
     await KalinkaPlayerProxy().clear();
     await KalinkaPlayerProxy().add(url);
     await KalinkaPlayerProxy().play(index);
