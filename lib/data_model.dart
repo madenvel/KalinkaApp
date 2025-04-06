@@ -539,6 +539,34 @@ class BrowseItem {
       this.playlist,
       this.catalog});
 
+  BrowseItem copyWith({
+    String? id,
+    String? name,
+    String? subname,
+    String? url,
+    bool? canBrowse,
+    bool? canAdd,
+    Track? track,
+    Album? album,
+    Artist? artist,
+    Playlist? playlist,
+    Catalog? catalog,
+  }) {
+    return BrowseItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      subname: subname ?? this.subname,
+      url: url ?? this.url,
+      canBrowse: canBrowse ?? this.canBrowse,
+      canAdd: canAdd ?? this.canAdd,
+      track: track ?? this.track,
+      album: album ?? this.album,
+      artist: artist ?? this.artist,
+      playlist: playlist ?? this.playlist,
+      catalog: catalog ?? this.catalog,
+    );
+  }
+
   get image {
     if (album != null) {
       return album?.image;
