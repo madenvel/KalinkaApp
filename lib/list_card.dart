@@ -58,6 +58,7 @@ class ImageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkResponse(
+      containedInkWell: true,
       borderRadius: BorderRadius.circular(12.0),
       highlightShape: BoxShape.rectangle,
       onTap: onTap,
