@@ -1,4 +1,5 @@
-import 'package:kalinka/data_model.dart' show BrowseItem, BrowseItemsList;
+import 'package:kalinka/data_model.dart'
+    show BrowseItem, BrowseItemsList, Catalog, Preview, PreviewType;
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 
 abstract class BrowseItemDataSource {
@@ -54,9 +55,25 @@ class DefaultBrowseItemDataSource implements BrowseItemDataSource {
 class SuggestionsBrowseItemDataSource implements BrowseItemDataSource {
   final proxy = KalinkaPlayerProxy();
   final BrowseItem parentItem;
+  late BrowseItem catalogItem;
   bool _isValid = true;
 
-  SuggestionsBrowseItemDataSource(this.parentItem);
+  SuggestionsBrowseItemDataSource(this.parentItem) {
+    catalogItem = BrowseItem(
+      name: 'You may also like',
+      id: parentItem.id,
+      url: parentItem.url,
+      canBrowse: true,
+      canAdd: false,
+      catalog: Catalog(
+        id: parentItem.id,
+        previewConfig: Preview(
+            type: PreviewType.imageText, aspectRatio: 1.0, rowsCount: 1),
+        title: '',
+        canGenreFilter: false,
+      ),
+    );
+  }
 
   @override
   Future<BrowseItemsList> fetch({
@@ -76,7 +93,7 @@ class SuggestionsBrowseItemDataSource implements BrowseItemDataSource {
   String get key => '${parentItem.url}_suggestions';
 
   @override
-  BrowseItem get item => parentItem;
+  BrowseItem get item => catalogItem;
 
   @override
   bool get isValid => _isValid;

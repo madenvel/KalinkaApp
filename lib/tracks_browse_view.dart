@@ -12,7 +12,7 @@ import 'package:kalinka/data_provider.dart' show PlayerStateProvider;
 import 'package:kalinka/favorite_button.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart' show KalinkaPlayerProxy;
 import 'package:kalinka/list_card.dart';
-import 'package:kalinka/preview_section_grid.dart' show SectionPreviewGrid;
+import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
 import 'package:kalinka/soundwave.dart' show SoundwaveWidget;
 import 'package:provider/provider.dart';
 import 'data_model.dart';
@@ -105,30 +105,41 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
       extendBodyBehindAppBar: true,
       body: SingleChildScrollView(
         controller: _scrollController,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Column(
-            children: [
-              SizedBox(height: 16.0 + MediaQuery.of(context).padding.top),
-              Column(
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.only(
+                left: 16.0,
+                right: 16.0,
+                top: MediaQuery.of(context).padding.top + 24.0,
+                bottom: 24.0,
+              ),
+              child: Column(
                 children: [
                   if (albumImage != null) _buildAlbumCover(context, albumImage),
                   Padding(
                       padding:
                           EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0),
                       child: _buildAlbumInfo(context, name, subname)),
+                  _buildButtonsBar(context),
                 ],
               ),
-              ChangeNotifierProvider<BrowseItemDataProvider>(
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: ChangeNotifierProvider<BrowseItemDataProvider>(
                   create: (BuildContext context) {
                     return BrowseItemDataProvider(
                       dataSource: DefaultBrowseItemDataSource(browseItem),
                     );
                   },
                   builder: (context, _) => _buildTracksList(context)),
-              _buildSimilarItemsSection(context, albumImage),
-            ],
-          ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: _buildSimilarItemsSection(context, albumImage),
+            ),
+          ],
         ),
       ),
     );
@@ -136,8 +147,8 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
 
   Widget _buildAlbumCover(BuildContext context, String albumImage) {
     final placeholderWidget = SizedBox(
-      height: 150,
-      child: ImagePlaceholder(borderRadius: 12),
+      height: 250,
+      child: Icon(Icons.music_note, size: 250, color: Colors.grey),
     );
 
     return ClipRRect(
@@ -145,8 +156,8 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
       borderRadius: BorderRadius.circular(12),
       child: Container(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width - 32,
-          maxHeight: 300,
+          maxWidth: MediaQuery.of(context).size.width - 64,
+          maxHeight: 250,
         ),
         child: CachedNetworkImage(
           imageUrl: albumImage,
@@ -187,8 +198,6 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
           ),
         const SizedBox(height: 12.0),
         _buildTrackCountDurationText(),
-        _buildButtonsBar(context),
-        const SizedBox(height: 16.0),
       ],
     );
   }
@@ -200,7 +209,9 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
     }
 
     final duration = widget.browseItem.duration;
-    final durationText = duration != null ? '${formatTime(duration)}  •  ' : '';
+    final durationText = duration != null
+        ? '${formatTime(duration, showSeconds: false)}  •  '
+        : '';
     final text = '${widget.browseItem.trackCount} tracks';
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -305,7 +316,7 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
     final isPlaylist = widget.browseItem.browseType == 'playlist';
 
     return Padding(
-      padding: const EdgeInsets.only(top: 16.0, left: 4.0, bottom: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -315,10 +326,11 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
                 fontWeight: FontWeight.bold,
               )),
           const SizedBox(height: 16.0),
-          ListView.builder(
+          ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             padding: EdgeInsets.zero,
+            separatorBuilder: (context, index) => const Divider(height: 1),
             itemCount: _visibleTrackCount.clamp(0, provider.totalItemCount),
             itemBuilder: (context, index) {
               final item = provider.getItem(index).item;
@@ -497,21 +509,9 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
   Widget _buildSimilarItemsSection(BuildContext context, String? albumImage) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 8.0),
-            child: Text(
-              'You may also like',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(height: 16.0),
-          SectionPreviewGrid(
-              dataSource: BrowseItemDataSource.suggestions(widget.browseItem),
-              rowsCount: 1),
-        ],
+      child: PreviewSectionCard(
+        dataSource: BrowseItemDataSource.suggestions(
+            widget.browseItem.copyWith(name: 'You may also like')),
       ),
     );
   }
@@ -527,14 +527,14 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
   }
 }
 
-String formatTime(int seconds) {
+String formatTime(int seconds, {showSeconds = true}) {
   final hours = seconds ~/ 3600;
   final minutes = (seconds % 3600) ~/ 60;
   final secs = seconds % 60;
 
   final hoursStr = hours > 0 ? '${hours}h ' : '';
   final minutesStr = minutes > 0 ? '${minutes}m ' : '';
-  final secondsStr = '${secs}s';
+  final secondsStr = showSeconds ? '${secs}s' : '';
 
   return '$hoursStr$minutesStr$secondsStr'.trim();
 }
