@@ -30,6 +30,7 @@ class BrowseItemDataProvider extends ChangeNotifier {
               ? math.min(itemsPerRequest, itemCountLimit!)
               : itemsPerRequest
           : 0);
+  int get cachedCount => _cacheEntry.items.length;
 
   BrowseItemDataProvider(
       {required this.dataSource,

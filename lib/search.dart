@@ -1,4 +1,6 @@
 import 'package:flutter/services.dart';
+import 'package:kalinka/artist_browse_view.dart' show ArtistBrowseView;
+import 'package:kalinka/tracks_browse_view.dart' show TracksBrowseView;
 import 'package:kalinka/search_results_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/bottom_menu.dart';
@@ -7,7 +9,6 @@ import 'package:kalinka/data_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 
-import 'browse.dart';
 import 'data_model.dart';
 
 class Search extends StatefulWidget {
@@ -179,8 +180,12 @@ class _SearchState extends State<Search> {
                 savedSearchProvider.addSearch(item);
                 if (item.canBrowse) {
                   Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (context) => BrowsePage(parentItem: item)),
+                    MaterialPageRoute(builder: (context) {
+                      if (item.browseType == 'artist') {
+                        return ArtistBrowseView(browseItem: item);
+                      }
+                      return TracksBrowseView(browseItem: item);
+                    }),
                   );
                 } else if (item.canAdd) {
                   _playTrack(context, item.id);
@@ -236,9 +241,12 @@ class _SearchState extends State<Search> {
               onTap: () {
                 if (browseItem.canBrowse) {
                   Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            BrowsePage(parentItem: browseItem)),
+                    MaterialPageRoute(builder: (context) {
+                      if (browseItem.browseType == 'artist') {
+                        return ArtistBrowseView(browseItem: browseItem);
+                      }
+                      return TracksBrowseView(browseItem: browseItem);
+                    }),
                   );
                 } else if (browseItem.canAdd) {
                   _playTrack(context, browseItem.id);

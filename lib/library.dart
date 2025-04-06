@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kalinka/artist_browse_view.dart' show ArtistBrowseView;
+import 'package:kalinka/tracks_browse_view.dart' show TracksBrowseView;
 import 'package:provider/provider.dart';
 import 'package:kalinka/bottom_menu.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/custom_list_tile.dart';
 
-import 'browse.dart';
 import 'data_model.dart';
 import 'kalinkaplayer_proxy.dart';
 
@@ -165,8 +166,12 @@ class _LibraryState extends State<Library> {
                     if (browseItems[index].canBrowse) {
                       var item = browseItems[index];
                       Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (context) => BrowsePage(parentItem: item)),
+                        MaterialPageRoute(builder: (context) {
+                          if (item.browseType == 'artist') {
+                            return ArtistBrowseView(browseItem: item);
+                          }
+                          return TracksBrowseView(browseItem: item);
+                        }),
                       );
                     } else if (browseItems[index].canAdd) {
                       _playTrack(context, browseItems[index].id, index);

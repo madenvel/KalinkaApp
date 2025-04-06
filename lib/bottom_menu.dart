@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kalinka/add_to_playlist.dart';
+import 'package:kalinka/tracks_browse_view.dart' show TracksBrowseView;
 import 'package:provider/provider.dart';
-import 'package:kalinka/browse.dart';
 import 'package:kalinka/custom_list_tile.dart';
 import 'package:kalinka/data_model.dart';
 import 'package:kalinka/data_provider.dart';
@@ -116,7 +116,7 @@ class BottomMenu extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                               builder: (context) =>
-                                  BrowsePage(parentItem: item)));
+                                  TracksBrowseView(browseItem: item)));
                     }
                   });
                 })
@@ -135,7 +135,7 @@ class BottomMenu extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                               builder: (context) =>
-                                  BrowsePage(parentItem: item)));
+                                  TracksBrowseView(browseItem: item)));
                     }
                   });
                 })
