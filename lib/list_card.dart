@@ -7,13 +7,15 @@ class ImagePlaceholder extends StatelessWidget {
   final double? height;
   final double borderRadius;
   final Color color;
+  final bool circle;
 
   const ImagePlaceholder(
       {super.key,
       this.width,
       this.height,
       this.borderRadius = 12.0,
-      this.color = Colors.grey});
+      this.circle = false,
+      this.color = Colors.black});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +24,8 @@ class ImagePlaceholder extends StatelessWidget {
       height: height,
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(borderRadius),
+        borderRadius: circle ? null : BorderRadius.circular(borderRadius),
+        shape: circle ? BoxShape.circle : BoxShape.rectangle,
       ),
     );
   }
@@ -39,6 +42,7 @@ class ImageCard extends StatelessWidget {
   final BoxConstraints constraints;
   final EdgeInsets contentPadding;
   final double aspectRatio;
+  final bool circle;
   final GestureTapCallback? onTap;
 
   const ImageCard(
@@ -53,7 +57,8 @@ class ImageCard extends StatelessWidget {
       this.textVertTrailing,
       this.contentPadding = const EdgeInsets.all(8.0),
       required this.constraints,
-      this.aspectRatio = 1.0});
+      this.aspectRatio = 1.0,
+      this.circle = false});
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +82,11 @@ class ImageCard extends StatelessWidget {
                         fit: BoxFit.cover,
                         imageBuilder: (context, imageProvider) => Container(
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
+                                shape: circle
+                                    ? BoxShape.circle
+                                    : BoxShape.rectangle,
+                                borderRadius:
+                                    circle ? null : BorderRadius.circular(12),
                                 image: DecorationImage(
                                   image: imageProvider,
                                   fit: BoxFit.cover,
@@ -85,7 +94,7 @@ class ImageCard extends StatelessWidget {
                               ),
                             ),
                         placeholder: (context, url) =>
-                            const ImagePlaceholder())),
+                            ImagePlaceholder(circle: circle))),
               const Spacer(),
               if (title != null && subtitle != null)
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -214,6 +223,7 @@ class PlaceholderCard extends StatelessWidget {
   final BoxConstraints constraints;
   final double aspectRatio;
   final bool roomForText;
+  final bool circle;
 
   const PlaceholderCard(
       {super.key,
@@ -222,6 +232,7 @@ class PlaceholderCard extends StatelessWidget {
       this.contentPadding = const EdgeInsets.all(8.0),
       this.aspectRatio = 1.0,
       required this.constraints,
+      this.circle = false,
       this.roomForText = true});
 
   @override
@@ -239,7 +250,8 @@ class PlaceholderCard extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.grey,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: circle ? null : BorderRadius.circular(12),
+                    shape: circle ? BoxShape.circle : BoxShape.rectangle,
                   ),
                 ),
               ),
@@ -254,7 +266,8 @@ class PlaceholderCard extends StatelessWidget {
                       height: 18,
                       decoration: BoxDecoration(
                         color: Colors.grey,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: circle ? null : BorderRadius.circular(8),
+                        shape: circle ? BoxShape.circle : BoxShape.rectangle,
                       ),
                     ),
                     const SizedBox(height: 4),

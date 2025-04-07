@@ -8,6 +8,7 @@ import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/favorite_button.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:kalinka/list_card.dart';
+import 'package:kalinka/polka_dot_painter.dart' show PolkaDotPainter;
 import 'package:kalinka/preview_section_card.dart';
 import 'package:kalinka/tracks_browse_view.dart' show TracksBrowseView;
 import 'package:provider/provider.dart';
@@ -104,25 +105,41 @@ class _ArtistBrowseViewState extends State<ArtistBrowseView> {
           controller: _scrollController,
           child: Column(
             children: [
-              Container(
-                padding: EdgeInsets.only(
-                  left: 16.0,
-                  right: 16.0,
-                  top: MediaQuery.of(context).padding.top + 24.0,
-                  bottom: 24.0,
-                ),
-                child: Column(
-                  children: [
-                    if (artistImage != null)
-                      _buildArtistImage(context, artistImage),
-                    Padding(
-                      padding: const EdgeInsets.only(
-                          left: 16.0, right: 16.0, top: 16.0),
-                      child: _buildArtistInfo(context, name),
+              Stack(
+                children: [
+                  Positioned.fill(
+                    child: CustomPaint(
+                      size: Size.infinite,
+                      painter: PolkaDotPainter(
+                        dotSize: 50,
+                        spacing: 1.0,
+                        dotColor: KalinkaColors.primaryButtonColor
+                            .withValues(alpha: 0.4),
+                        sizeReductionFactor: 0.05,
+                      ),
                     ),
-                    _buildButtonsBar(context),
-                  ],
-                ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      top: MediaQuery.of(context).padding.top + 24.0,
+                      bottom: 24.0,
+                    ),
+                    child: Column(
+                      children: [
+                        if (artistImage != null)
+                          _buildArtistImage(context, artistImage),
+                        Padding(
+                          padding: const EdgeInsets.only(
+                              left: 16.0, right: 16.0, top: 16.0),
+                          child: _buildArtistInfo(context, name),
+                        ),
+                        _buildButtonsBar(context),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -160,7 +177,7 @@ class _ArtistBrowseViewState extends State<ArtistBrowseView> {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -312,11 +329,14 @@ class _ArtistBrowseViewState extends State<ArtistBrowseView> {
                     icon: const Icon(Icons.more_vert),
                     onPressed: () {
                       // Add your desired functionality here
+                      final parentContext = context;
                       showModalBottomSheet(
                         context: context,
                         showDragHandle: true,
-                        scrollControlDisabledMaxHeightRatio: 0.5,
-                        builder: (context) => BottomMenu(browseItem: item),
+                        isScrollControlled: false,
+                        useRootNavigator: true,
+                        builder: (context) => BottomMenu(
+                            parentContext: parentContext, browseItem: item),
                       );
                     },
                   ),

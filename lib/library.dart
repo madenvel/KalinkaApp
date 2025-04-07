@@ -180,13 +180,16 @@ class _LibraryState extends State<Library> {
                   trailing: IconButton(
                       icon: const Icon(Icons.more_vert),
                       onPressed: () {
+                        final parentContext = context;
                         showModalBottomSheet(
                             context: context,
                             showDragHandle: true,
                             useRootNavigator: true,
                             scrollControlDisabledMaxHeightRatio: 0.4,
                             builder: (context) {
-                              return BottomMenu(browseItem: browseItems[index]);
+                              return BottomMenu(
+                                  parentContext: parentContext,
+                                  browseItem: browseItems[index]);
                             });
                       }));
             },
