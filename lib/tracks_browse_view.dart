@@ -14,6 +14,7 @@ import 'package:kalinka/data_provider.dart'
 import 'package:kalinka/favorite_button.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart' show KalinkaPlayerProxy;
 import 'package:kalinka/list_card.dart';
+import 'package:kalinka/polka_dot_painter.dart';
 import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
 import 'package:kalinka/soundwave.dart' show SoundwaveWidget;
 import 'package:provider/provider.dart';
@@ -115,25 +116,7 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
                 controller: _scrollController,
                 child: Column(
                   children: [
-                    Container(
-                      padding: EdgeInsets.only(
-                        left: 16.0,
-                        right: 16.0,
-                        top: MediaQuery.of(context).padding.top + 24.0,
-                        bottom: 24.0,
-                      ),
-                      child: Column(
-                        children: [
-                          if (albumImage != null)
-                            _buildAlbumCover(context, albumImage),
-                          Padding(
-                              padding: EdgeInsets.only(
-                                  left: 16.0, right: 16.0, top: 16.0),
-                              child: _buildAlbumInfo(context, name, subname)),
-                          _buildButtonsBar(context),
-                        ],
-                      ),
-                    ),
+                    _buildAlbumSection(context, albumImage, name, subname),
                     Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: _buildTracksList(context)),
@@ -145,6 +128,42 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
                 ),
               ),
             ));
+  }
+
+  Widget _buildAlbumSection(
+      BuildContext context, String? albumImage, String name, String subname) {
+    return
+        // Content (Album Cover, Info, Buttons)
+        Stack(children: [
+      Positioned.fill(
+        child: CustomPaint(
+          size: Size.infinite,
+          painter: PolkaDotPainter(
+            dotSize: 50,
+            spacing: 1.0,
+            dotColor: KalinkaColors.primaryButtonColor.withValues(alpha: 0.4),
+            sizeReductionFactor: 0.05,
+          ),
+        ),
+      ),
+      Padding(
+        padding: EdgeInsets.only(
+          left: 16.0,
+          right: 16.0,
+          top: MediaQuery.of(context).padding.top + 24.0,
+          bottom: 24.0,
+        ),
+        child: Column(
+          children: [
+            if (albumImage != null) _buildAlbumCover(context, albumImage),
+            Padding(
+                padding: EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0),
+                child: _buildAlbumInfo(context, name, subname)),
+            _buildButtonsBar(context),
+          ],
+        ),
+      ),
+    ]);
   }
 
   Widget _buildAlbumCover(BuildContext context, String albumImage) {
@@ -363,12 +382,15 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
                       IconButton(
                         icon: const Icon(Icons.more_vert),
                         onPressed: () {
+                          final parentContext = context;
                           showModalBottomSheet(
                               context: context,
+                              useRootNavigator: true,
+                              isScrollControlled: false,
                               showDragHandle: true,
-                              scrollControlDisabledMaxHeightRatio: 0.5,
-                              builder: (context) =>
-                                  BottomMenu(browseItem: item));
+                              builder: (context) => BottomMenu(
+                                  parentContext: parentContext,
+                                  browseItem: item));
                         },
                         tooltip: 'More options',
                       ),

@@ -194,13 +194,15 @@ class _SearchState extends State<Search> {
               trailing: IconButton(
                   icon: const Icon(Icons.more_vert),
                   onPressed: () {
+                    final parentContext = context;
                     showModalBottomSheet(
                         context: context,
                         showDragHandle: true,
                         useRootNavigator: true,
                         scrollControlDisabledMaxHeightRatio: 0.4,
                         builder: (context) {
-                          return BottomMenu(browseItem: item);
+                          return BottomMenu(
+                              parentContext: parentContext, browseItem: item);
                         });
                   }));
         });

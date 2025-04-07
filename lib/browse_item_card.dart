@@ -55,6 +55,7 @@ class BrowseItemCard extends StatelessWidget {
             textVertLeading: textVertLeading,
             textVertTrailing: textVertTrailing,
             aspectRatio: 1.0 / imageAspectRatio,
+            circle: item?.browseType == 'artist',
             contentPadding: EdgeInsets.all(contentPadding),
             constraints: constraints,
             onTap: () => onTap?.call(item!))

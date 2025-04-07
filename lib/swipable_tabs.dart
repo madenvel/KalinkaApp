@@ -1,11 +1,9 @@
-import 'dart:ui';
-
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:kalinka/add_to_playlist.dart';
-import 'package:kalinka/custom_cache_manager.dart';
+import 'package:kalinka/colors.dart' show KalinkaColors;
 import 'package:kalinka/event_listener.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
+import 'package:kalinka/polka_dot_painter.dart' show PolkaDotPainter;
 import 'package:provider/provider.dart';
 import 'package:kalinka/bottom_menu.dart';
 import 'package:kalinka/data_model.dart';
@@ -64,6 +62,7 @@ class _SwipableTabsState extends State<SwipableTabs>
   @override
   Widget build(BuildContext context) {
     return Stack(children: [
+      Container(color: Theme.of(context).scaffoldBackgroundColor),
       _buildBackgroundImage(context),
       Scaffold(
         backgroundColor: Colors.transparent,
@@ -99,6 +98,7 @@ class _SwipableTabsState extends State<SwipableTabs>
                               track: track)
                           : null;
                       if (item != null) {
+                        final prentContext = context;
                         showModalBottomSheet(
                             context: context,
                             showDragHandle: true,
@@ -106,6 +106,7 @@ class _SwipableTabsState extends State<SwipableTabs>
                             scrollControlDisabledMaxHeightRatio: 0.4,
                             builder: (context) {
                               return BottomMenu(
+                                parentContext: prentContext,
                                 browseItem: item,
                                 showPlay: false,
                                 showAddToQueue: false,
@@ -162,30 +163,39 @@ class _SwipableTabsState extends State<SwipableTabs>
   }
 
   Widget _buildBackgroundImage(BuildContext context) {
-    String imageUrl = context
-            .watch<PlayerStateProvider>()
-            .state
-            .currentTrack
-            ?.album
-            ?.image
-            ?.large ??
-        '';
-    return imageUrl.isNotEmpty
-        ? ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: CachedNetworkImage(
-              cacheManager: KalinkaMusicCacheManager.instance,
-              imageUrl: imageUrl,
-              fit: BoxFit.cover,
-              height: double.infinity,
-              width: double.infinity,
-              color: Theme.of(context)
-                  .scaffoldBackgroundColor
-                  .withValues(alpha: 0.8),
-              colorBlendMode: BlendMode.darken,
-              filterQuality: FilterQuality.low,
-            ))
-        : const SizedBox.shrink();
+    return CustomPaint(
+      size: Size.infinite,
+      painter: PolkaDotPainter(
+        dotSize: 50,
+        spacing: 1.0,
+        dotColor: KalinkaColors.primaryButtonColor.withValues(alpha: 0.4),
+        sizeReductionFactor: 0.05,
+      ),
+    );
+    // String imageUrl = context
+    //         .watch<PlayerStateProvider>()
+    //         .state
+    //         .currentTrack
+    //         ?.album
+    //         ?.image
+    //         ?.large ??
+    //     '';
+    // return imageUrl.isNotEmpty
+    //     ? ImageFiltered(
+    //         imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+    //         child: CachedNetworkImage(
+    //           cacheManager: KalinkaMusicCacheManager.instance,
+    //           imageUrl: imageUrl,
+    //           fit: BoxFit.cover,
+    //           height: double.infinity,
+    //           width: double.infinity,
+    //           color: Theme.of(context)
+    //               .scaffoldBackgroundColor
+    //               .withValues(alpha: 0.8),
+    //           colorBlendMode: BlendMode.darken,
+    //           filterQuality: FilterQuality.low,
+    //         ))
+    //     : const SizedBox.shrink();
   }
 
   void _buildAddToPlaylist(BuildContext context) {

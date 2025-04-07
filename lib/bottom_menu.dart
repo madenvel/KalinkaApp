@@ -9,12 +9,14 @@ import 'package:kalinka/kalinkaplayer_proxy.dart';
 
 class BottomMenu extends StatelessWidget {
   final BrowseItem browseItem;
+  final BuildContext parentContext;
   final bool showPlay;
   final bool showAddToQueue;
 
   const BottomMenu(
       {super.key,
       required this.browseItem,
+      required this.parentContext,
       this.showPlay = true,
       this.showAddToQueue = true});
 
@@ -69,7 +71,7 @@ class BottomMenu extends StatelessWidget {
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
-                      context,
+                      parentContext,
                       MaterialPageRoute(
                           builder: (context) => AddToPlaylist(
                                 items: BrowseItemsList(0, 1, 1, [browseItem]),
@@ -113,7 +115,7 @@ class BottomMenu extends StatelessWidget {
                     if (context.mounted) {
                       Navigator.pop(context);
                       Navigator.push(
-                          context,
+                          parentContext,
                           MaterialPageRoute(
                               builder: (context) =>
                                   TracksBrowseView(browseItem: item)));

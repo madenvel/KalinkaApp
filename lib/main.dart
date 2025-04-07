@@ -129,8 +129,11 @@ class _MyHomePageState extends State<MyHomePage> {
                       return Playbar(onTap: () {
                         Navigator.push(
                             context,
-                            MaterialPageRoute(
-                                builder: (context) => const SwipableTabs()));
+                            PageRouteBuilder(
+                                opaque: false,
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) =>
+                                        const SwipableTabs()));
                       });
                     } else {
                       return const SizedBox.shrink();
