@@ -34,12 +34,7 @@ class BottomMenu extends StatelessWidget {
           ..._buildPlaylistOptions(context),
           ..._buildFavoriteOptions(context, favoritesProvider),
           ..._buildNavigationOptions(context),
-          const SizedBox(height: 16),
-          Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewPadding.bottom,
-            ),
-          ),
+          SizedBox(height: 16 + MediaQuery.of(context).viewPadding.bottom),
         ],
       );
     });

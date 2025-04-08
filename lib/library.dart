@@ -184,7 +184,9 @@ class _LibraryState extends State<Library> {
                         showModalBottomSheet(
                             context: context,
                             showDragHandle: true,
+                            isScrollControlled: false,
                             useRootNavigator: true,
+                            scrollControlDisabledMaxHeightRatio: 0.7,
                             builder: (context) {
                               return BottomMenu(
                                   parentContext: parentContext,
