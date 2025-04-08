@@ -27,8 +27,6 @@ class BottomMenu extends StatelessWidget {
         builder: (context, favoritesProvider, _) {
       return Column(
         mainAxisSize: MainAxisSize.min,
-        // padding: const EdgeInsets.all(0),
-        // direction: Axis.vertical,
         children: [
           _buildHeader(),
           const Divider(),
