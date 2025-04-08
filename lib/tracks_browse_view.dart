@@ -117,9 +117,10 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
                     onPressed: () {
                       showModalBottomSheet(
                           context: context,
-                          useRootNavigator: true,
-                          isScrollControlled: false,
                           showDragHandle: true,
+                          isScrollControlled: false,
+                          useRootNavigator: true,
+                          scrollControlDisabledMaxHeightRatio: 0.7,
                           builder: (context) => BottomMenu(
                                 browseItem: widget.browseItem,
                                 parentContext: parentContext,
@@ -403,9 +404,10 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
                           final parentContext = context;
                           showModalBottomSheet(
                               context: context,
-                              useRootNavigator: true,
-                              isScrollControlled: false,
                               showDragHandle: true,
+                              isScrollControlled: false,
+                              useRootNavigator: true,
+                              scrollControlDisabledMaxHeightRatio: 0.7,
                               builder: (context) => BottomMenu(
                                   parentContext: parentContext,
                                   browseItem: item));

@@ -198,8 +198,9 @@ class _SearchState extends State<Search> {
                     showModalBottomSheet(
                         context: context,
                         showDragHandle: true,
+                        isScrollControlled: false,
                         useRootNavigator: true,
-                        scrollControlDisabledMaxHeightRatio: 0.4,
+                        scrollControlDisabledMaxHeightRatio: 0.7,
                         builder: (context) {
                           return BottomMenu(
                               parentContext: parentContext, browseItem: item);

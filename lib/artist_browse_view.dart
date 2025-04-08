@@ -333,6 +333,7 @@ class _ArtistBrowseViewState extends State<ArtistBrowseView> {
                         showDragHandle: true,
                         isScrollControlled: false,
                         useRootNavigator: true,
+                        scrollControlDisabledMaxHeightRatio: 0.7,
                         builder: (context) => BottomMenu(
                             parentContext: parentContext, browseItem: item),
                       );
