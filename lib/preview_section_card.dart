@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:kalinka/browse_item_data_provider.dart'
+    show BrowseItemDataProvider;
 import 'package:kalinka/browse_item_data_source.dart' show BrowseItemDataSource;
 import 'package:kalinka/catalog_browse_item_view.dart'
     show CatalogBrowseItemView;
 import 'package:kalinka/data_model.dart' show BrowseItem;
+import 'package:kalinka/data_provider.dart' show GenreFilterProvider;
 import 'package:kalinka/large_image_preview_card.dart'
     show LargeImagePreviewCard;
 import 'package:kalinka/preview_section_grid.dart' show SectionPreviewGrid;
 import 'package:kalinka/tracks_browse_view.dart';
+import 'package:provider/provider.dart'
+    show ChangeNotifierProxyProvider, Consumer;
 
 class PreviewSectionCard extends StatelessWidget {
   final BrowseItemDataSource? dataSource;
   final double contentPadding;
+  final int? rowsCount;
 
   const PreviewSectionCard(
-      {super.key, this.dataSource, this.contentPadding = 8.0});
+      {super.key, this.dataSource, this.contentPadding = 8.0, this.rowsCount});
 
   void _onTap(BuildContext context, BrowseItem item) {
     Navigator.of(context).push(
@@ -36,18 +42,56 @@ class PreviewSectionCard extends StatelessWidget {
         section?.image?.small ??
         section?.image?.thumbnail;
     final hasImage = image != null && image.isNotEmpty;
-    return (section == null)
-        ? _buildSectionPlaceholder(context, const SectionPreviewGrid())
-        : _buildSectionPreview(
+    final updatedSection = dataSource?.item;
+    if (updatedSection == null) {
+      return _buildSectionPlaceholder(context, const SectionPreviewGrid());
+    }
+
+    return _buildWithBrowseDataProvider(
+      context,
+      Consumer(
+        builder: (context, BrowseItemDataProvider dataProvider, child) {
+          final hasNoItems = dataProvider.totalItemCount == 0;
+          return _buildSectionPreview(
             context,
-            section,
+            updatedSection,
             hasImage
                 ? LargeImagePreviewCard(
-                    section: section, contentPadding: contentPadding)
-                : SectionPreviewGrid(
-                    dataSource: dataSource,
-                    onTap: (item) => _onTap(context, item)),
-            seeAll: !hasImage);
+                    section: updatedSection, contentPadding: contentPadding)
+                : (hasNoItems
+                    ? Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: const Text('No items found'),
+                      )
+                    : SectionPreviewGrid(
+                        dataProvider: dataProvider,
+                        onTap: (item) => _onTap(context, item))),
+            seeAll: !hasImage && !hasNoItems,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildWithBrowseDataProvider(BuildContext context, Widget child) {
+    final catalog = dataSource?.item.catalog;
+    final crossAxisCount = rowsCount ?? catalog?.previewConfig?.rowsCount ?? 2;
+    final itemsCount = dataSource?.item.catalog?.previewConfig?.itemsCount ??
+        5 * crossAxisCount;
+
+    return ChangeNotifierProxyProvider<GenreFilterProvider,
+            BrowseItemDataProvider>(
+        create: (context) => BrowseItemDataProvider(
+            dataSource: dataSource!, itemCountLimit: itemsCount),
+        update: (_, genreFilterProvider, dataProvider) {
+          if (dataProvider == null) {
+            return BrowseItemDataProvider(dataSource: dataSource!)
+              ..maybeUpdateGenreFilter(genreFilterProvider.filter);
+          }
+          dataProvider.maybeUpdateGenreFilter(genreFilterProvider.filter);
+          return dataProvider;
+        },
+        child: child);
   }
 
   Widget _buildSectionPreview(
@@ -74,7 +118,7 @@ class PreviewSectionCard extends StatelessWidget {
             const Spacer(),
             if (seeAll)
               TextButton(
-                  child: const Text('More', style: TextStyle(fontSize: 16)),
+                  child: const Text('See All', style: TextStyle(fontSize: 16)),
                   onPressed: () {
                     if (item.canBrowse) {
                       Navigator.of(context).push(MaterialPageRoute(

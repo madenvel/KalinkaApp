@@ -2,16 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:kalinka/browse_item_card.dart' show BrowseItemCard;
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
-import 'package:kalinka/browse_item_data_source.dart' show BrowseItemDataSource;
 import 'package:kalinka/data_model.dart';
-import 'package:kalinka/data_provider.dart' show GenreFilterProvider;
-import 'package:provider/provider.dart'
-    show ChangeNotifierProxyProvider, Consumer;
 
 typedef BrowseItemTapCallback = void Function(BrowseItem item);
 
 class SectionPreviewGrid extends StatelessWidget {
-  final BrowseItemDataSource? dataSource;
+  final BrowseItemDataProvider? dataProvider;
   final double contentPadding;
   final double textLabelHeight;
   final BrowseItemTapCallback? onTap;
@@ -19,7 +15,7 @@ class SectionPreviewGrid extends StatelessWidget {
 
   const SectionPreviewGrid({
     super.key,
-    this.dataSource,
+    this.dataProvider,
     this.contentPadding = 8.0,
     this.textLabelHeight = 52.0,
     this.rowsCount,
@@ -34,10 +30,10 @@ class SectionPreviewGrid extends StatelessWidget {
   }
 
   Widget _buildGrid(BuildContext context, BoxConstraints constraints) {
-    if (dataSource == null) {
+    if (dataProvider == null) {
       return _buildEmptyGrid(context);
     }
-    final catalog = dataSource!.item.catalog;
+    final catalog = dataProvider!.dataSource.item.catalog;
     final sizeDescription = catalog?.previewConfig?.cardSize ?? CardSize.small;
     final cardSize = calculateCardSize(context, sizeDescription);
     final crossAxisCount = rowsCount ?? catalog?.previewConfig?.rowsCount ?? 2;
@@ -48,34 +44,19 @@ class SectionPreviewGrid extends StatelessWidget {
             2 * contentPadding +
             (previewType == PreviewType.textOnly ? 0 : textLabelHeight)) *
         crossAxisCount;
-    final int itemsCount =
-        catalog?.previewConfig?.itemsCount ?? 5 * crossAxisCount;
 
-    return ChangeNotifierProxyProvider<GenreFilterProvider,
-            BrowseItemDataProvider>(
-        create: (context) => BrowseItemDataProvider(
-            dataSource: dataSource!, itemCountLimit: itemsCount),
-        update: (_, genreFilterProvider, dataProvider) {
-          if (dataProvider == null) {
-            return BrowseItemDataProvider(dataSource: dataSource!)
-              ..maybeUpdateGenreFilter(genreFilterProvider.filter);
-          }
-          dataProvider.maybeUpdateGenreFilter(genreFilterProvider.filter);
-          return dataProvider;
-        },
-        child: Consumer(
-            builder: (context, BrowseItemDataProvider dataProvider, child) {
-          return _buildGridContent(
-              dataProvider: dataProvider,
-              sectionHeight: sectionHeight,
-              cardSize: cardSize,
-              crossAxisCount: crossAxisCount,
-              cardSizeRatio: cardSizeRatio);
-        }));
+    return _buildGridContent(
+        context: context,
+        dataProvider: dataProvider,
+        sectionHeight: sectionHeight,
+        cardSize: cardSize,
+        crossAxisCount: crossAxisCount,
+        cardSizeRatio: cardSizeRatio);
   }
 
   Widget _buildGridContent(
       {BrowseItemDataProvider? dataProvider,
+      required BuildContext context,
       required double sectionHeight,
       required double cardSize,
       required int crossAxisCount,
@@ -83,28 +64,35 @@ class SectionPreviewGrid extends StatelessWidget {
     return RepaintBoundary(
       child: SizedBox(
           height: sectionHeight,
-          child: GridView.builder(
-            padding: EdgeInsets.all(0),
-            scrollDirection: Axis.horizontal,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              mainAxisExtent: cardSize,
-            ),
-            itemCount: dataProvider != null ? dataProvider.maybeItemCount : 10,
-            itemBuilder: (context, index) {
-              final BrowseItem? item = dataProvider?.getItem(index).item;
-              return BrowseItemCard(
-                item: item,
-                onTap: item != null ? onTap : null,
-                constraints:
-                    BoxConstraints.tight(Size(cardSize, sectionHeight)),
-                imageAspectRatio: cardSizeRatio,
-                previewTypeHint:
-                    dataSource?.item.catalog?.previewConfig?.type ??
-                        PreviewType.imageText,
-              );
-            },
-          )),
+          child: dataProvider != null && dataProvider.maybeItemCount > 0
+              ? GridView.builder(
+                  padding: EdgeInsets.all(0),
+                  scrollDirection: Axis.horizontal,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    mainAxisExtent: cardSize,
+                  ),
+                  itemCount: dataProvider.maybeItemCount,
+                  itemBuilder: (context, index) {
+                    final BrowseItem? item = dataProvider.getItem(index).item;
+                    return BrowseItemCard(
+                      item: item,
+                      onTap: item != null ? onTap : null,
+                      constraints:
+                          BoxConstraints.tight(Size(cardSize, sectionHeight)),
+                      imageAspectRatio: cardSizeRatio,
+                      previewTypeHint: dataProvider
+                              .dataSource.item.catalog?.previewConfig?.type ??
+                          PreviewType.imageText,
+                    );
+                  },
+                )
+              : Center(
+                  child: Text(
+                    'No items available',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                )),
     );
   }
 
@@ -121,6 +109,7 @@ class SectionPreviewGrid extends StatelessWidget {
         crossAxisCount;
 
     return _buildGridContent(
+        context: context,
         sectionHeight: sectionHeight,
         cardSize: cardSize,
         crossAxisCount: crossAxisCount,
