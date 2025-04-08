@@ -167,35 +167,11 @@ class _SwipableTabsState extends State<SwipableTabs>
       size: Size.infinite,
       painter: PolkaDotPainter(
         dotSize: 50,
-        spacing: 1.0,
-        dotColor: KalinkaColors.primaryButtonColor.withValues(alpha: 0.4),
+        spacing: 0.75,
+        dotColor: KalinkaColors.primaryButtonColor,
         sizeReductionFactor: 0.05,
       ),
     );
-    // String imageUrl = context
-    //         .watch<PlayerStateProvider>()
-    //         .state
-    //         .currentTrack
-    //         ?.album
-    //         ?.image
-    //         ?.large ??
-    //     '';
-    // return imageUrl.isNotEmpty
-    //     ? ImageFiltered(
-    //         imageFilter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-    //         child: CachedNetworkImage(
-    //           cacheManager: KalinkaMusicCacheManager.instance,
-    //           imageUrl: imageUrl,
-    //           fit: BoxFit.cover,
-    //           height: double.infinity,
-    //           width: double.infinity,
-    //           color: Theme.of(context)
-    //               .scaffoldBackgroundColor
-    //               .withValues(alpha: 0.8),
-    //           colorBlendMode: BlendMode.darken,
-    //           filterQuality: FilterQuality.low,
-    //         ))
-    //     : const SizedBox.shrink();
   }
 
   void _buildAddToPlaylist(BuildContext context) {

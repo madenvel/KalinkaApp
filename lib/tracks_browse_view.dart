@@ -93,6 +93,7 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
         browseItem.image?.thumbnail;
     final name = browseItem.name ?? '';
     final subname = browseItem.subname ?? '';
+    final parentContext = context;
 
     return ChangeNotifierProvider<BrowseItemDataProvider>(
         create: (BuildContext context) {
@@ -110,6 +111,23 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
                     : Colors.transparent,
                 elevation: _showAppBarTitle ? 4.0 : 0.0,
                 forceMaterialTransparency: !_showAppBarTitle,
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.more_vert),
+                    onPressed: () {
+                      showModalBottomSheet(
+                          context: context,
+                          useRootNavigator: true,
+                          isScrollControlled: false,
+                          showDragHandle: true,
+                          builder: (context) => BottomMenu(
+                                browseItem: widget.browseItem,
+                                parentContext: parentContext,
+                              ));
+                    },
+                    tooltip: 'More options',
+                  ),
+                ],
               ),
               extendBodyBehindAppBar: true,
               body: SingleChildScrollView(
@@ -140,8 +158,8 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
           size: Size.infinite,
           painter: PolkaDotPainter(
             dotSize: 50,
-            spacing: 1.0,
-            dotColor: KalinkaColors.primaryButtonColor.withValues(alpha: 0.4),
+            spacing: 0.75,
+            dotColor: KalinkaColors.primaryButtonColor,
             sizeReductionFactor: 0.05,
           ),
         ),

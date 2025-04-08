@@ -185,7 +185,6 @@ class _LibraryState extends State<Library> {
                             context: context,
                             showDragHandle: true,
                             useRootNavigator: true,
-                            scrollControlDisabledMaxHeightRatio: 0.4,
                             builder: (context) {
                               return BottomMenu(
                                   parentContext: parentContext,

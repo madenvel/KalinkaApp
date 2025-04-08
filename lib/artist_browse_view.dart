@@ -112,9 +112,8 @@ class _ArtistBrowseViewState extends State<ArtistBrowseView> {
                       size: Size.infinite,
                       painter: PolkaDotPainter(
                         dotSize: 50,
-                        spacing: 1.0,
-                        dotColor: KalinkaColors.primaryButtonColor
-                            .withValues(alpha: 0.4),
+                        spacing: 0.75,
+                        dotColor: KalinkaColors.primaryButtonColor,
                         sizeReductionFactor: 0.05,
                       ),
                     ),
@@ -328,7 +327,6 @@ class _ArtistBrowseViewState extends State<ArtistBrowseView> {
                   trailing: IconButton(
                     icon: const Icon(Icons.more_vert),
                     onPressed: () {
-                      // Add your desired functionality here
                       final parentContext = context;
                       showModalBottomSheet(
                         context: context,
