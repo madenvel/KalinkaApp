@@ -28,7 +28,7 @@ class _PlayQueueState extends State<PlayQueue> {
     _itemScrollController.scrollTo(
       index: index,
       duration: Duration(milliseconds: 300),
-      alignment: 0.5,
+      alignment: _previousTrackIndex == 0 ? 0.0 : 0.3,
       curve: Curves.easeInOut,
     );
   }
@@ -49,7 +49,8 @@ class _PlayQueueState extends State<PlayQueue> {
         tracks.isNotEmpty) {
       _previousTrackIndex = currentTrackIndex;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        scrollToIndex(currentTrackIndex);
+        Future.delayed(Duration(milliseconds: 500))
+            .then((_) => scrollToIndex(currentTrackIndex));
       });
     }
 
