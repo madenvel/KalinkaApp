@@ -77,6 +77,16 @@ class EventListener {
   bool _isRunning = false;
   bool get isRunning => _isRunning;
 
+  int _calculateUpdatedPosition() {
+    if (_lastPlayerStateUpdate == null ||
+        _latestPlayerState!.state != PlayerStateType.playing) {
+      // If the last player state update is null or the player is not playing,
+      return _latestPlayerState!.position!;
+    }
+    return _latestPlayerState!.position! +
+        DateTime.now().difference(_lastPlayerStateUpdate!).inMilliseconds;
+  }
+
   String registerCallback(Map<EventType, Function(List<dynamic>)> callbacks) {
     var uuid = const Uuid().v4();
     for (var eventType in callbacks.keys) {
@@ -88,10 +98,7 @@ class EventListener {
           callbacks.containsKey(EventType.StateReplay)) {
         if (_latestPlayerState != null) {
           var updatedPlayerState = _latestPlayerState!.copyWith(
-            position: _latestPlayerState!.position! +
-                DateTime.now()
-                    .difference(_lastPlayerStateUpdate!)
-                    .inMilliseconds,
+            position: _calculateUpdatedPosition(),
           );
           callbacks[EventType.StateReplay]!(
               [updatedPlayerState, _latestTrackList, _latestPlaybackMode]);
