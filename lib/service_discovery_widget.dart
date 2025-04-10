@@ -350,22 +350,19 @@ class ServiceDiscoveryWidget extends StatelessWidget {
 
     return Column(
       children: [
-        LimitedBox(
-          maxHeight: 300,
-          child: servers.isEmpty && !isLoading
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 32.0),
-                    child: Text("No servers found"),
-                  ),
-                )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: servers.length,
-                  itemBuilder: (context, index) =>
-                      _buildServerItem(servers[index], context),
+        servers.isEmpty && !isLoading
+            ? const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32.0),
+                  child: Text("No servers found"),
                 ),
-        ),
+              )
+            : ListView.builder(
+                shrinkWrap: true,
+                itemCount: servers.length,
+                itemBuilder: (context, index) =>
+                    _buildServerItem(servers[index], context),
+              ),
         if (isLoading)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16.0),
