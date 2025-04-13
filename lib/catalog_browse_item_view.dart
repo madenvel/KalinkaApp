@@ -23,16 +23,17 @@ class CatalogBrowseItemView extends StatelessWidget {
     final parentItem = dataSource.item;
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: 0.0,
         title: Text(parentItem.name ?? 'Unknown'),
         actions: [const GenreFilterButton()],
-        leadingWidth: 30,
       ),
       body: ChangeNotifierProxyProvider<GenreFilterProvider,
           BrowseItemDataProvider>(
-        create: (context) => BrowseItemDataProvider(dataSource: dataSource),
+        create: (context) =>
+            BrowseItemDataProvider.fromDataSource(dataSource: dataSource),
         update: (_, genreFilterProvider, dataProvider) {
           if (dataProvider == null) {
-            return BrowseItemDataProvider(dataSource: dataSource)
+            return BrowseItemDataProvider.fromDataSource(dataSource: dataSource)
               ..maybeUpdateGenreFilter(genreFilterProvider.filter);
           }
           dataProvider.maybeUpdateGenreFilter(genreFilterProvider.filter);
@@ -53,7 +54,7 @@ class CatalogBrowseItemView extends StatelessWidget {
 
   Widget _buildGrid(BuildContext context, BoxConstraints constraints,
       BrowseItemDataProvider provider) {
-    final parentItem = provider.dataSource.item;
+    final parentItem = provider.itemDataSource.item;
     final int crossAxisCount = calculateCrossAxisCount(constraints);
     final double imageWidth = constraints.maxWidth / crossAxisCount;
     final PreviewType previewType =

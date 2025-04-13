@@ -47,7 +47,7 @@ class _DiscoverState extends State<Discover> {
   }
 
   BrowseItemDataProvider _createProvider() {
-    return BrowseItemDataProvider(
+    return BrowseItemDataProvider.fromDataSource(
       dataSource: DefaultBrowseItemDataSource(BrowseItem(
           id: 'root', url: '/catalog', canBrowse: true, canAdd: false)),
       itemsPerRequest: 10,

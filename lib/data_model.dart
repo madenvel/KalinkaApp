@@ -525,6 +525,7 @@ class BrowseItem {
   final Artist? artist;
   final Playlist? playlist;
   final Catalog? catalog;
+  final List<BrowseItem>? extraSections;
 
   BrowseItem(
       {required this.id,
@@ -537,7 +538,8 @@ class BrowseItem {
       this.album,
       this.artist,
       this.playlist,
-      this.catalog});
+      this.catalog,
+      this.extraSections});
 
   BrowseItem copyWith({
     String? id,
@@ -551,6 +553,7 @@ class BrowseItem {
     Artist? artist,
     Playlist? playlist,
     Catalog? catalog,
+    List<BrowseItem>? extraSections,
   }) {
     return BrowseItem(
       id: id ?? this.id,
@@ -564,6 +567,7 @@ class BrowseItem {
       artist: artist ?? this.artist,
       playlist: playlist ?? this.playlist,
       catalog: catalog ?? this.catalog,
+      extraSections: extraSections ?? this.extraSections,
     );
   }
 
@@ -644,6 +648,10 @@ class BrowseItem {
             : Playlist.fromJson(json["playlist"]),
         catalog:
             json["catalog"] == null ? null : Catalog.fromJson(json["catalog"]),
+        extraSections: json["extra_sections"] == null
+            ? null
+            : List<BrowseItem>.from(
+                json["extra_sections"].map((x) => BrowseItem.fromJson(x))),
       );
 
   Map<String, dynamic> toJson() => {
@@ -658,6 +666,9 @@ class BrowseItem {
         "artist": artist?.toJson(),
         "playlist": playlist?.toJson(),
         "catalog": catalog?.toJson(),
+        "extra_sections": extraSections == null
+            ? null
+            : List<dynamic>.from(extraSections!.map((x) => x.toJson())),
       };
 }
 

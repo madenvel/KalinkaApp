@@ -11,7 +11,6 @@ import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'colors.dart';
 
 class SettingsTab extends StatefulWidget {
   const SettingsTab({super.key});
@@ -108,21 +107,12 @@ class _SettingsTabState extends State<SettingsTab> {
                         actionsAlignment: MainAxisAlignment.spaceBetween,
                         actions: <Widget>[
                           ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  KalinkaColors.secondaryButtonColor,
-                              foregroundColor: KalinkaColors.buttonTextColor,
-                            ),
                             child: const Text('Cancel'),
                             onPressed: () {
                               Navigator.of(context).pop(false);
                             },
                           ),
                           ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: KalinkaColors.primaryButtonColor,
-                              foregroundColor: KalinkaColors.buttonTextColor,
-                            ),
                             child: const Text('Yes'),
                             onPressed: () {
                               Navigator.of(context).pop(true);
@@ -168,20 +158,12 @@ class _SettingsTabState extends State<SettingsTab> {
           ),
           actions: <Widget>[
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: KalinkaColors.secondaryButtonColor,
-                foregroundColor: KalinkaColors.buttonTextColor,
-              ),
               child: const Text('Discard'),
               onPressed: () {
                 Navigator.of(context).pop(false);
               },
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: KalinkaColors.primaryButtonColor,
-                foregroundColor: KalinkaColors.buttonTextColor,
-              ),
               child: const Text('Save'),
               onPressed: () async {
                 await KalinkaPlayerProxy().saveSettings(_updatedValues);
@@ -282,8 +264,8 @@ class _SettingsTabState extends State<SettingsTab> {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: KalinkaColors.primaryButtonColor,
-                    foregroundColor: KalinkaColors.buttonTextColor,
+                    // backgroundColor: KalinkaColors.primaryButtonColor,
+                    // foregroundColor: KalinkaColors.buttonTextColor,
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
@@ -362,7 +344,6 @@ class _SettingsTabState extends State<SettingsTab> {
         style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.secondary,
         ),
       ),
     );
@@ -474,7 +455,7 @@ class _SettingsTabState extends State<SettingsTab> {
                       fontSize: 14,
                       color: _updatedValues.containsKey(path)
                           ? Theme.of(context).colorScheme.error
-                          : Colors.grey,
+                          : null,
                     ),
                   ),
                 ],
@@ -521,20 +502,12 @@ class _SettingsTabState extends State<SettingsTab> {
           content: _buildEditorWidget(context, settings, path),
           actions: <Widget>[
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: KalinkaColors.secondaryButtonColor,
-                foregroundColor: KalinkaColors.buttonTextColor,
-              ),
               child: const Text('CANCEL'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: KalinkaColors.primaryButtonColor,
-                foregroundColor: KalinkaColors.buttonTextColor,
-              ),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -1020,20 +993,20 @@ class _NestedSettingsScreenState extends State<_NestedSettingsScreen> {
             content: _buildEditorWidget(settings, path, setDialogState),
             actions: <Widget>[
               ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: KalinkaColors.secondaryButtonColor,
-                  foregroundColor: KalinkaColors.buttonTextColor,
-                ),
+                // style: ElevatedButton.styleFrom(
+                //   backgroundColor: KalinkaColors.secondaryButtonColor,
+                //   foregroundColor: KalinkaColors.buttonTextColor,
+                // ),
                 child: const Text('CANCEL'),
                 onPressed: () {
                   Navigator.of(dialogContext).pop();
                 },
               ),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: KalinkaColors.primaryButtonColor,
-                  foregroundColor: KalinkaColors.buttonTextColor,
-                ),
+                // style: ElevatedButton.styleFrom(
+                //   backgroundColor: KalinkaColors.primaryButtonColor,
+                //   foregroundColor: KalinkaColors.buttonTextColor,
+                // ),
                 onPressed: () {
                   Navigator.of(dialogContext).pop();
                 },

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kalinka/artist_browse_view.dart' show ArtistBrowseView;
-import 'package:kalinka/tracks_browse_view.dart' show TracksBrowseView;
+import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
+import 'package:kalinka/search_results_provider.dart' show SearchTypeProvider;
 import 'package:provider/provider.dart';
 import 'package:kalinka/bottom_menu.dart';
 import 'package:kalinka/data_provider.dart';
-import 'package:kalinka/custom_list_tile.dart';
+import 'package:kalinka/browse_item_data_provider.dart';
+import 'package:kalinka/browse_item_data_source.dart';
+import 'package:kalinka/browse_item_list.dart';
 
 import 'data_model.dart';
 import 'kalinkaplayer_proxy.dart';
@@ -20,8 +23,19 @@ class Library extends StatefulWidget {
 class _LibraryState extends State<Library> {
   _LibraryState();
 
-  int _selectedIndex = 0;
   final TextEditingController _textEditingController = TextEditingController();
+  static final List<SearchType> searchTypes = [
+    SearchType.track,
+    SearchType.album,
+    SearchType.artist,
+    SearchType.playlist,
+  ];
+  static final List<String> searchTypesStr = [
+    'Albums',
+    'Artists',
+    'Tracks',
+    'Playlists'
+  ];
 
   final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -43,160 +57,128 @@ class _LibraryState extends State<Library> {
             key: navigatorKey,
             onGenerateRoute: (settings) => MaterialPageRoute(builder: (_) {
                   return Scaffold(
-                    appBar: AppBar(
-                      title: const Row(children: [
-                        Icon(Icons.library_music),
-                        SizedBox(width: 8),
-                        Text('My Library')
-                      ]),
-                    ),
-                    body: Column(
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: TextField(
-                            controller: _textEditingController,
-                            onChanged: (text) {
-                              setState(() {});
-                            },
-                            decoration: InputDecoration(
-                              labelText: 'Type text to filter the list below',
-                              border: const OutlineInputBorder(),
-                              suffixIcon: _textEditingController.text.isNotEmpty
-                                  ? IconButton(
-                                      icon: const Icon(Icons.clear),
-                                      onPressed: () {
-                                        setState(() {
-                                          _textEditingController.clear();
-                                        });
-                                      })
-                                  : null,
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                            height: 36,
-                            child: ListView(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 8.0),
-                                scrollDirection: Axis.horizontal,
-                                children: List<Widget>.generate(4, (int index) {
-                                  return Padding(
-                                      padding: const EdgeInsets.only(
-                                          left: 4, right: 4),
-                                      child: ChoiceChip(
-                                        label: Text([
-                                          'Albums',
-                                          'Artists',
-                                          'Tracks',
-                                          'Playlists'
-                                        ][index]),
-                                        selected: _selectedIndex == index,
-                                        onSelected: (bool selected) {
-                                          setState(() {
-                                            _selectedIndex =
-                                                selected ? index : 0;
-                                            context
-                                                .read<UserFavoritesProvider>()
-                                                .markForReload(
-                                                    SearchType.values[
-                                                        _selectedIndex + 1]);
-                                          });
-                                        },
-                                      ));
-                                }))),
-                        const SizedBox(height: 8.0),
-                        Expanded(child: _buildItemList(context)),
-                      ],
-                    ),
-                  );
+                      appBar: AppBar(
+                        title: const Row(children: [
+                          Icon(Icons.library_music),
+                          SizedBox(width: 8),
+                          Text('My Library')
+                        ]),
+                      ),
+                      body: ChangeNotifierProvider<SearchTypeProvider>(
+                          create: (_) => SearchTypeProvider(),
+                          builder: (context, _) => _buildBody(context)));
                 })));
   }
 
-  List<BrowseItem> _filterItems(List<BrowseItem> browseItems) {
-    String filterText = _textEditingController.text.toLowerCase();
-    if (filterText.isEmpty) {
-      return browseItems;
-    }
-    List<BrowseItem> filteredItems = [];
-    for (var i = 0; i < browseItems.length; i++) {
-      BrowseItem item = browseItems[i];
-      if ((item.name != null &&
-              item.name!.toLowerCase().contains(filterText)) ||
-          (item.subname != null &&
-              item.subname!.toLowerCase().contains(filterText))) {
-        filteredItems.add(item);
-      }
-    }
+  Widget _buildBody(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.max,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: TextField(
+            controller: _textEditingController,
+            onChanged: (text) {
+              setState(() {});
+            },
+            decoration: InputDecoration(
+              labelText: 'Type text to filter the list below',
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
+              suffixIcon: _textEditingController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        setState(() {
+                          _textEditingController.clear();
+                        });
+                      })
+                  : null,
+            ),
+          ),
+        ),
+        _buildChipList(context),
+        const SizedBox(height: 8.0),
+        Expanded(child: _buildItemList(context)),
+      ],
+    );
+  }
 
-    return filteredItems;
+  Widget _buildChipList(BuildContext context) {
+    final provider = context.watch<SearchTypeProvider>();
+    final searchType = provider.searchType;
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: SegmentedButton<SearchType>(
+          segments: List.generate(
+            searchTypes.length,
+            (index) => ButtonSegment(
+              value: searchTypes[index],
+              label: Text(searchTypesStr[index]),
+            ),
+          ),
+          selected: {searchType},
+          onSelectionChanged: (Set<SearchType> newSelection) {
+            if (newSelection.isNotEmpty) {
+              provider.updateSearchType(newSelection.first);
+            }
+          },
+        ),
+      ),
+    );
   }
 
   Widget _buildItemList(BuildContext context) {
-    UserFavoritesProvider provider = context.watch<UserFavoritesProvider>();
-    List<SearchType> searchTypes = [
-      SearchType.album,
-      SearchType.artist,
-      SearchType.track,
-      SearchType.playlist
-    ];
-    var favorite = provider.favorite(searchTypes[_selectedIndex]);
-    List<BrowseItem> browseItems = _filterItems(favorite.items);
-    return favorite.isLoaded
-        ? ListView.separated(
-            padding: EdgeInsets.zero,
-            itemCount: browseItems.length + 1,
-            separatorBuilder: (context, index) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              if (index == browseItems.length) {
-                return Padding(
-                    padding: const EdgeInsets.only(bottom: 16, top: 8),
-                    child: Row(children: [
-                      const Spacer(),
-                      Text('Total: ${browseItems.length} item(s)',
-                          style: const TextStyle(
-                              fontSize: 12.0, color: Colors.grey)),
-                      const SizedBox(width: 8)
-                    ]));
-              }
-              return CustomListTile(
-                  browseItem: browseItems[index],
-                  onTap: () {
-                    if (browseItems[index].canBrowse) {
-                      var item = browseItems[index];
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) {
-                          if (item.browseType == 'artist') {
-                            return ArtistBrowseView(browseItem: item);
-                          }
-                          return TracksBrowseView(browseItem: item);
-                        }),
-                      );
-                    } else if (browseItems[index].canAdd) {
-                      _playTrack(context, browseItems[index].id, index);
-                    }
-                  },
-                  trailing: IconButton(
-                      icon: const Icon(Icons.more_vert),
-                      onPressed: () {
-                        final parentContext = context;
-                        showModalBottomSheet(
-                            context: context,
-                            showDragHandle: true,
-                            isScrollControlled: false,
-                            useRootNavigator: true,
-                            scrollControlDisabledMaxHeightRatio: 0.7,
-                            builder: (context) {
-                              return BottomMenu(
-                                  parentContext: parentContext,
-                                  browseItem: browseItems[index]);
-                            });
-                      }));
-            },
-          )
-        : const Align(
-            alignment: Alignment.topCenter, child: CircularProgressIndicator());
+    return ChangeNotifierProxyProvider<SearchTypeProvider,
+            BrowseItemDataProvider>(
+        create: (context) => BrowseItemDataProvider.fromDataSource(
+              dataSource: BrowseItemDataSource.favorites(
+                  context.read<SearchTypeProvider>().searchType),
+              itemsPerRequest: 30,
+            ),
+        update: (context, searchTypeProvider, dataProvider) {
+          return BrowseItemDataProvider.fromDataSource(
+            dataSource:
+                BrowseItemDataSource.favorites(searchTypeProvider.searchType),
+            itemsPerRequest: 30,
+          );
+        },
+        builder: (context, _) => BrowseItemList(
+              provider: context.watch<BrowseItemDataProvider>(),
+              shrinkWrap: false,
+              actionButtonIcon: const Icon(Icons.more_vert),
+              actionButtonTooltip: "More options",
+              onTap: (context, index, item) {
+                if (item.canBrowse) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) {
+                      if (item.browseType == 'artist') {
+                        return ArtistBrowseView(browseItem: item);
+                      }
+                      return BrowseItemView(browseItem: item);
+                    }),
+                  );
+                } else if (item.canAdd) {
+                  _playTrack(context, item.id, index);
+                }
+              },
+              onAction: (context, index, item) {
+                final parentContext = context;
+                showModalBottomSheet(
+                    context: context,
+                    showDragHandle: true,
+                    isScrollControlled: false,
+                    useRootNavigator: true,
+                    scrollControlDisabledMaxHeightRatio: 0.7,
+                    builder: (context) {
+                      return BottomMenu(
+                          parentContext: parentContext, browseItem: item);
+                    });
+              },
+              pageSize: 0,
+            ));
   }
 
   void _playTrack(BuildContext context, String trackId, int index) async {

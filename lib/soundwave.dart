@@ -56,24 +56,34 @@ class _SoundwaveWidgetState extends State<SoundwaveWidget>
 
   @override
   Widget build(BuildContext context) {
+    // Get the primary color from the current theme
+    final themeColor = Theme.of(context).colorScheme.primary;
+
     return FractionallySizedBox(
         widthFactor: 0.5,
         heightFactor: 0.5,
         child: CustomPaint(
-          painter: SoundBarsPainter(repaint: _counter),
+          painter: SoundBarsPainter(
+            repaint: _counter,
+            color: themeColor,
+          ),
         ));
   }
 }
 
 class SoundBarsPainter extends CustomPainter {
-  SoundBarsPainter({super.repaint});
+  SoundBarsPainter({
+    super.repaint,
+    required this.color,
+  });
 
   final List<double> bars = [0.0, 0.0, 0.0, 0.0];
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.blue
+      ..color = color
       ..strokeWidth = 2.0
       ..style = PaintingStyle.stroke;
 

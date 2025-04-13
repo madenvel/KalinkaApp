@@ -8,7 +8,6 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'custom_cache_manager.dart';
 import 'data_model.dart';
 import 'soundwave.dart';
-import 'colors.dart';
 
 class PlayQueue extends StatefulWidget {
   const PlayQueue({super.key});
@@ -17,12 +16,16 @@ class PlayQueue extends StatefulWidget {
   State<PlayQueue> createState() => _PlayQueueState();
 }
 
-class _PlayQueueState extends State<PlayQueue> {
+class _PlayQueueState extends State<PlayQueue>
+    with AutomaticKeepAliveClientMixin {
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
 
   int? _previousTrackIndex;
+
+  @override
+  bool get wantKeepAlive => true;
 
   void scrollToIndex(int index) {
     _itemScrollController.scrollTo(
@@ -35,6 +38,7 @@ class _PlayQueueState extends State<PlayQueue> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return _buildList(context);
   }
 
@@ -75,11 +79,13 @@ class _PlayQueueState extends State<PlayQueue> {
           isCurrentTrack
               ? Container(
                   decoration: BoxDecoration(
-                    color: KalinkaColors.inactiveProgressBarColor
-                        .withValues(alpha: 0.2),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.4),
                     border: Border(
                       left: BorderSide(
-                        color: KalinkaColors.progressBarColor,
+                        color: Theme.of(context).colorScheme.secondaryContainer,
                         width: 4.0,
                       ),
                     ),

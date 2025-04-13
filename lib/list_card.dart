@@ -1,49 +1,20 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:kalinka/custom_cache_manager.dart';
-
-class ImagePlaceholder extends StatelessWidget {
-  final double? width;
-  final double? height;
-  final double borderRadius;
-  final Color color;
-  final bool circle;
-
-  const ImagePlaceholder(
-      {super.key,
-      this.width,
-      this.height,
-      this.borderRadius = 12.0,
-      this.circle = false,
-      this.color = Colors.black});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: circle ? null : BorderRadius.circular(borderRadius),
-        shape: circle ? BoxShape.circle : BoxShape.rectangle,
-      ),
-    );
-  }
-}
+import 'package:kalinka/shimmer_widget.dart';
 
 class ImageCard extends StatelessWidget {
   final String? imageUrl;
   final String? title;
   final String? subtitle;
-  final TextStyle? titleStyle;
-  final TextStyle? subtitleStyle;
   final Widget? textVertLeading;
   final Widget? textVertTrailing;
   final BoxConstraints constraints;
   final EdgeInsets contentPadding;
   final double aspectRatio;
-  final bool circle;
+  final BoxShape shape;
   final GestureTapCallback? onTap;
+  final Alignment textAlignment;
 
   const ImageCard(
       {super.key,
@@ -51,17 +22,42 @@ class ImageCard extends StatelessWidget {
       this.title,
       this.subtitle,
       this.onTap,
-      this.titleStyle,
-      this.subtitleStyle,
       this.textVertLeading,
       this.textVertTrailing,
       this.contentPadding = const EdgeInsets.all(8.0),
       required this.constraints,
       this.aspectRatio = 1.0,
-      this.circle = false});
+      this.shape = BoxShape.rectangle,
+      this.textAlignment = Alignment.centerLeft});
 
   @override
   Widget build(BuildContext context) {
+    return CachedNetworkImage(
+        imageUrl: imageUrl!,
+        cacheManager: KalinkaMusicCacheManager.instance,
+        fit: BoxFit.cover,
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
+        imageBuilder: (context, imageProvider) {
+          return _buildInnerWidget(context, imageProvider);
+        },
+        placeholder: (context, url) {
+          return PlaceholderCard(
+            textVertLeading: textVertLeading,
+            textVertTrailing: textVertTrailing,
+            aspectRatio: aspectRatio,
+            contentPadding: contentPadding,
+            roomForText: true,
+            constraints: constraints,
+            shape: shape,
+          );
+        },
+        errorWidget: (context, url, error) {
+          return const Expanded(child: Text("Error!"));
+        });
+  }
+
+  Widget _buildInnerWidget(BuildContext context, ImageProvider imageProvider) {
     return InkResponse(
       containedInkWell: true,
       borderRadius: BorderRadius.circular(12.0),
@@ -76,36 +72,31 @@ class ImageCard extends StatelessWidget {
               if (imageUrl != null)
                 AspectRatio(
                     aspectRatio: aspectRatio,
-                    child: CachedNetworkImage(
-                        imageUrl: imageUrl!,
-                        cacheManager: KalinkaMusicCacheManager.instance,
-                        fit: BoxFit.cover,
-                        imageBuilder: (context, imageProvider) => Container(
-                              decoration: BoxDecoration(
-                                shape: circle
-                                    ? BoxShape.circle
-                                    : BoxShape.rectangle,
-                                borderRadius:
-                                    circle ? null : BorderRadius.circular(12),
-                                image: DecorationImage(
-                                  image: imageProvider,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                        placeholder: (context, url) =>
-                            ImagePlaceholder(circle: circle))),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: shape,
+                        borderRadius: shape == BoxShape.circle
+                            ? null
+                            : BorderRadius.circular(12),
+                        image: DecorationImage(
+                          image: imageProvider,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    )),
               const Spacer(),
-              if (title != null && subtitle != null)
+              if (title != null || subtitle != null)
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   if (textVertLeading != null) textVertLeading!,
-                  Text(title!,
-                      overflow: TextOverflow.ellipsis, style: titleStyle),
-                  Text(
-                    subtitle!,
-                    overflow: TextOverflow.ellipsis,
-                    style: subtitleStyle,
-                  ),
+                  if (title != null)
+                    Align(
+                        alignment: textAlignment,
+                        child: Text(title!, overflow: TextOverflow.ellipsis)),
+                  if (subtitle != null)
+                    Text(
+                      subtitle!,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   if (textVertTrailing != null) textVertTrailing!,
                 ]),
             ]),
@@ -180,15 +171,7 @@ class CategoryCard extends StatelessWidget {
                           title,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
-                          style: titleStyle?.copyWith(
-                            shadows: [
-                              Shadow(
-                                offset: Offset(2.0, 2.0),
-                                blurRadius: 3.0,
-                                color: Colors.black,
-                              ),
-                            ],
-                          ),
+                          style: titleStyle,
                           maxLines: 2,
                         ),
                       ),
@@ -223,7 +206,7 @@ class PlaceholderCard extends StatelessWidget {
   final BoxConstraints constraints;
   final double aspectRatio;
   final bool roomForText;
-  final bool circle;
+  final BoxShape shape;
 
   const PlaceholderCard(
       {super.key,
@@ -232,7 +215,7 @@ class PlaceholderCard extends StatelessWidget {
       this.contentPadding = const EdgeInsets.all(8.0),
       this.aspectRatio = 1.0,
       required this.constraints,
-      this.circle = false,
+      this.shape = BoxShape.rectangle,
       this.roomForText = true});
 
   @override
@@ -247,12 +230,11 @@ class PlaceholderCard extends StatelessWidget {
             children: [
               AspectRatio(
                 aspectRatio: aspectRatio,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey,
-                    borderRadius: circle ? null : BorderRadius.circular(12),
-                    shape: circle ? BoxShape.circle : BoxShape.rectangle,
-                  ),
+                child: ShimmerWidget(
+                  width: double.infinity,
+                  height: double.infinity,
+                  borderRadius: 12,
+                  shape: shape,
                 ),
               ),
               if (roomForText) ...[
@@ -261,23 +243,16 @@ class PlaceholderCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (textVertLeading != null) textVertLeading!,
-                    Container(
+                    ShimmerWidget(
                       width: constraints.maxWidth * 0.7,
                       height: 18,
-                      decoration: BoxDecoration(
-                        color: Colors.grey,
-                        borderRadius: circle ? null : BorderRadius.circular(8),
-                        shape: circle ? BoxShape.circle : BoxShape.rectangle,
-                      ),
+                      borderRadius: 8,
                     ),
                     const SizedBox(height: 4),
-                    Container(
+                    ShimmerWidget(
                       width: constraints.maxWidth * 0.6,
                       height: 15,
-                      decoration: BoxDecoration(
-                        color: Colors.grey,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      borderRadius: 8,
                     ),
                     if (textVertTrailing != null) textVertTrailing!,
                   ],

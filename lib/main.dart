@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:kalinka/connection_manager.dart';
 import 'package:provider/provider.dart';
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'data_provider.dart';
 import 'discover.dart';
 import 'library.dart';
@@ -28,16 +29,12 @@ class KalinkaMusic extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    var listTileTheme = Theme.of(context).listTileTheme.copyWith(
-        titleTextStyle:
-            const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        subtitleTextStyle: const TextStyle(
-            fontSize: 14, fontWeight: FontWeight.w400, color: Colors.grey));
     return MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (context) => TrackListProvider()),
           ChangeNotifierProvider(create: (context) => PlayerStateProvider()),
-          ChangeNotifierProvider(create: (context) => UserFavoritesProvider()),
+          ChangeNotifierProvider(
+              create: (context) => UserFavoritesIdsProvider()),
           ChangeNotifierProvider(create: (context) => GenreFilterProvider()),
           ChangeNotifierProvider(
               create: (context) => ConnectionSettingsProvider()),
@@ -46,51 +43,13 @@ class KalinkaMusic extends StatelessWidget {
         child: MaterialApp(
           scrollBehavior: MyCustomScrollBehavior(),
           title: 'Kalinka App',
-          theme: ThemeData(
-            brightness: Brightness.light,
-            useMaterial3: true,
-            visualDensity: VisualDensity.compact,
-            // colorSchemeSeed: Colors.black,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.blue,
-              // ···
-              brightness: Brightness.light,
-            ),
-            listTileTheme: listTileTheme,
-            appBarTheme: AppBarTheme(
-              toolbarHeight: 48,
-              titleTextStyle: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black),
-            ),
-            /* light theme settings */
+          theme: FlexThemeData.light(
+            scheme: FlexScheme.red,
           ),
-          darkTheme: ThemeData(
-            brightness: Brightness.dark,
-            useMaterial3: true,
-            visualDensity: VisualDensity.compact,
-            // colorSchemeSeed: Colors.black,
-            listTileTheme: listTileTheme,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.blue,
-              // ···
-              brightness: Brightness.dark,
-            ),
-            appBarTheme: AppBarTheme(
-              toolbarHeight: 48,
-              titleTextStyle: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white),
-            ),
-            /* dark theme settings */
+          darkTheme: FlexThemeData.dark(
+            scheme: FlexScheme.red,
           ),
-          themeMode: ThemeMode.dark,
-          /* ThemeMode.system to follow system theme, 
-         ThemeMode.light for light theme, 
-         ThemeMode.dark for dark theme
-      */
+          themeMode: ThemeMode.system, // Follow system theme by default
           home: const MyHomePage(),
         ));
   }

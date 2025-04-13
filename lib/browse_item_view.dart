@@ -7,23 +7,20 @@ import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
 import 'package:kalinka/browse_item_data_source.dart'
     show BrowseItemDataSource, DefaultBrowseItemDataSource;
-import 'package:kalinka/colors.dart';
 import 'package:kalinka/custom_cache_manager.dart';
-import 'package:kalinka/data_provider.dart'
-    show PlayerStateProvider, TrackListProvider;
+import 'package:kalinka/data_provider.dart' show TrackListProvider;
 import 'package:kalinka/favorite_button.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart' show KalinkaPlayerProxy;
-import 'package:kalinka/list_card.dart';
 import 'package:kalinka/polka_dot_painter.dart';
 import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
-import 'package:kalinka/soundwave.dart' show SoundwaveWidget;
+import 'package:kalinka/browse_item_list.dart';
 import 'package:provider/provider.dart';
 import 'data_model.dart';
 
-class TracksBrowseView extends StatefulWidget {
+class BrowseItemView extends StatefulWidget {
   final BrowseItem browseItem;
 
-  TracksBrowseView({super.key, required this.browseItem})
+  BrowseItemView({super.key, required this.browseItem})
       : assert(
             browseItem.album != null ||
                 browseItem.playlist != null ||
@@ -31,17 +28,14 @@ class TracksBrowseView extends StatefulWidget {
             "browseItem must have either album or playlist data");
 
   @override
-  State<TracksBrowseView> createState() => _TracksBrowseViewState();
+  State<BrowseItemView> createState() => _BrowseItemViewState();
 }
 
-class _TracksBrowseViewState extends State<TracksBrowseView> {
+class _BrowseItemViewState extends State<BrowseItemView> {
   late ScrollController _scrollController;
-  int _visibleTrackCount = 5;
-  static const int _trackLoadChunkSize = 10;
   bool _showAppBarTitle = false;
   final GlobalKey _albumCoverKey = GlobalKey(); // Add GlobalKey for measuring
 
-  static const double leadingIconSize = 40.0;
   static const double _additionalScrollOffset = 100.0; // Buffer after image
 
   @override
@@ -79,12 +73,6 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
     }
   }
 
-  void _showMoreTracks() {
-    setState(() {
-      _visibleTrackCount += _trackLoadChunkSize;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final browseItem = widget.browseItem;
@@ -97,7 +85,7 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
 
     return ChangeNotifierProvider<BrowseItemDataProvider>(
         create: (BuildContext context) {
-          return BrowseItemDataProvider(
+          return BrowseItemDataProvider.fromDataSource(
             dataSource: DefaultBrowseItemDataSource(browseItem),
           );
         },
@@ -134,15 +122,28 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
               body: SingleChildScrollView(
                 controller: _scrollController,
                 child: Column(
+                  spacing: 24,
                   children: [
                     _buildAlbumSection(context, albumImage, name, subname),
                     Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: _buildTracksList(context)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: _buildSimilarItemsSection(context, albumImage),
-                    ),
+                        child: BrowseItemList(
+                          provider: context.watch<BrowseItemDataProvider>(),
+                          onTap: _replaceAndPlay,
+                          onAction: (_, __, BrowseItem item) {
+                            showModalBottomSheet(
+                                context: context,
+                                showDragHandle: true,
+                                isScrollControlled: false,
+                                useRootNavigator: true,
+                                scrollControlDisabledMaxHeightRatio: 0.7,
+                                builder: (context) => BottomMenu(
+                                    parentContext: parentContext,
+                                    browseItem: item));
+                          },
+                        )),
+                    ..._buildExtraSections(context),
+                    const SizedBox.shrink()
                   ],
                 ),
               ),
@@ -160,7 +161,7 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
           painter: PolkaDotPainter(
             dotSize: 50,
             spacing: 0.75,
-            dotColor: KalinkaColors.primaryButtonColor,
+            dotColor: Theme.of(context).colorScheme.primary,
             sizeReductionFactor: 0.05,
           ),
         ),
@@ -170,7 +171,6 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
           left: 16.0,
           right: 16.0,
           top: MediaQuery.of(context).padding.top + 24.0,
-          bottom: 24.0,
         ),
         child: Column(
           children: [
@@ -229,7 +229,6 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
           Text(
             subname,
             style: const TextStyle(
-              color: Colors.grey,
               fontSize: 17,
             ),
             maxLines: 1,
@@ -257,7 +256,6 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Text('$durationText$text',
           style: TextStyle(
-            color: Colors.grey,
             fontSize: 14,
           )),
     );
@@ -270,12 +268,13 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
       spacing: 32,
       children: [
         IconButton(
-          icon: const Icon(Icons.play_arrow, size: 40),
+          icon: Icon(Icons.play_arrow,
+              size: 40, color: Theme.of(context).colorScheme.surface),
           onPressed: () {
-            _replaceAndPlay(context, widget.browseItem.url, 0);
+            _replaceAndPlay(context, 0, null);
           },
           style: IconButton.styleFrom(
-            backgroundColor: KalinkaColors.primaryButtonColor,
+            backgroundColor: Theme.of(context).colorScheme.secondary,
             padding: const EdgeInsets.all(8),
           ),
           tooltip: 'Play',
@@ -351,229 +350,23 @@ class _TracksBrowseViewState extends State<TracksBrowseView> {
     );
   }
 
-  Widget _buildTracksList(BuildContext context) {
-    final provider = context.watch<BrowseItemDataProvider>();
-    final isPlaylist = widget.browseItem.browseType == 'playlist';
+  List<Widget> _buildExtraSections(BuildContext context) {
+    List<Widget> widgets = [];
+    widget.browseItem.extraSections?.forEach((section) {
+      widgets.add(Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: PreviewSectionCard(
+          dataSource: BrowseItemDataSource.browse(section),
+        ),
+      ));
+    });
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Tracks',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              )),
-          const SizedBox(height: 16.0),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.zero,
-            separatorBuilder: (context, index) => const Divider(height: 1),
-            itemCount: _visibleTrackCount.clamp(0, provider.totalItemCount),
-            itemBuilder: (context, index) {
-              final item = provider.getItem(index).item;
-              if (item != null) {
-                return ListTile(
-                  contentPadding: EdgeInsets.symmetric(horizontal: 8.0),
-                  leading: _withPlaybackAnimationOverlay(context, item.id,
-                      _createListLeadingWidget(context, item, index)),
-                  title: Text('${item.name}'),
-                  subtitle: isPlaylist
-                      ? Text(
-                          '${item.subname ?? ''}${item.track?.album?.title != null ? ' • ${item.track?.album?.title}' : ''}',
-                          style: TextStyle(
-                            color: Theme.of(context).disabledColor,
-                            fontSize: 14,
-                          ),
-                        )
-                      : null,
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (item.duration != null)
-                        Text(formatTime(item.duration!),
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(context).disabledColor)),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.more_vert),
-                        onPressed: () {
-                          final parentContext = context;
-                          showModalBottomSheet(
-                              context: context,
-                              showDragHandle: true,
-                              isScrollControlled: false,
-                              useRootNavigator: true,
-                              scrollControlDisabledMaxHeightRatio: 0.7,
-                              builder: (context) => BottomMenu(
-                                  parentContext: parentContext,
-                                  browseItem: item));
-                        },
-                        tooltip: 'More options',
-                      ),
-                    ],
-                  ),
-                  onTap: () {
-                    _replaceAndPlay(context, widget.browseItem.url, index);
-                  },
-                  visualDensity: VisualDensity.standard,
-                );
-              } else {
-                return ListTile(
-                  contentPadding: EdgeInsets.symmetric(horizontal: 8.0),
-                  leading: ImagePlaceholder(
-                    width: leadingIconSize,
-                    height: leadingIconSize,
-                    borderRadius: 4.0,
-                  ),
-                  title: Column(
-                    children: [
-                      Container(
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: Colors.grey,
-                          borderRadius: BorderRadius.circular(4.0),
-                        ),
-                      ),
-                      if (isPlaylist) const SizedBox(height: 4),
-                      if (isPlaylist)
-                        Container(
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: Colors.grey,
-                            borderRadius: BorderRadius.circular(4.0),
-                          ),
-                        ),
-                    ],
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: Colors.grey,
-                          borderRadius: BorderRadius.circular(4.0),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.more_vert),
-                    ],
-                  ),
-                );
-              }
-            },
-          ),
-          if (_visibleTrackCount < provider.totalItemCount)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Center(
-                child: TextButton.icon(
-                  icon: const Icon(Icons.expand_more),
-                  label: Text(_getShowMoreButtonText(provider.totalItemCount)),
-                  onPressed: _showMoreTracks,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
+    return widgets;
   }
 
-  Widget _withPlaybackAnimationOverlay(
-      BuildContext context, String trackId, Widget child) {
-    final PlayerStateProvider playerStateProvider =
-        context.watch<PlayerStateProvider>();
-    final bool isPlaying =
-        playerStateProvider.state.currentTrack?.id == trackId;
-    if (!isPlaying) {
-      return child;
-    }
-    // If the track is playing, show the overlay
-    // with a play icon and a semi-transparent background
-    // to indicate that the track is currently playing.
-    return Stack(children: [
-      child,
-      Positioned.fill(
-        child: SoundwaveWidget(),
-      )
-    ]);
-  }
-
-  Widget _createListLeadingWidget(
-      BuildContext context, BrowseItem item, int index) {
-    switch (widget.browseItem.browseType) {
-      case 'album':
-        return SizedBox(
-          width: leadingIconSize,
-          height: leadingIconSize,
-          child: Center(
-            child: Text(
-              '${index + 1}',
-              style: const TextStyle(fontSize: 16),
-            ),
-          ),
-        );
-      default:
-        final albumImage =
-            item.image?.thumbnail ?? item.image?.small ?? item.image?.large;
-        if (albumImage == null) {
-          return const Icon(Icons.music_note, size: 24);
-        }
-        return SizedBox(
-          height: leadingIconSize,
-          width: leadingIconSize,
-          child: CachedNetworkImage(
-            imageUrl: albumImage,
-            fit: BoxFit.cover,
-            imageBuilder: (context, imageProvider) => Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4.0),
-                image: DecorationImage(
-                  image: imageProvider,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            cacheManager: KalinkaMusicCacheManager.instance,
-            placeholder: (context, url) =>
-                const ImagePlaceholder(borderRadius: 4),
-            errorWidget: (context, url, error) =>
-                const ImagePlaceholder(borderRadius: 4),
-          ),
-        );
-    }
-  }
-
-  String _getShowMoreButtonText(int totalTracks) {
-    final remainingTracks = totalTracks - _visibleTrackCount;
-    if (totalTracks > 20) {
-      final nextChunkSize = remainingTracks > _trackLoadChunkSize
-          ? _trackLoadChunkSize
-          : remainingTracks;
-      return 'Show $nextChunkSize more tracks';
-    } else {
-      return 'Show all $totalTracks tracks';
-    }
-  }
-
-  Widget _buildSimilarItemsSection(BuildContext context, String? albumImage) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
-      child: PreviewSectionCard(
-        dataSource: BrowseItemDataSource.suggestions(
-            widget.browseItem.copyWith(name: 'You may also like')),
-      ),
-    );
-  }
-
-  Future<void> _replaceAndPlay(
-      BuildContext context, String url, int index) async {
+  Future<void> _replaceAndPlay(BuildContext context, int index, _) async {
     final provider = context.read<BrowseItemDataProvider>();
+    final url = widget.browseItem.url;
     List<Track> trackList = context.read<TrackListProvider>().trackList;
     bool itemsEqual = true;
     if (trackList.length == provider.totalItemCount) {

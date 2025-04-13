@@ -33,7 +33,7 @@ class SectionPreviewGrid extends StatelessWidget {
     if (dataProvider == null) {
       return _buildEmptyGrid(context);
     }
-    final catalog = dataProvider!.dataSource.item.catalog;
+    final catalog = dataProvider!.itemDataSource.item.catalog;
     final sizeDescription = catalog?.previewConfig?.cardSize ?? CardSize.small;
     final cardSize = calculateCardSize(context, sizeDescription);
     final crossAxisCount = rowsCount ?? catalog?.previewConfig?.rowsCount ?? 2;
@@ -81,8 +81,8 @@ class SectionPreviewGrid extends StatelessWidget {
                       constraints:
                           BoxConstraints.tight(Size(cardSize, sectionHeight)),
                       imageAspectRatio: cardSizeRatio,
-                      previewTypeHint: dataProvider
-                              .dataSource.item.catalog?.previewConfig?.type ??
+                      previewTypeHint: dataProvider.itemDataSource.item.catalog
+                              ?.previewConfig?.type ??
                           PreviewType.imageText,
                     );
                   },

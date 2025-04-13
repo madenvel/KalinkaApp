@@ -1,10 +1,13 @@
-import 'package:flutter/services.dart';
+import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:kalinka/artist_browse_view.dart' show ArtistBrowseView;
-import 'package:kalinka/tracks_browse_view.dart' show TracksBrowseView;
+import 'package:kalinka/browse_item_data_provider.dart'
+    show BrowseItemDataProvider;
+import 'package:kalinka/browse_item_data_source.dart';
+import 'package:kalinka/browse_item_list.dart' show BrowseItemList;
+import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
 import 'package:kalinka/search_results_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/bottom_menu.dart';
-import 'package:kalinka/custom_list_tile.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
@@ -37,10 +40,30 @@ class _SearchState extends State<Search> {
         },
         child: Navigator(
             key: navigatorKey,
-            onGenerateRoute: (settings) {
-              return MaterialPageRoute(builder: (_) => _buildProviders());
-            }));
+            onGenerateRoute: (settings) => MaterialPageRoute(builder: (_) {
+                  return _buildProviders();
+                })));
   }
+
+  // Widget _buildTextEntry(BuildContext context) {
+  //   final textFieldController = context.watch<TextEditingController>();
+  //   return TextField(
+  //     controller: textFieldController,
+  //     autofocus: true,
+  //     decoration: const InputDecoration(
+  //       hintText: 'Search',
+  //       border: InputBorder.none,
+  //       contentPadding: EdgeInsets.only(left: 16),
+  //     ),
+  //     onChanged: (value) {
+  //       if (value.isEmpty) {
+  //         context.read<BrowseItemDataProvider>().clear();
+  //       }
+  //     },
+  //   );
+  // }
+
+  // _buildSearchPage(context)
 
   Widget _buildProviders() {
     return MultiProvider(
@@ -54,16 +77,17 @@ class _SearchState extends State<Search> {
           )
         ],
         child: ChangeNotifierProxyProvider2<TextEditingController,
-                SearchTypeProvider, SearchResultsProvider>(
-            create: (_) => SearchResultsProvider(),
-            update:
-                (_, textController, searchTypeProvider, searchResultsProvider) {
-              if (searchResultsProvider == null) {
-                return SearchResultsProvider();
+                SearchTypeProvider, BrowseItemDataProvider>(
+            create: (_) => BrowseItemDataProvider.fromDataSource(
+                dataSource: BrowseItemDataSource.empty()),
+            update: (_, textController, searchTypeProvider, __) {
+              if (textController.text.isEmpty) {
+                return BrowseItemDataProvider.fromDataSource(
+                    dataSource: BrowseItemDataSource.empty());
               }
-              return searchResultsProvider
-                ..updateSearchQuery(
-                    textController.text, searchTypeProvider.searchType);
+              return BrowseItemDataProvider.fromDataSource(
+                  dataSource: BrowseItemDataSource.search(
+                      searchTypeProvider.searchType, textController.text));
             },
             builder: (context, _) => _buildSearchPage(context)));
   }
@@ -75,18 +99,16 @@ class _SearchState extends State<Search> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AppBar(
-            title: const Row(children: [
-          Icon(Icons.search_outlined),
-          SizedBox(width: 8),
-          Text('Search')
-        ])),
-        Padding(
+          flexibleSpace: Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
+              clipBehavior: Clip.antiAlias,
               controller: textFieldController,
               decoration: InputDecoration(
-                border: const OutlineInputBorder(),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
                 labelText: 'Search for albums, artists, tracks, playlists',
+                prefixIcon: const Icon(Icons.search),
                 suffixIcon: textFieldController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear),
@@ -95,7 +117,9 @@ class _SearchState extends State<Search> {
                         })
                     : null,
               ),
-            )),
+            ),
+          ),
+        ),
         textFieldController.text.isNotEmpty
             ? _buildChipGroup(searchTypeProvider)
             : const SizedBox.shrink(),
@@ -122,141 +146,95 @@ class _SearchState extends State<Search> {
       SearchType.track,
       SearchType.playlist
     ];
-    return SizedBox(
-        height: 36,
-        child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            scrollDirection: Axis.horizontal,
-            children: List<Widget>.generate(4, (index) {
-              return Padding(
-                  padding: const EdgeInsets.only(left: 4, right: 4),
-                  child: FilterChip(
-                    label: Text(searchTypesStr[index]),
-                    selected: provider.searchType == searchTypes[index],
-                    onSelected: (isSelected) {
-                      if (isSelected) {
-                        provider.updateSearchType(searchTypes[index]);
-                      }
-                    },
-                  ));
-            })));
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: SegmentedButton<SearchType>(
+        segments: List.generate(searchTypes.length, (index) {
+          return ButtonSegment<SearchType>(
+            value: searchTypes[index],
+            label: Text(searchTypesStr[index]),
+          );
+        }),
+        selected: {provider.searchType},
+        showSelectedIcon: true,
+        onSelectionChanged: (selected) {
+          if (selected.isNotEmpty) {
+            provider.updateSearchType(selected.first);
+          }
+        },
+      ),
+    );
   }
 
   Widget _buildSearchResults(BuildContext context) {
-    final provider = context.watch<SearchResultsProvider>();
+    final provider = context.watch<BrowseItemDataProvider>();
     final savedSearchProvider = context.read<SavedSearchProvider>();
-    return ListView.separated(
-        padding: EdgeInsets.zero,
-        itemCount: provider.maybeCount,
-        separatorBuilder: (context, index) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          BrowseItem? item = provider.getItem(index);
-          if (item == null) {
-            return ListTile(
-              leading: Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.grey,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              title: Container(
-                height: 16,
-                width: 100,
-                color: Colors.grey,
-                margin: const EdgeInsets.only(bottom: 4),
-              ),
-              subtitle: Container(
-                height: 14,
-                width: 60,
-                color: Colors.grey,
-              ),
-            );
-          }
-          return CustomListTile(
-              browseItem: item,
-              onTap: () {
-                savedSearchProvider.addSearch(item);
-                if (item.canBrowse) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) {
-                      if (item.browseType == 'artist') {
-                        return ArtistBrowseView(browseItem: item);
-                      }
-                      return TracksBrowseView(browseItem: item);
-                    }),
-                  );
-                } else if (item.canAdd) {
-                  _playTrack(context, item.id);
+    return BrowseItemList(
+        provider: provider,
+        onTap: (context, index, item) {
+          savedSearchProvider.addSearch(item);
+          if (item.canBrowse) {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) {
+                if (item.browseType == 'artist') {
+                  return ArtistBrowseView(browseItem: item);
                 }
-              },
-              trailing: IconButton(
-                  icon: const Icon(Icons.more_vert),
-                  onPressed: () {
-                    final parentContext = context;
-                    showModalBottomSheet(
-                        context: context,
-                        showDragHandle: true,
-                        isScrollControlled: false,
-                        useRootNavigator: true,
-                        scrollControlDisabledMaxHeightRatio: 0.7,
-                        builder: (context) {
-                          return BottomMenu(
-                              parentContext: parentContext, browseItem: item);
-                        });
-                  }));
-        });
+                return BrowseItemView(browseItem: item);
+              }),
+            );
+          } else if (item.canAdd) {
+            _playTrack(context, item.id);
+          }
+        },
+        onAction: (_, __, BrowseItem item) {
+          final parentContext = navigatorKey.currentState?.context ?? context;
+          showModalBottomSheet(
+              context: context,
+              showDragHandle: true,
+              isScrollControlled: false,
+              useRootNavigator: true,
+              scrollControlDisabledMaxHeightRatio: 0.7,
+              builder: (context) {
+                return BottomMenu(
+                    parentContext: parentContext, browseItem: item);
+              });
+        },
+        pageSize: 0,
+        shrinkWrap: false);
   }
 
   Widget _buildSearchHistory(BuildContext context) {
-    final savedSearchProvider = context.watch<SavedSearchProvider>();
-
-    return FutureBuilder(
-        future: savedSearchProvider.ready,
-        builder: (_, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            return _buildSearchHistoryContent(savedSearchProvider);
-          }
-          return const SizedBox.shrink();
-        });
-  }
-
-  Widget _buildSearchHistoryContent(SavedSearchProvider provider) {
+    final provider = context.watch<SavedSearchProvider>();
     return Column(children: [
-      provider.savedSearches.isNotEmpty
+      provider.totalItemCount > 0
           ? _buildSearchHistoryHeader(provider)
           : const SizedBox.shrink(),
       Expanded(
-          child: ListView.separated(
-        padding: EdgeInsets.zero,
-        itemCount: provider.savedSearches.length,
-        separatorBuilder: (context, index) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          final browseItem = provider.savedSearches[index];
-          return CustomListTile(
-              browseItem: browseItem,
-              trailing: IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    provider.removeSearchAt(index);
-                  }),
-              onTap: () {
-                if (browseItem.canBrowse) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) {
-                      if (browseItem.browseType == 'artist') {
-                        return ArtistBrowseView(browseItem: browseItem);
-                      }
-                      return TracksBrowseView(browseItem: browseItem);
-                    }),
-                  );
-                } else if (browseItem.canAdd) {
-                  _playTrack(context, browseItem.id);
+          child: BrowseItemList(
+        provider: provider,
+        onTap: (__, index, item) {
+          if (item.canBrowse) {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) {
+                if (item.browseType == 'artist') {
+                  return ArtistBrowseView(browseItem: item);
                 }
-                provider.moveToTop(index);
-              });
+                return BrowseItemView(browseItem: item);
+              }),
+            );
+          } else if (item.canAdd) {
+            _playTrack(context, item.id);
+          }
+
+          provider.moveToTop(index);
         },
+        onAction: (_, index, item) {
+          provider.removeSearchAt(index);
+        },
+        actionButtonIcon: const Icon(Icons.delete),
+        actionButtonTooltip: 'Delete',
+        pageSize: 0,
+        shrinkWrap: false,
       ))
     ]);
   }
@@ -271,8 +249,9 @@ class _SearchState extends State<Search> {
       Padding(
           padding: const EdgeInsets.only(right: 15, top: 4, bottom: 4),
           child: ElevatedButton(
-              child:
-                  const Text('Delete All', style: TextStyle(color: Colors.red)),
+              child: Text(
+                'Delete All',
+              ),
               onPressed: () {
                 provider.clearHistory();
               })),

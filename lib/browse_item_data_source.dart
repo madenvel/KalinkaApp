@@ -1,5 +1,5 @@
 import 'package:kalinka/data_model.dart'
-    show BrowseItem, BrowseItemsList, Catalog, Preview, PreviewType;
+    show BrowseItem, BrowseItemsList, Catalog, Preview, PreviewType, SearchType;
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 
 abstract class BrowseItemDataSource {
@@ -22,6 +22,46 @@ abstract class BrowseItemDataSource {
   static BrowseItemDataSource suggestions(BrowseItem parentItem) {
     return SuggestionsBrowseItemDataSource(parentItem);
   }
+
+  static BrowseItemDataSource search(SearchType searchType, String query) {
+    return SearchBrowseItemDataSource(searchType, query);
+  }
+
+  static BrowseItemDataSource favorites(SearchType searchType) {
+    return UserFavoriteBrowseItemDataSource(searchType);
+  }
+
+  static BrowseItemDataSource empty() {
+    return EmptyBrowseItemDataSource();
+  }
+}
+
+class EmptyBrowseItemDataSource implements BrowseItemDataSource {
+  @override
+  Future<BrowseItemsList> fetch({
+    required int offset,
+    required int limit,
+    required List<String> genreFilter,
+  }) async {
+    return BrowseItemsList(0, 0, 0, []);
+  }
+
+  @override
+  String get key => 'empty';
+
+  @override
+  BrowseItem get item => BrowseItem(
+        name: '',
+        subname: '',
+        id: '',
+        url: '',
+        canBrowse: false,
+        canAdd: false,
+        catalog: null,
+      );
+
+  @override
+  bool get isValid => true;
 }
 
 class DefaultBrowseItemDataSource implements BrowseItemDataSource {
@@ -95,6 +135,122 @@ class SuggestionsBrowseItemDataSource implements BrowseItemDataSource {
 
   @override
   BrowseItem get item => catalogItem;
+
+  @override
+  bool get isValid => _isValid;
+}
+
+class SearchBrowseItemDataSource implements BrowseItemDataSource {
+  final proxy = KalinkaPlayerProxy();
+  final SearchType searchType;
+  final String query;
+  late BrowseItem _item;
+  bool _isValid = true;
+
+  SearchBrowseItemDataSource(this.searchType, this.query) {
+    _item = BrowseItem(
+      name: 'Search: $query',
+      subname: 'Results for $query',
+      id: 'search_${searchType.name}_$query',
+      url: 'search://${searchType.name}/$query',
+      canBrowse: true,
+      canAdd: false,
+      catalog: Catalog(
+        id: 'search_${searchType.name}_$query',
+        previewConfig: Preview(
+            type: PreviewType.imageText, aspectRatio: 1.0, rowsCount: 1),
+        title: 'Search Results',
+        canGenreFilter: false,
+      ),
+    );
+  }
+
+  @override
+  Future<BrowseItemsList> fetch({
+    required int offset,
+    required int limit,
+    required List<String> genreFilter,
+  }) async {
+    return proxy
+        .search(searchType, query, offset: offset, limit: limit)
+        .catchError((e) {
+      _isValid = false;
+      throw e;
+    });
+  }
+
+  @override
+  String get key => 'search_${searchType.name}_$query';
+
+  @override
+  BrowseItem get item => _item;
+
+  @override
+  bool get isValid => _isValid;
+}
+
+class UserFavoriteBrowseItemDataSource implements BrowseItemDataSource {
+  final proxy = KalinkaPlayerProxy();
+  final SearchType searchType;
+  late BrowseItem _item;
+  bool _isValid = true;
+
+  UserFavoriteBrowseItemDataSource(this.searchType) {
+    String title;
+
+    switch (searchType) {
+      case SearchType.album:
+        title = 'Albums';
+        break;
+      case SearchType.artist:
+        title = 'Artists';
+        break;
+      case SearchType.track:
+        title = 'Tracks';
+        break;
+      case SearchType.playlist:
+        title = 'Playlists';
+        break;
+      default:
+        title = 'Favorites';
+    }
+
+    _item = BrowseItem(
+      name: title,
+      subname: '',
+      id: 'favorites_${searchType.name}',
+      url: '/favorites/list/${searchType.name}',
+      canBrowse: true,
+      canAdd: false,
+      catalog: Catalog(
+        id: 'favorites_${searchType.name}',
+        previewConfig: Preview(
+            type: PreviewType.imageText, aspectRatio: 1.0, rowsCount: 1),
+        title: title,
+        canGenreFilter: false,
+      ),
+    );
+  }
+
+  @override
+  Future<BrowseItemsList> fetch({
+    required int offset,
+    required int limit,
+    required List<String> genreFilter,
+  }) async {
+    return proxy
+        .getFavorite(searchType, offset: offset, limit: limit)
+        .catchError((e) {
+      _isValid = false;
+      return BrowseItemsList(0, 0, 0, []);
+    });
+  }
+
+  @override
+  String get key => 'favorites_${searchType.name}';
+
+  @override
+  BrowseItem get item => _item;
 
   @override
   bool get isValid => _isValid;

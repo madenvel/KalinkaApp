@@ -20,8 +20,8 @@ class FavoriteButton extends StatelessWidget {
         -1) {
       return const SizedBox.shrink();
     }
-    UserFavoritesProvider favoritesProvider =
-        context.watch<UserFavoritesProvider>();
+    UserFavoritesIdsProvider favoritesProvider =
+        context.watch<UserFavoritesIdsProvider>();
     bool isFavorite = favoritesProvider
         .favorite(SearchTypeExtension.fromStringValue(item.browseType))
         .ids

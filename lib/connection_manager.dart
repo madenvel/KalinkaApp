@@ -143,15 +143,13 @@ class _ConnectionManagerState extends State<ConnectionManager> {
       BuildContext context, ConnectionSettingsProvider provider) {
     return Center(
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Container(
-          width: 100,
-          height: 100,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
+        CircleAvatar(
+          radius: 50,
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Image.asset('assets/kalinka_icon.png', height: 70),
           ),
-          padding: const EdgeInsets.all(8.0),
-          child: Image.asset('assets/redberry_icon.png'),
         ),
         const SizedBox(height: 16),
         if (provider.isSet && _connectionAttempts < _maxConnectionAttempts)

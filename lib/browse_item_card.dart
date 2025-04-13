@@ -23,8 +23,6 @@ class BrowseItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const double titleFontSize = 14.0;
-    const double subtitleFontSize = 14.0;
     const textVertLeading = SizedBox(height: 2);
     const textVertTrailing = SizedBox(height: 4);
 
@@ -48,16 +46,14 @@ class BrowseItemCard extends StatelessWidget {
             imageUrl: image!,
             title: item!.name,
             subtitle: item!.subname,
-            titleStyle: const TextStyle(
-                fontSize: titleFontSize, fontWeight: FontWeight.bold),
-            subtitleStyle:
-                const TextStyle(fontSize: subtitleFontSize, color: Colors.grey),
             textVertLeading: textVertLeading,
             textVertTrailing: textVertTrailing,
             aspectRatio: 1.0 / imageAspectRatio,
-            circle: item?.browseType == 'artist',
+            shape: item?.artist != null ? BoxShape.circle : BoxShape.rectangle,
             contentPadding: EdgeInsets.all(contentPadding),
             constraints: constraints,
+            textAlignment:
+                item?.artist != null ? Alignment.center : Alignment.centerLeft,
             onTap: () => onTap?.call(item!))
         : CategoryCard(
             key: ValueKey(item!.id),

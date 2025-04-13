@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:kalinka/custom_cache_manager.dart'
     show KalinkaMusicCacheManager;
 import 'package:kalinka/data_model.dart' show BrowseItem, CardSize;
-import 'package:kalinka/list_card.dart' show ImagePlaceholder;
-import 'package:kalinka/tracks_browse_view.dart';
+import 'package:kalinka/browse_item_view.dart';
+import 'package:kalinka/shimmer_widget.dart';
 
 class LargeImagePreviewCard extends StatelessWidget {
   final BrowseItem section;
@@ -30,7 +30,7 @@ class LargeImagePreviewCard extends StatelessWidget {
             }
             Navigator.of(context).push(
               MaterialPageRoute(
-                  builder: (context) => TracksBrowseView(browseItem: section)),
+                  builder: (context) => BrowseItemView(browseItem: section)),
             );
           },
           child: Padding(
@@ -48,7 +48,11 @@ class LargeImagePreviewCard extends StatelessWidget {
                   ),
                 ),
               ),
-              placeholder: (context, url) => ImagePlaceholder(),
+              placeholder: (context, url) => ShimmerWidget(
+                width: cardSize,
+                height: cardSize + contentPadding * 2,
+                borderRadius: 12.0,
+              ),
             ),
           )),
     );

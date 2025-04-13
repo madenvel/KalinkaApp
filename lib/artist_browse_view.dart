@@ -3,14 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:kalinka/bottom_menu.dart' show BottomMenu;
 import 'package:kalinka/browse_item_data_provider.dart';
 import 'package:kalinka/browse_item_data_source.dart';
-import 'package:kalinka/colors.dart';
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/favorite_button.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
-import 'package:kalinka/list_card.dart';
 import 'package:kalinka/polka_dot_painter.dart' show PolkaDotPainter;
 import 'package:kalinka/preview_section_card.dart';
-import 'package:kalinka/tracks_browse_view.dart' show TracksBrowseView;
+import 'package:kalinka/shimmer_widget.dart';
+import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
 import 'package:provider/provider.dart';
 import 'data_model.dart';
 
@@ -85,7 +84,7 @@ class _ArtistBrowseViewState extends State<ArtistBrowseView> {
 
     return ChangeNotifierProvider<BrowseItemDataProvider>(
       create: (BuildContext context) {
-        return BrowseItemDataProvider(
+        return BrowseItemDataProvider.fromDataSource(
           dataSource: BrowseItemDataSource.browse(browseItem),
         );
       },
@@ -113,7 +112,7 @@ class _ArtistBrowseViewState extends State<ArtistBrowseView> {
                       painter: PolkaDotPainter(
                         dotSize: 50,
                         spacing: 0.75,
-                        dotColor: KalinkaColors.primaryButtonColor,
+                        dotColor: Theme.of(context).primaryColor,
                         sizeReductionFactor: 0.05,
                       ),
                     ),
@@ -144,10 +143,7 @@ class _ArtistBrowseViewState extends State<ArtistBrowseView> {
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: _buildAlbumsList(context),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: _buildSimilarArtistsSection(context),
-              ),
+              ..._buildExtraSections(context),
             ],
           ),
         ),
@@ -236,7 +232,7 @@ class _ArtistBrowseViewState extends State<ArtistBrowseView> {
               _playArtistTopTracks(context);
             },
             style: IconButton.styleFrom(
-              backgroundColor: KalinkaColors.primaryButtonColor,
+              backgroundColor: Theme.of(context).primaryIconTheme.color,
               padding: const EdgeInsets.all(8),
             ),
             tooltip: 'Play',
@@ -343,7 +339,7 @@ class _ArtistBrowseViewState extends State<ArtistBrowseView> {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                           builder: (context) =>
-                              TracksBrowseView(browseItem: item)),
+                              BrowseItemView(browseItem: item)),
                     );
                   },
                   visualDensity: VisualDensity.standard,
@@ -351,7 +347,7 @@ class _ArtistBrowseViewState extends State<ArtistBrowseView> {
               } else {
                 return ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  leading: ImagePlaceholder(
+                  leading: ShimmerWidget(
                     width: leadingIconSize,
                     height: leadingIconSize,
                     borderRadius: 4.0,
@@ -416,9 +412,16 @@ class _ArtistBrowseViewState extends State<ArtistBrowseView> {
           ),
         ),
         cacheManager: KalinkaMusicCacheManager.instance,
-        placeholder: (context, url) => const ImagePlaceholder(borderRadius: 4),
-        errorWidget: (context, url, error) =>
-            const ImagePlaceholder(borderRadius: 4),
+        placeholder: (context, url) => ShimmerWidget(
+          width: leadingIconSize,
+          height: leadingIconSize,
+          borderRadius: 4.0,
+        ),
+        errorWidget: (context, url, error) => ShimmerWidget(
+          width: leadingIconSize,
+          height: leadingIconSize,
+          borderRadius: 4.0,
+        ),
       ),
     );
   }
@@ -435,14 +438,15 @@ class _ArtistBrowseViewState extends State<ArtistBrowseView> {
     }
   }
 
-  Widget _buildSimilarArtistsSection(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
-      child: PreviewSectionCard(
-        dataSource: BrowseItemDataSource.suggestions(
-            widget.browseItem.copyWith(name: 'Similar Artists')),
-      ),
-    );
+  List<Widget> _buildExtraSections(BuildContext context) {
+    final sections = <Widget>[];
+    widget.browseItem.extraSections?.forEach((section) {
+      sections.add(Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+          child: PreviewSectionCard(
+              dataSource: BrowseItemDataSource.browse(section))));
+    });
+    return sections;
   }
 
   Future<void> _playArtistTopTracks(BuildContext context) async {
