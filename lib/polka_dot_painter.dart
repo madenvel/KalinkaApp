@@ -75,7 +75,7 @@ class PolkaDotPainter extends CustomPainter {
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
       colors: [
-        Colors.white.withValues(alpha: 0.55), // Fully visible
+        Colors.white.withValues(alpha: 0.65), // Fully visible
         Colors.transparent, // Fully faded
       ],
     );

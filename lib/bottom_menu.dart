@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kalinka/add_to_playlist.dart';
 import 'package:kalinka/artist_browse_view.dart';
-import 'package:kalinka/tracks_browse_view.dart' show TracksBrowseView;
+import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
 import 'package:provider/provider.dart';
 import 'package:kalinka/custom_list_tile.dart';
 import 'package:kalinka/data_model.dart';
@@ -23,7 +23,7 @@ class BottomMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<UserFavoritesProvider>(
+    return Consumer<UserFavoritesIdsProvider>(
         builder: (context, favoritesProvider, _) {
       return Column(
         mainAxisSize: MainAxisSize.min,
@@ -113,7 +113,7 @@ class BottomMenu extends StatelessWidget {
   }
 
   List<Widget> _buildFavoriteOptions(
-      BuildContext context, UserFavoritesProvider favoritesProvider) {
+      BuildContext context, UserFavoritesIdsProvider favoritesProvider) {
     List<Widget> widgets = [];
 
     if (browseItem.canFavorite && !favoritesProvider.isFavorite(browseItem)) {
@@ -148,35 +148,36 @@ class BottomMenu extends StatelessWidget {
 
   List<Widget> _buildNavigationOptions(BuildContext context) {
     List<Widget> widgets = [];
-
-    if (browseItem.browseType == 'track' && browseItem.track!.album != null) {
+    final albumId = browseItem.album?.id ?? browseItem.track?.album?.id;
+    final artistId =
+        browseItem.album?.artist?.id ?? browseItem.track?.performer?.id;
+    if (albumId != null) {
       widgets.add(ListTile(
         title: const Text('More from this Album'),
         leading: const Icon(Icons.album),
         onTap: () {
           KalinkaPlayerProxy()
-              .getMetadata('/album/${browseItem.track!.album!.id}')
+              .getMetadata('/album/$albumId')
               .then((BrowseItem item) {
             if (context.mounted) {
               Navigator.pop(context);
               Navigator.push(
                   parentContext,
                   MaterialPageRoute(
-                      builder: (context) =>
-                          TracksBrowseView(browseItem: item)));
+                      builder: (context) => BrowseItemView(browseItem: item)));
             }
           });
         },
       ));
     }
 
-    if (browseItem.browseType == 'album' && browseItem.album!.artist != null) {
+    if (artistId != null) {
       widgets.add(ListTile(
         title: const Text('More from this Artist'),
-        leading: const Icon(Icons.album),
+        leading: const Icon(Icons.person),
         onTap: () {
           KalinkaPlayerProxy()
-              .getMetadata('/artist/${browseItem.album!.artist!.id}')
+              .getMetadata('/artist/$artistId')
               .then((BrowseItem item) {
             if (context.mounted) {
               Navigator.pop(context);

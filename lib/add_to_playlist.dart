@@ -7,7 +7,6 @@ import 'package:kalinka/data_model.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:provider/provider.dart';
-import 'package:kalinka/colors.dart'; // Add this import for consistent colors
 
 class AddToPlaylist extends StatefulWidget {
   final BrowseItemsList items;
@@ -65,9 +64,9 @@ class AddToPlaylistState extends State<AddToPlaylist> {
           child: const Text('CANCEL'),
         ),
         ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: KalinkaColors.primaryButtonColor,
-          ),
+          // style: ElevatedButton.styleFrom(
+          //   backgroundColor: KalinkaColors.primaryButtonColor,
+          // ),
           onPressed: () {
             _handleCreateNewPlaylist(
               nameController.text,
@@ -75,9 +74,9 @@ class AddToPlaylistState extends State<AddToPlaylist> {
             );
             Navigator.of(context, rootNavigator: true).pop();
           },
-          child: const Text(
+          child: Text(
             'CREATE',
-            style: TextStyle(color: KalinkaColors.buttonTextColor),
+            // style: TextStyle(color: KalinkaColors.buttonTextColor),
           ),
         ),
       ],
@@ -88,8 +87,8 @@ class AddToPlaylistState extends State<AddToPlaylist> {
     if (name.isEmpty) return;
 
     UserPlaylistProvider provider = context.read<UserPlaylistProvider>();
-    UserFavoritesProvider favoritesProvider =
-        context.read<UserFavoritesProvider>();
+    UserFavoritesIdsProvider favoritesProvider =
+        context.read<UserFavoritesIdsProvider>();
 
     provider.addPlaylist(name, description).then((value) {
       favoritesProvider.addIdOnly(SearchType.playlist, value.id);

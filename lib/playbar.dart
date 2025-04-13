@@ -1,9 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:kalinka/colors.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/fg_service.dart';
-import 'package:kalinka/play_button.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
@@ -60,6 +58,7 @@ class _PlaybarState extends State<Playbar> {
 
   @override
   Widget build(BuildContext context) {
+    final highlightColor = Theme.of(context).colorScheme.secondaryContainer;
     return InkWell(
         child: Container(
             width: double.infinity,
@@ -73,12 +72,11 @@ class _PlaybarState extends State<Playbar> {
               ChangeNotifierProvider(
                   create: (context) => TrackPositionProvider(),
                   builder: (context, child) => RepaintBoundary(
-                      child: LinearProgressIndicator(
-                          value: _calculateRelativeProgress(context),
-                          backgroundColor:
-                              Theme.of(context).scaffoldBackgroundColor,
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                              KalinkaColors.primaryButtonColor)))),
+                          child: LinearProgressIndicator(
+                        value: _calculateRelativeProgress(context),
+                        color: highlightColor,
+                        backgroundColor: Theme.of(context).colorScheme.surface,
+                      ))),
               const Divider(height: 0)
             ])),
         onTap: () {
@@ -104,9 +102,63 @@ class _PlaybarState extends State<Playbar> {
               child: Consumer<TrackListProvider>(
                   builder: (context, provider, _) =>
                       _buildCarousel(context, provider))),
-          const PlayButton(size: 36),
+          _buildPlaybutton(context),
           const SizedBox(width: 8),
         ]));
+  }
+
+  IconData _getPlaybackIcon(PlayerStateProvider provider) {
+    switch (provider.state.state) {
+      case PlayerStateType.playing:
+        return Icons.pause;
+
+      case PlayerStateType.stopped:
+      case PlayerStateType.paused:
+        return Icons.play_arrow;
+      case PlayerStateType.buffering:
+        return Icons.hourglass_empty;
+      case PlayerStateType.error:
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content:
+                Text(provider.state.message ?? "Error while playing track."),
+          ));
+        });
+        return Icons.error;
+      default:
+        return Icons.play_arrow;
+    }
+  }
+
+  Widget _buildPlaybutton(BuildContext context) {
+    return Consumer<PlayerStateProvider>(builder: (context, provider, _) {
+      if (provider.isLoading) {
+        return const SizedBox.shrink();
+      }
+      return IconButton(
+          icon: Icon(_getPlaybackIcon(provider),
+              size: 36, color: Theme.of(context).colorScheme.surface),
+          style: IconButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+            padding: const EdgeInsets.all(8),
+          ),
+          onPressed: () {
+            switch (provider.state.state) {
+              case PlayerStateType.playing:
+                KalinkaPlayerProxy().pause(paused: true);
+                break;
+              case PlayerStateType.paused:
+                KalinkaPlayerProxy().pause(paused: false);
+                break;
+              case PlayerStateType.stopped:
+              case PlayerStateType.error:
+                KalinkaPlayerProxy().play();
+                break;
+              default:
+                break;
+            }
+          });
+    });
   }
 
   Widget _buildInfoText(BuildContext context, int index) {

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'colors.dart';
 import 'service_discovery.dart';
 import 'package:bonsoir/bonsoir.dart';
 
@@ -108,8 +107,8 @@ class ServiceDiscoveryWidget extends StatelessWidget {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: KalinkaColors.primaryButtonColor,
-              ),
+                  // backgroundColor: KalinkaColors.primaryButtonColor,
+                  ),
               onPressed: () {
                 // Validate input
                 if (nameController.text.isEmpty ||
@@ -136,9 +135,9 @@ class ServiceDiscoveryWidget extends StatelessWidget {
                 Navigator.of(context).pop();
                 _showServerDetails(customServer, context);
               },
-              child: const Text(
+              child: Text(
                 'ADD',
-                style: TextStyle(color: KalinkaColors.buttonTextColor),
+                // style: TextStyle(color: KalinkaColors.buttonTextColor),
               ),
             ),
           ],
@@ -162,7 +161,7 @@ class ServiceDiscoveryWidget extends StatelessWidget {
                   backgroundColor: Colors.white,
                   radius: 24, // Slightly bigger for the bottom sheet
                   child: Image.asset(
-                    'assets/redberry_icon.png',
+                    'assets/kalinka_icon.png',
                     height: 32,
                   ),
                 ),
@@ -206,7 +205,7 @@ class ServiceDiscoveryWidget extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: KalinkaColors.primaryButtonColor,
+                    // backgroundColor: KalinkaColors.primaryButtonColor,
                     padding: const EdgeInsets.symmetric(
                         vertical: 20.0), // Taller button
                     shape: RoundedRectangleBorder(
@@ -217,11 +216,12 @@ class ServiceDiscoveryWidget extends StatelessWidget {
                     Navigator.pop(context);
                     Navigator.pop(context, server);
                   },
-                  child: const Text(
+                  child: Text(
                     "CONNECT",
                     style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: KalinkaColors.buttonTextColor),
+                      fontWeight: FontWeight.bold,
+                      // color: KalinkaColors.buttonTextColor
+                    ),
                   ),
                 ),
               ),
@@ -242,11 +242,12 @@ class ServiceDiscoveryWidget extends StatelessWidget {
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  child: const Text(
+                  child: Text(
                     "CANCEL",
                     style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: KalinkaColors.buttonTextColor),
+                      fontWeight: FontWeight.bold,
+                      // color: KalinkaColors.buttonTextColor,
+                    ),
                   ),
                 ),
               ),
@@ -312,7 +313,7 @@ class ServiceDiscoveryWidget extends StatelessWidget {
           backgroundColor: Colors.white,
           radius: 22, // Adjust radius for header icon
           child: Image.asset(
-            'assets/redberry_icon.png',
+            'assets/kalinka_icon.png',
             height: 30,
           ),
         ),
@@ -424,7 +425,7 @@ class ServiceDiscoveryWidget extends StatelessWidget {
               backgroundColor: Colors.white,
               radius: 18, // Smaller for list items
               child: Image.asset(
-                'assets/redberry_icon.png',
+                'assets/kalinka_icon.png',
                 height: 24,
               ),
             ),
@@ -472,16 +473,19 @@ class ServiceDiscoveryWidget extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
-        icon: const Icon(Icons.refresh, color: KalinkaColors.buttonTextColor),
-        label: const Text(
+        icon: Icon(
+          Icons.refresh,
+          // color: KalinkaColors.buttonTextColor,
+        ),
+        label: Text(
           "REFRESH SEARCH",
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: KalinkaColors.buttonTextColor,
+            // color: KalinkaColors.buttonTextColor,
           ),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: KalinkaColors.primaryButtonColor,
+          // backgroundColor: KalinkaColors.primaryButtonColor,
           padding: const EdgeInsets.symmetric(vertical: 20.0),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),

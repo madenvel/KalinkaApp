@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:kalinka/colors.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/favorite_button.dart';
@@ -16,10 +15,10 @@ class _NowPlayingConstants {
   static const double horizontalPadding = 24.0;
   static const double verticalPadding = 16.0;
   static const double sectionSpacing = 16.0;
-  static const double standardIconSize = 26.0;
+  static const double standardIconSize = 28.0;
   static const double largeIconSize = 42.0;
-  static const double playIconSize = 70.0;
-  static const double smallTextSize = 12.0;
+  static const double playIconSize = 60.0;
+  static const double smallTextSize = 14.0;
   static const double mediumTextSize = 14.0;
   static const double largeTextSize = 20.0;
   static const double cornerRadius = 8.0;
@@ -212,8 +211,7 @@ class _NowPlayingState extends State<NowPlaying> {
       const SizedBox(height: 8),
       Text(
         '${track?.performer?.name ?? 'Unknown'}  •  ${track?.album?.title ?? 'Unknown'}',
-        style: const TextStyle(
-            fontSize: _NowPlayingConstants.mediumTextSize, color: Colors.grey),
+        style: TextStyle(fontSize: _NowPlayingConstants.mediumTextSize),
         textAlign: TextAlign.center,
       ),
     ]);
@@ -236,15 +234,16 @@ class _NowPlayingState extends State<NowPlaying> {
 
     return Column(children: [
       SliderTheme(
-          data: SliderThemeData(
-            trackShape: CustomTrackShape(),
-            thumbShape: CustomThumbShape(),
-            overlayShape: SliderComponentShape.noOverlay,
-            activeTrackColor: KalinkaColors.progressBarColor,
-            inactiveTrackColor: KalinkaColors.inactiveProgressBarColor,
-            thumbColor: KalinkaColors.progressBarColor,
-            trackHeight: 4,
-          ),
+          data: Theme.of(context).sliderTheme.copyWith(
+                trackShape: CustomTrackShape(),
+                thumbShape: CustomThumbShape(),
+                overlayShape: SliderComponentShape.noOverlay,
+                inactiveTrackColor:
+                    Theme.of(context).colorScheme.surfaceContainerHigh,
+                thumbColor: Theme.of(context).colorScheme.secondary,
+                activeTrackColor: Theme.of(context).colorScheme.secondary,
+                trackHeight: 4,
+              ),
           child: Slider(
             value: isSeeking
                 ? seekValue
@@ -277,22 +276,20 @@ class _NowPlayingState extends State<NowPlaying> {
 
   Widget _buildTimeIndicators(int position, int duration) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 4.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             _formatDuration(
                 ((isSeeking ? seekValue : position) / 1000).floor()),
-            style: const TextStyle(
-                fontSize: _NowPlayingConstants.smallTextSize,
-                color: Colors.grey),
+            style:
+                const TextStyle(fontSize: _NowPlayingConstants.smallTextSize),
           ),
           Text(
             _formatDuration((duration / 1000).floor()),
-            style: const TextStyle(
-                fontSize: _NowPlayingConstants.smallTextSize,
-                color: Colors.grey),
+            style:
+                const TextStyle(fontSize: _NowPlayingConstants.smallTextSize),
           ),
         ],
       ),
@@ -317,9 +314,6 @@ class _NowPlayingState extends State<NowPlaying> {
                       const RoundSliderThumbShape(enabledThumbRadius: 6),
                   overlayShape:
                       const RoundSliderOverlayShape(overlayRadius: 14),
-                  activeTrackColor: KalinkaColors.progressBarColor,
-                  inactiveTrackColor: KalinkaColors.inactiveProgressBarColor,
-                  thumbColor: KalinkaColors.progressBarColor,
                 ),
                 child: Slider(
                   value: provider.volume,
@@ -369,7 +363,7 @@ class _NowPlayingState extends State<NowPlaying> {
   IconData _getPlaybackIcon(PlayerStateType state) {
     switch (state) {
       case PlayerStateType.playing:
-        return Icons.pause_circle_filled;
+        return Icons.pause;
       case PlayerStateType.paused:
       case PlayerStateType.stopped:
         return Icons.play_arrow;
@@ -390,16 +384,16 @@ class _NowPlayingState extends State<NowPlaying> {
         onPressed: () => KalinkaPlayerProxy().previous(),
       ),
       const SizedBox(width: 16),
-      Container(
-        decoration: const BoxDecoration(
-          color: KalinkaColors.primaryButtonColor,
-          shape: BoxShape.circle,
+      IconButton(
+        icon: Icon(playIcon,
+            size: _NowPlayingConstants.playIconSize,
+            color: Theme.of(context).colorScheme.surface),
+        onPressed: () => _handlePlayPause(state),
+        style: IconButton.styleFrom(
+          backgroundColor: Theme.of(context).colorScheme.secondary,
+          padding: const EdgeInsets.all(8),
         ),
-        child: IconButton(
-          icon: Icon(playIcon, color: Colors.white),
-          iconSize: _NowPlayingConstants.playIconSize,
-          onPressed: () => _handlePlayPause(state),
-        ),
+        tooltip: 'Play',
       ),
       const SizedBox(width: 16),
       IconButton(

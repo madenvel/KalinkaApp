@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:kalinka/add_to_playlist.dart';
-import 'package:kalinka/colors.dart' show KalinkaColors;
 import 'package:kalinka/event_listener.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:kalinka/polka_dot_painter.dart' show PolkaDotPainter;
@@ -72,7 +71,6 @@ class _SwipableTabsState extends State<SwipableTabs>
             Text(_index == 0 ? 'Now Playing' : 'Play Queue',
                 style: const TextStyle(fontSize: 16)),
             TabPageSelector(
-              color: Colors.black38,
               controller: controller,
               indicatorSize: 8,
             ),
@@ -169,7 +167,7 @@ class _SwipableTabsState extends State<SwipableTabs>
       painter: PolkaDotPainter(
         dotSize: 50,
         spacing: 0.75,
-        dotColor: KalinkaColors.primaryButtonColor,
+        dotColor: Theme.of(context).colorScheme.primary,
         sizeReductionFactor: 0.05,
       ),
     );

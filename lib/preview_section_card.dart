@@ -9,7 +9,7 @@ import 'package:kalinka/data_provider.dart' show GenreFilterProvider;
 import 'package:kalinka/large_image_preview_card.dart'
     show LargeImagePreviewCard;
 import 'package:kalinka/preview_section_grid.dart' show SectionPreviewGrid;
-import 'package:kalinka/tracks_browse_view.dart';
+import 'package:kalinka/browse_item_view.dart';
 import 'package:provider/provider.dart'
     show ChangeNotifierProxyProvider, Consumer;
 
@@ -30,7 +30,7 @@ class PreviewSectionCard extends StatelessWidget {
               onTap: (item) => _onTap(context, item));
         }
 
-        return TracksBrowseView(browseItem: item);
+        return BrowseItemView(browseItem: item);
       }),
     );
   }
@@ -81,11 +81,12 @@ class PreviewSectionCard extends StatelessWidget {
 
     return ChangeNotifierProxyProvider<GenreFilterProvider,
             BrowseItemDataProvider>(
-        create: (context) => BrowseItemDataProvider(
+        create: (context) => BrowseItemDataProvider.fromDataSource(
             dataSource: dataSource!, itemCountLimit: itemsCount),
         update: (_, genreFilterProvider, dataProvider) {
           if (dataProvider == null) {
-            return BrowseItemDataProvider(dataSource: dataSource!)
+            return BrowseItemDataProvider.fromDataSource(
+                dataSource: dataSource!)
               ..maybeUpdateGenreFilter(genreFilterProvider.filter);
           }
           dataProvider.maybeUpdateGenreFilter(genreFilterProvider.filter);

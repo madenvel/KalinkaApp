@@ -2,6 +2,10 @@ import 'dart:async';
 import 'dart:convert' show json;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:kalinka/browse_item_data.dart';
+import 'package:kalinka/browse_item_data_provider.dart'
+    show BrowseItemDataProvider;
+import 'package:kalinka/browse_item_data_source.dart';
 import 'package:kalinka/data_model.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:shared_preferences/shared_preferences.dart'
@@ -11,6 +15,10 @@ class SearchTypeProvider with ChangeNotifier {
   SearchType _searchType = SearchType.album;
 
   SearchType get searchType => _searchType;
+
+  SearchTypeProvider({SearchType searchType = SearchType.album}) {
+    _searchType = searchType;
+  }
 
   void updateSearchType(SearchType searchType) {
     if (_searchType != searchType) {
@@ -89,15 +97,17 @@ class SearchResultsProvider with ChangeNotifier {
   }
 }
 
-class SavedSearchProvider with ChangeNotifier {
+class SavedSearchProvider
+    with ChangeNotifier
+    implements BrowseItemDataProvider {
   final List<BrowseItem> _previousSearches = [];
   late SharedPreferences _prefs;
 
   final Completer _completer = Completer();
 
-  List<BrowseItem> get savedSearches => List.unmodifiable(_previousSearches);
-  bool get isReady => _completer.isCompleted;
-  Future<void> get ready => _completer.future;
+  // List<BrowseItem> get savedSearches => List.unmodifiable(_previousSearches);
+  // bool get isReady => _completer.isCompleted;
+  // Future<void> get ready => _completer.future;
 
   SavedSearchProvider() {
     _loadFromPrefs();
@@ -150,6 +160,7 @@ class SavedSearchProvider with ChangeNotifier {
       });
     }).whenComplete(() {
       _completer.complete();
+      notifyListeners();
     });
   }
 
@@ -159,4 +170,32 @@ class SavedSearchProvider with ChangeNotifier {
           _previousSearches.map((e) => json.encode(e)).toList()),
     ]).then((_) {});
   }
+
+  @override
+  int get cachedCount => _previousSearches.length;
+
+  @override
+  BrowseItemData getItem(int index) {
+    if (index >= _previousSearches.length) {
+      _loadFromPrefs();
+      return BrowseItemData(loadingState: BrowseItemLoadingState.loading);
+    }
+    return BrowseItemData(
+        item: _previousSearches[index],
+        loadingState: BrowseItemLoadingState.loaded);
+  }
+
+  @override
+  BrowseItemDataSource get itemDataSource => BrowseItemDataSource.empty();
+
+  @override
+  int get maybeItemCount => _previousSearches.length;
+
+  @override
+  void maybeUpdateGenreFilter(List<String> newGenreFilter) {
+    // No genre filter for saved searches
+  }
+
+  @override
+  int get totalItemCount => _previousSearches.length;
 }

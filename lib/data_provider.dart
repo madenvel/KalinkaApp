@@ -242,7 +242,7 @@ class FavoriteInfo {
   List<BrowseItem> items = [];
 }
 
-class UserFavoritesProvider with ChangeNotifier {
+class UserFavoritesIdsProvider with ChangeNotifier {
   final logger = Logger();
   final Map<SearchType, FavoriteInfo> _favorites = {
     SearchType.track: FavoriteInfo(),
@@ -281,7 +281,7 @@ class UserFavoritesProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  UserFavoritesProvider() {
+  UserFavoritesIdsProvider() {
     subscriptionId = EventListener().registerCallback({
       // EventType.FavoriteAdded: (args) {
       //   _favorites[SearchType.track]!.ids.addAll(args[0].cast<String>());
