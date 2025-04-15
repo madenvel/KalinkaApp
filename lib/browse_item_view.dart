@@ -14,6 +14,7 @@ import 'package:kalinka/kalinkaplayer_proxy.dart' show KalinkaPlayerProxy;
 import 'package:kalinka/polka_dot_painter.dart';
 import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
 import 'package:kalinka/browse_item_list.dart';
+import 'package:kalinka/shimmer_widget.dart';
 import 'package:provider/provider.dart';
 import 'data_model.dart';
 
@@ -21,11 +22,8 @@ class BrowseItemView extends StatefulWidget {
   final BrowseItem browseItem;
 
   BrowseItemView({super.key, required this.browseItem})
-      : assert(
-            browseItem.album != null ||
-                browseItem.playlist != null ||
-                browseItem.canAdd,
-            "browseItem must have either album or playlist data");
+      : assert(browseItem.artist != null || browseItem.canAdd,
+            "browseItem must have either artist or canAdd property");
 
   @override
   State<BrowseItemView> createState() => _BrowseItemViewState();
@@ -80,7 +78,6 @@ class _BrowseItemViewState extends State<BrowseItemView> {
         browseItem.image?.small ??
         browseItem.image?.thumbnail;
     final name = browseItem.name ?? '';
-    final subname = browseItem.subname ?? '';
     final parentContext = context;
 
     return ChangeNotifierProvider<BrowseItemDataProvider>(
@@ -124,7 +121,7 @@ class _BrowseItemViewState extends State<BrowseItemView> {
                 child: Column(
                   spacing: 24,
                   children: [
-                    _buildAlbumSection(context, albumImage, name, subname),
+                    _buildHeader(context, albumImage),
                     Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: BrowseItemList(
@@ -150,67 +147,125 @@ class _BrowseItemViewState extends State<BrowseItemView> {
             ));
   }
 
-  Widget _buildAlbumSection(
-      BuildContext context, String? albumImage, String name, String subname) {
-    return
-        // Content (Album Cover, Info, Buttons)
-        Stack(children: [
+  Widget _buildHeader(BuildContext context, String? albumImage) {
+    return Stack(children: [
       Positioned.fill(
         child: CustomPaint(
           size: Size.infinite,
           painter: PolkaDotPainter(
-            dotSize: 50,
-            spacing: 0.75,
+            dotSize: 10,
+            spacing: 2.0,
             dotColor: Theme.of(context).colorScheme.primary,
-            sizeReductionFactor: 0.05,
+            sizeReductionFactor: 0.00,
           ),
         ),
       ),
-      Padding(
-        padding: EdgeInsets.only(
-          left: 16.0,
-          right: 16.0,
-          top: MediaQuery.of(context).padding.top + 24.0,
-        ),
-        child: Column(
-          children: [
-            if (albumImage != null) _buildAlbumCover(context, albumImage),
-            Padding(
-                padding: EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0),
-                child: _buildAlbumInfo(context, name, subname)),
-            _buildButtonsBar(context),
-          ],
-        ),
-      ),
+      CachedNetworkImage(
+          imageUrl: albumImage ?? '',
+          fit: BoxFit.contain,
+          fadeInDuration: Duration.zero,
+          fadeOutDuration: Duration.zero,
+          cacheManager: KalinkaMusicCacheManager.instance,
+          placeholder: (_, __) => _buildHeaderPlaceholder(context),
+          errorWidget: (_, __, ___) => _buildHeaderView(context, null),
+          imageBuilder: (_, imageProvider) =>
+              _buildHeaderView(context, imageProvider))
     ]);
   }
 
-  Widget _buildAlbumCover(BuildContext context, String albumImage) {
-    final placeholderWidget = SizedBox(
-      height: 250,
-      child: Icon(Icons.music_note, size: 250, color: Colors.grey),
+  Widget _buildHeaderView(BuildContext context, ImageProvider? imageProvider) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16.0,
+        right: 16.0,
+        top: MediaQuery.of(context).padding.top + 24.0,
+      ),
+      child: Column(
+        children: [
+          if (imageProvider != null) _buildImageCover(context, imageProvider),
+          Padding(
+              padding: EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0),
+              child: _buildCoverInfo(context)),
+          _buildButtonsBar(context),
+        ],
+      ),
     );
+  }
 
-    return ClipRRect(
+  Widget _buildHeaderPlaceholder(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16.0,
+        right: 16.0,
+        top: MediaQuery.of(context).padding.top + 24.0,
+      ),
+      child: Column(
+        children: [
+          ShimmerWidget(
+            width: 250,
+            height: 250,
+            borderRadius: 12,
+            shape: widget.browseItem.artist != null
+                ? BoxShape.circle
+                : BoxShape.rectangle,
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const ShimmerWidget(height: 20, width: 180),
+                const SizedBox(height: 8.0),
+                const ShimmerWidget(height: 17, width: 140),
+                const SizedBox(height: 12.0),
+                const ShimmerWidget(height: 14, width: 100),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16.0),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            spacing: 32,
+            children: List.generate(
+                4,
+                (_) => const ShimmerWidget(
+                      height: 48,
+                      width: 48,
+                      borderRadius: 10,
+                    )),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageCover(BuildContext context, ImageProvider imageProvider) {
+    // MediaQuery.of(context).removePadding(removeTop: true);
+    return Container(
       key: _albumCoverKey,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width - 64,
-          maxHeight: 250,
-        ),
-        child: CachedNetworkImage(
-          imageUrl: albumImage,
-          fit: BoxFit.contain,
-          cacheManager: KalinkaMusicCacheManager.instance,
-          placeholder: (_, __) => placeholderWidget,
-          errorWidget: (_, __, ___) => placeholderWidget,
+      width: 250,
+      height: 250,
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.sizeOf(context).width - 64,
+        maxHeight: 250,
+      ),
+      decoration: BoxDecoration(
+        shape: widget.browseItem.artist != null
+            ? BoxShape.circle
+            : BoxShape.rectangle,
+        borderRadius:
+            widget.browseItem.artist != null ? null : BorderRadius.circular(12),
+        image: DecorationImage(
+          image: imageProvider,
+          fit: BoxFit.cover,
         ),
       ),
     );
   }
 
-  Widget _buildAlbumInfo(BuildContext context, String name, String subname) {
+  Widget _buildCoverInfo(BuildContext context) {
+    final name = widget.browseItem.name ?? '';
+    final subname = widget.browseItem.subname ?? '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [

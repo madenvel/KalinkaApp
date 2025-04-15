@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:kalinka/add_to_playlist.dart';
-import 'package:kalinka/artist_browse_view.dart';
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
 import 'package:provider/provider.dart';
 import 'package:kalinka/custom_list_tile.dart';
@@ -184,8 +183,7 @@ class BottomMenu extends StatelessWidget {
               Navigator.push(
                   parentContext,
                   MaterialPageRoute(
-                      builder: (context) =>
-                          ArtistBrowseView(browseItem: item)));
+                      builder: (context) => BrowseItemView(browseItem: item)));
             }
           });
         },

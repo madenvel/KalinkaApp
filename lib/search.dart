@@ -1,5 +1,4 @@
 import 'package:flutter/services.dart' show SystemNavigator;
-import 'package:kalinka/artist_browse_view.dart' show ArtistBrowseView;
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
 import 'package:kalinka/browse_item_data_source.dart';
@@ -45,26 +44,6 @@ class _SearchState extends State<Search> {
                 })));
   }
 
-  // Widget _buildTextEntry(BuildContext context) {
-  //   final textFieldController = context.watch<TextEditingController>();
-  //   return TextField(
-  //     controller: textFieldController,
-  //     autofocus: true,
-  //     decoration: const InputDecoration(
-  //       hintText: 'Search',
-  //       border: InputBorder.none,
-  //       contentPadding: EdgeInsets.only(left: 16),
-  //     ),
-  //     onChanged: (value) {
-  //       if (value.isEmpty) {
-  //         context.read<BrowseItemDataProvider>().clear();
-  //       }
-  //     },
-  //   );
-  // }
-
-  // _buildSearchPage(context)
-
   Widget _buildProviders() {
     return MultiProvider(
         providers: [
@@ -95,41 +74,45 @@ class _SearchState extends State<Search> {
   Widget _buildSearchPage(BuildContext context) {
     final textFieldController = context.watch<TextEditingController>();
     final searchTypeProvider = context.watch<SearchTypeProvider>();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AppBar(
-          flexibleSpace: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              clipBehavior: Clip.antiAlias,
-              controller: textFieldController,
-              decoration: InputDecoration(
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
-                labelText: 'Search for albums, artists, tracks, playlists',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: textFieldController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          textFieldController.clear();
-                        })
-                    : null,
-              ),
+    return Scaffold(
+      appBar: AppBar(
+        flexibleSpace: Padding(
+          padding: EdgeInsets.only(
+              left: 8.0,
+              right: 8.0,
+              bottom: 8.0,
+              top: MediaQuery.of(context).padding.top + 8.0),
+          child: TextField(
+            clipBehavior: Clip.antiAlias,
+            controller: textFieldController,
+            decoration: InputDecoration(
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
+              labelText: 'Search for albums, artists, tracks, playlists',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: textFieldController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        textFieldController.clear();
+                      })
+                  : null,
             ),
           ),
         ),
-        textFieldController.text.isNotEmpty
-            ? _buildChipGroup(searchTypeProvider)
-            : const SizedBox.shrink(),
-        const SizedBox(height: 8),
+      ),
+      body: Column(children: [
+        Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: textFieldController.text.isNotEmpty
+                ? _buildChipGroup(searchTypeProvider)
+                : const SizedBox.shrink()),
         Expanded(
           child: textFieldController.text.isEmpty
               ? _buildSearchHistory(context)
               : _buildSearchResults(context),
         ),
-      ],
+      ]),
     );
   }
 
@@ -146,23 +129,37 @@ class _SearchState extends State<Search> {
       SearchType.track,
       SearchType.playlist
     ];
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: SegmentedButton<SearchType>(
-        segments: List.generate(searchTypes.length, (index) {
-          return ButtonSegment<SearchType>(
-            value: searchTypes[index],
-            label: Text(searchTypesStr[index]),
-          );
-        }),
-        selected: {provider.searchType},
-        showSelectedIcon: true,
-        onSelectionChanged: (selected) {
-          if (selected.isNotEmpty) {
-            provider.updateSearchType(selected.first);
-          }
-        },
-      ),
+    return Row(
+      children: [
+        const Divider(height: 1),
+        Expanded(
+          child: SegmentedButton<SearchType>(
+            segments: List.generate(searchTypes.length, (index) {
+              return ButtonSegment<SearchType>(
+                value: searchTypes[index],
+                label: Text(searchTypesStr[index]),
+              );
+            }),
+            selected: {provider.searchType},
+            showSelectedIcon: false,
+            onSelectionChanged: (selected) {
+              if (selected.isNotEmpty) {
+                provider.updateSearchType(selected.first);
+              }
+            },
+            style: ButtonStyle(
+              side: MaterialStateProperty.all(BorderSide.none),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: MaterialStateProperty.all(
+                const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const Divider(height: 1),
+      ],
     );
   }
 
@@ -176,9 +173,6 @@ class _SearchState extends State<Search> {
           if (item.canBrowse) {
             Navigator.of(context).push(
               MaterialPageRoute(builder: (context) {
-                if (item.browseType == 'artist') {
-                  return ArtistBrowseView(browseItem: item);
-                }
                 return BrowseItemView(browseItem: item);
               }),
             );
@@ -216,9 +210,6 @@ class _SearchState extends State<Search> {
           if (item.canBrowse) {
             Navigator.of(context).push(
               MaterialPageRoute(builder: (context) {
-                if (item.browseType == 'artist') {
-                  return ArtistBrowseView(browseItem: item);
-                }
                 return BrowseItemView(browseItem: item);
               }),
             );

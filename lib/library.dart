@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:kalinka/artist_browse_view.dart' show ArtistBrowseView;
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
 import 'package:kalinka/search_results_provider.dart' show SearchTypeProvider;
 import 'package:provider/provider.dart';
@@ -31,9 +30,9 @@ class _LibraryState extends State<Library> {
     SearchType.playlist,
   ];
   static final List<String> searchTypesStr = [
+    'Tracks',
     'Albums',
     'Artists',
-    'Tracks',
     'Playlists'
   ];
 
@@ -58,11 +57,34 @@ class _LibraryState extends State<Library> {
             onGenerateRoute: (settings) => MaterialPageRoute(builder: (_) {
                   return Scaffold(
                       appBar: AppBar(
-                        title: const Row(children: [
-                          Icon(Icons.library_music),
-                          SizedBox(width: 8),
-                          Text('My Library')
-                        ]),
+                        flexibleSpace: Padding(
+                          padding: EdgeInsets.only(
+                              left: 8.0,
+                              right: 8.0,
+                              bottom: 8.0,
+                              top: MediaQuery.of(context).padding.top + 8.0),
+                          child: TextField(
+                            controller: _textEditingController,
+                            onChanged: (text) {
+                              setState(() {});
+                            },
+                            decoration: InputDecoration(
+                              labelText: 'Type text to filter the list below',
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(20)),
+                              prefixIcon: const Icon(Icons.library_music),
+                              suffixIcon: _textEditingController.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: () {
+                                        setState(() {
+                                          _textEditingController.clear();
+                                        });
+                                      })
+                                  : null,
+                            ),
+                          ),
+                        ),
                       ),
                       body: ChangeNotifierProvider<SearchTypeProvider>(
                           create: (_) => SearchTypeProvider(),
@@ -74,31 +96,9 @@ class _LibraryState extends State<Library> {
     return Column(
       mainAxisSize: MainAxisSize.max,
       children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: TextField(
-            controller: _textEditingController,
-            onChanged: (text) {
-              setState(() {});
-            },
-            decoration: InputDecoration(
-              labelText: 'Type text to filter the list below',
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
-              suffixIcon: _textEditingController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        setState(() {
-                          _textEditingController.clear();
-                        });
-                      })
-                  : null,
-            ),
-          ),
-        ),
+        const Divider(height: 1.0),
         _buildChipList(context),
-        const SizedBox(height: 8.0),
+        const Divider(height: 1.0),
         Expanded(child: _buildItemList(context)),
       ],
     );
@@ -109,23 +109,30 @@ class _LibraryState extends State<Library> {
     final searchType = provider.searchType;
     return SizedBox(
       width: double.infinity,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: SegmentedButton<SearchType>(
-          segments: List.generate(
-            searchTypes.length,
-            (index) => ButtonSegment(
-              value: searchTypes[index],
-              label: Text(searchTypesStr[index]),
+      child: SegmentedButton<SearchType>(
+        segments: List.generate(
+          searchTypes.length,
+          (index) => ButtonSegment(
+            value: searchTypes[index],
+            label: Text(searchTypesStr[index]),
+          ),
+        ),
+        selected: {searchType},
+        onSelectionChanged: (Set<SearchType> newSelection) {
+          if (newSelection.isNotEmpty) {
+            provider.updateSearchType(newSelection.first);
+          }
+        },
+        style: ButtonStyle(
+          side: MaterialStateProperty.all(BorderSide.none),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: MaterialStateProperty.all(
+            const RoundedRectangleBorder(
+              borderRadius: BorderRadius.zero,
             ),
           ),
-          selected: {searchType},
-          onSelectionChanged: (Set<SearchType> newSelection) {
-            if (newSelection.isNotEmpty) {
-              provider.updateSearchType(newSelection.first);
-            }
-          },
         ),
+        showSelectedIcon: false,
       ),
     );
   }
@@ -155,7 +162,7 @@ class _LibraryState extends State<Library> {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (context) {
                       if (item.browseType == 'artist') {
-                        return ArtistBrowseView(browseItem: item);
+                        return BrowseItemView(browseItem: item);
                       }
                       return BrowseItemView(browseItem: item);
                     }),
