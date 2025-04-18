@@ -132,30 +132,19 @@ class _SearchState extends State<Search> {
     return Row(
       children: [
         const Divider(height: 1),
-        Expanded(
-          child: SegmentedButton<SearchType>(
-            segments: List.generate(searchTypes.length, (index) {
-              return ButtonSegment<SearchType>(
-                value: searchTypes[index],
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Wrap(
+            spacing: 8.0,
+            children: List.generate(searchTypes.length, (index) {
+              return ChoiceChip(
                 label: Text(searchTypesStr[index]),
+                selected: provider.searchType == searchTypes[index],
+                onSelected: (_) {
+                  provider.updateSearchType(searchTypes[index]);
+                },
               );
             }),
-            selected: {provider.searchType},
-            showSelectedIcon: false,
-            onSelectionChanged: (selected) {
-              if (selected.isNotEmpty) {
-                provider.updateSearchType(selected.first);
-              }
-            },
-            style: ButtonStyle(
-              side: MaterialStateProperty.all(BorderSide.none),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: MaterialStateProperty.all(
-                const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                ),
-              ),
-            ),
           ),
         ),
         const Divider(height: 1),
