@@ -6,6 +6,7 @@ import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_model.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
+import 'package:kalinka/playlist_creation_dialog.dart';
 import 'package:provider/provider.dart';
 
 class AddToPlaylist extends StatefulWidget {
@@ -20,86 +21,15 @@ class AddToPlaylistState extends State<AddToPlaylist> {
   // Set to keep track of selected playlist IDs
   Set<String> selectedPlaylists = {};
 
-  void _createNewPlaylist() {
-    final TextEditingController playlistNameController =
-        TextEditingController();
-    final TextEditingController playlistDescriptionController =
-        TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => _buildCreatePlaylistDialog(
-        playlistNameController,
-        playlistDescriptionController,
-      ),
-    );
-  }
-
-  AlertDialog _buildCreatePlaylistDialog(
-    TextEditingController nameController,
-    TextEditingController descriptionController,
-  ) {
-    return AlertDialog(
-      title: const Text('Create New Playlist'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Playlist Name'),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: descriptionController,
-              decoration:
-                  const InputDecoration(labelText: 'Playlist Description'),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-          child: const Text('CANCEL'),
-        ),
-        ElevatedButton(
-          // style: ElevatedButton.styleFrom(
-          //   backgroundColor: KalinkaColors.primaryButtonColor,
-          // ),
-          onPressed: () {
-            _handleCreateNewPlaylist(
-              nameController.text,
-              descriptionController.text,
-            );
-            Navigator.of(context, rootNavigator: true).pop();
-          },
-          child: Text(
-            'CREATE',
-            // style: TextStyle(color: KalinkaColors.buttonTextColor),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _handleCreateNewPlaylist(String name, String description) {
-    if (name.isEmpty) return;
-
-    UserPlaylistProvider provider = context.read<UserPlaylistProvider>();
-    UserFavoritesIdsProvider favoritesProvider =
-        context.read<UserFavoritesIdsProvider>();
-
-    provider.addPlaylist(name, description).then((value) {
-      favoritesProvider.addIdOnly(SearchType.playlist, value.id);
-
-      // Auto-select the newly created playlist
-      setState(() {
-        selectedPlaylists.add(value.id);
-      });
-
-      _showSnackBar('Playlist \'$name\' created', Icons.check);
-    });
+  // Method to show the playlist creation dialog
+  void createNewPlaylist(BuildContext context) {
+    PlaylistCreationDialog.show(
+        context: context,
+        onCreateCallback: (String playlistId) {
+          setState(() {
+            selectedPlaylists.add(playlistId);
+          });
+        });
   }
 
   void _togglePlaylistSelection(String playlistId) {
@@ -290,7 +220,7 @@ class AddToPlaylistState extends State<AddToPlaylist> {
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: _createNewPlaylist,
+          onTap: () => createNewPlaylist(context),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
             child: Row(
