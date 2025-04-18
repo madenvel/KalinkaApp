@@ -35,6 +35,11 @@ class _BrowseItemViewState extends State<BrowseItemView> {
   final GlobalKey _albumCoverKey = GlobalKey(); // Add GlobalKey for measuring
 
   static const double _additionalScrollOffset = 100.0; // Buffer after image
+  static const Map<String, String> _itemTypeToTextHint = {
+    'artist': 'Albums',
+    'album': 'Tracks',
+    'playlist': 'Tracks',
+  };
 
   @override
   void initState() {
@@ -119,14 +124,28 @@ class _BrowseItemViewState extends State<BrowseItemView> {
               body: SingleChildScrollView(
                 controller: _scrollController,
                 child: Column(
-                  spacing: 24,
                   children: [
                     _buildHeader(context, albumImage),
+                    const SizedBox(height: 24),
+                    Padding(
+                      padding: const EdgeInsets.only(
+                          top: 16.0, bottom: 8.0, left: 16.0),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _itemTypeToTextHint[browseItem.browseType] ?? 'Items',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
                     Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: BrowseItemList(
                           provider: context.watch<BrowseItemDataProvider>(),
-                          onTap: _replaceAndPlay,
+                          onTap: _onListItemTapAction,
                           onAction: (_, __, BrowseItem item) {
                             showModalBottomSheet(
                                 context: context,
@@ -147,29 +166,43 @@ class _BrowseItemViewState extends State<BrowseItemView> {
             ));
   }
 
+  void _onListItemTapAction(BuildContext context, int index, BrowseItem item) {
+    if (item.canBrowse) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => BrowseItemView(browseItem: item),
+        ),
+      );
+    } else if (item.canAdd) {
+      _replaceAndPlay(context, index, item);
+    }
+  }
+
   Widget _buildHeader(BuildContext context, String? albumImage) {
     return Stack(children: [
       Positioned.fill(
         child: CustomPaint(
           size: Size.infinite,
           painter: PolkaDotPainter(
-            dotSize: 10,
+            dotSize: 15,
             spacing: 2.0,
             dotColor: Theme.of(context).colorScheme.primary,
-            sizeReductionFactor: 0.00,
+            sizeReductionFactor: 0.0,
           ),
         ),
       ),
-      CachedNetworkImage(
-          imageUrl: albumImage ?? '',
-          fit: BoxFit.contain,
-          fadeInDuration: Duration.zero,
-          fadeOutDuration: Duration.zero,
-          cacheManager: KalinkaMusicCacheManager.instance,
-          placeholder: (_, __) => _buildHeaderPlaceholder(context),
-          errorWidget: (_, __, ___) => _buildHeaderView(context, null),
-          imageBuilder: (_, imageProvider) =>
-              _buildHeaderView(context, imageProvider))
+      if (albumImage?.isNotEmpty ?? false)
+        CachedNetworkImage(
+            imageUrl: albumImage!,
+            fadeInDuration: Duration.zero,
+            fadeOutDuration: Duration.zero,
+            cacheManager: KalinkaMusicCacheManager.instance,
+            placeholder: (_, __) => _buildHeaderPlaceholder(context),
+            errorWidget: (_, __, ___) => _buildHeaderView(context, null),
+            imageBuilder: (_, imageProvider) =>
+                _buildHeaderView(context, imageProvider))
+      else
+        _buildHeaderView(context, null)
     ]);
   }
 
@@ -182,12 +215,42 @@ class _BrowseItemViewState extends State<BrowseItemView> {
       ),
       child: Column(
         children: [
-          if (imageProvider != null) _buildImageCover(context, imageProvider),
+          if (imageProvider != null)
+            _buildImageCover(context, imageProvider)
+          else
+            _buildImagePlaceholder(context),
           Padding(
               padding: EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0),
               child: _buildCoverInfo(context)),
           _buildButtonsBar(context),
         ],
+      ),
+    );
+  }
+
+  Widget _buildImagePlaceholder(context) {
+    if (widget.browseItem.artist != null) {
+      return CircleAvatar(
+        radius: 125,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        child: Icon(
+          Icons.person,
+          size: 230,
+          color: Theme.of(context).colorScheme.onPrimary,
+        ),
+      );
+    }
+    return Container(
+      width: 250,
+      height: 250,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(
+        widget.browseItem.album != null ? Icons.album : Icons.playlist_play,
+        size: 100,
+        color: Theme.of(context).colorScheme.onPrimary,
       ),
     );
   }
@@ -240,26 +303,17 @@ class _BrowseItemViewState extends State<BrowseItemView> {
   }
 
   Widget _buildImageCover(BuildContext context, ImageProvider imageProvider) {
-    // MediaQuery.of(context).removePadding(removeTop: true);
-    return Container(
-      key: _albumCoverKey,
-      width: 250,
-      height: 250,
-      constraints: BoxConstraints(
-        maxWidth: MediaQuery.sizeOf(context).width - 64,
-        maxHeight: 250,
-      ),
-      decoration: BoxDecoration(
-        shape: widget.browseItem.artist != null
-            ? BoxShape.circle
-            : BoxShape.rectangle,
-        borderRadius:
-            widget.browseItem.artist != null ? null : BorderRadius.circular(12),
-        image: DecorationImage(
-          image: imageProvider,
-          fit: BoxFit.cover,
-        ),
-      ),
+    return ClipRRect(
+      borderRadius: widget.browseItem.artist != null
+          ? BorderRadius.circular(125)
+          : BorderRadius.circular(12),
+      child: Container(
+          key: _albumCoverKey,
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.sizeOf(context).width - 64,
+            maxHeight: 250,
+          ),
+          child: Image(image: imageProvider)),
     );
   }
 
@@ -317,59 +371,63 @@ class _BrowseItemViewState extends State<BrowseItemView> {
   }
 
   Widget _buildButtonsBar(BuildContext context) {
+    final isArtist = widget.browseItem.artist != null;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       spacing: 32,
       children: [
-        IconButton(
-          icon: Icon(Icons.play_arrow,
-              size: 40, color: Theme.of(context).colorScheme.surface),
-          onPressed: () {
-            _replaceAndPlay(context, 0, null);
-          },
-          style: IconButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.secondary,
-            padding: const EdgeInsets.all(8),
-          ),
-          tooltip: 'Play',
-        ),
-        _makeButtonWithLabel(context,
-            icon: Icons.queue,
-            label: 'Queue',
-            tooltip: 'Add to queue', onPressed: () {
-          _addToQueue(widget.browseItem.url);
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text('Confirmation'),
-                content: Text('Tracks added to queue successfully.'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text('OK'),
-                  ),
-                ],
-              );
+        if (!isArtist)
+          IconButton(
+            icon: Icon(Icons.play_arrow,
+                size: 40, color: Theme.of(context).colorScheme.surface),
+            onPressed: () {
+              _replaceAndPlay(context, 0, null);
             },
-          );
-        }),
-        _makeButtonWithLabel(context,
-            icon: Icons.playlist_add,
-            label: 'Add',
-            tooltip: 'Add to playlist', onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              fullscreenDialog: true,
-              builder: (context) => AddToPlaylist(
-                items: BrowseItemsList(0, 1, 1, [widget.browseItem]),
-              ),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.secondary,
+              padding: const EdgeInsets.all(8),
             ),
-          );
-        }),
+            tooltip: 'Play',
+          ),
+        if (!isArtist)
+          _makeButtonWithLabel(context,
+              icon: Icons.queue,
+              label: 'Queue',
+              tooltip: 'Add to queue', onPressed: () {
+            _addToQueue(widget.browseItem.url);
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text('Confirmation'),
+                  content: Text('Tracks added to queue successfully.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text('OK'),
+                    ),
+                  ],
+                );
+              },
+            );
+          }),
+        if (!isArtist)
+          _makeButtonWithLabel(context,
+              icon: Icons.playlist_add,
+              label: 'Add',
+              tooltip: 'Add to playlist', onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                fullscreenDialog: true,
+                builder: (context) => AddToPlaylist(
+                  items: BrowseItemsList(0, 1, 1, [widget.browseItem]),
+                ),
+              ),
+            );
+          }),
         Column(children: [
           FavoriteButton(
             item: widget.browseItem,

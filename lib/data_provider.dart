@@ -276,6 +276,14 @@ class UserFavoritesIdsProvider with ChangeNotifier {
 
   bool get idsLoaded => _idsLoaded;
 
+  Map<SearchType, int> get countByType {
+    Map<SearchType, int> count = {};
+    _favorites.forEach((key, value) {
+      count[key] = value.ids.length;
+    });
+    return count;
+  }
+
   void markForReload(SearchType searchType) {
     _favorites[searchType]!.isLoaded = false;
     notifyListeners();

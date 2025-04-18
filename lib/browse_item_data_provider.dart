@@ -16,17 +16,19 @@ abstract class BrowseItemDataProvider extends ChangeNotifier {
 
   BrowseItemData getItem(int index);
   void maybeUpdateGenreFilter(List<String> newGenreFilter);
+  void refresh();
 
   /// Factory method to create a default implementation
-  static BrowseItemDataProvider fromDataSource({
-    required BrowseItemDataSource dataSource,
-    int itemsPerRequest = 30,
-    int? itemCountLimit,
-  }) {
+  static BrowseItemDataProvider fromDataSource(
+      {required BrowseItemDataSource dataSource,
+      int itemsPerRequest = 30,
+      int? itemCountLimit,
+      bool invalidateCache = false}) {
     return DefaultBrowseItemDataProvider(
       dataSource: dataSource,
       itemsPerRequest: itemsPerRequest,
       itemCountLimit: itemCountLimit,
+      invalidateCache: invalidateCache,
     );
   }
 
@@ -71,8 +73,12 @@ class DefaultBrowseItemDataProvider extends BrowseItemDataProvider {
   DefaultBrowseItemDataProvider(
       {required this.dataSource,
       this.itemsPerRequest = 30,
-      this.itemCountLimit}) {
+      this.itemCountLimit,
+      bool invalidateCache = false}) {
     _cacheEntry = cache.getEntry(dataSource.key);
+    if (invalidateCache) {
+      _cacheEntry.invalidate();
+    }
     _genreFilter.addAll(_cacheEntry.genreFilter);
 
     assert(itemsPerRequest > 0);
@@ -148,5 +154,11 @@ class DefaultBrowseItemDataProvider extends BrowseItemDataProvider {
     return itemCountLimit != null
         ? math.min(_cacheEntry.items.length, itemCountLimit!)
         : _cacheEntry.items.length;
+  }
+
+  @override
+  void refresh() {
+    _cacheEntry.invalidate();
+    notifyListeners();
   }
 }

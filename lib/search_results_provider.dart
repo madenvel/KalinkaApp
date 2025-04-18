@@ -1,13 +1,11 @@
 import 'dart:async';
 import 'dart:convert' show json;
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:kalinka/browse_item_data.dart';
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
 import 'package:kalinka/browse_item_data_source.dart';
 import 'package:kalinka/data_model.dart';
-import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:shared_preferences/shared_preferences.dart'
     show SharedPreferences;
 
@@ -28,75 +26,6 @@ class SearchTypeProvider with ChangeNotifier {
   }
 }
 
-class SearchResultsProvider with ChangeNotifier {
-  String? _query;
-  SearchType _searchType = SearchType.album;
-  final int chunkSize;
-  final List<BrowseItem> _results = [];
-
-  int _totalItems = 0;
-  bool _hasLoaded = false;
-  bool _isDisposed = false;
-  bool _loadInProgress = false;
-
-  SearchResultsProvider({this.chunkSize = 30});
-
-  BrowseItem? getItem(int index) {
-    if (index < 0 || index >= (_hasLoaded ? _totalItems : chunkSize)) {
-      return null;
-    }
-    if (index >= _results.length) {
-      _fetchData();
-      return null;
-    }
-    return _results[index];
-  }
-
-  int get maybeCount => (_hasLoaded
-      ? math.min(_results.length + chunkSize, _totalItems)
-      : chunkSize);
-
-  void updateSearchQuery(String? query, SearchType searchType) {
-    if (_query != query || _searchType != searchType) {
-      _results.clear();
-      _totalItems = 0;
-      _hasLoaded = false;
-      _query = query;
-      _searchType = searchType;
-      notifyListeners();
-    }
-  }
-
-  Future<void> _fetchData() async {
-    if (_loadInProgress || _query == null) {
-      return;
-    }
-    final query = _query!;
-    _loadInProgress = true;
-    return KalinkaPlayerProxy()
-        .search(_searchType, query, offset: _results.length, limit: chunkSize)
-        .then((result) {
-      if (query != _query) {
-        return;
-      }
-      _results.addAll(result.items);
-      _totalItems = result.total;
-      _hasLoaded = true;
-    }).whenComplete(() {
-      _loadInProgress = false;
-      if (!_isDisposed) {
-        notifyListeners();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _isDisposed = true;
-    super.dispose();
-  }
-}
-
 class SavedSearchProvider
     with ChangeNotifier
     implements BrowseItemDataProvider {
@@ -104,10 +33,6 @@ class SavedSearchProvider
   late SharedPreferences _prefs;
 
   final Completer _completer = Completer();
-
-  // List<BrowseItem> get savedSearches => List.unmodifiable(_previousSearches);
-  // bool get isReady => _completer.isCompleted;
-  // Future<void> get ready => _completer.future;
 
   SavedSearchProvider() {
     _loadFromPrefs();
@@ -198,4 +123,11 @@ class SavedSearchProvider
 
   @override
   int get totalItemCount => _previousSearches.length;
+
+  @override
+  void refresh() {
+    _previousSearches.clear();
+    _loadFromPrefs();
+    notifyListeners();
+  }
 }

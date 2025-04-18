@@ -27,8 +27,8 @@ abstract class BrowseItemDataSource {
     return SearchBrowseItemDataSource(searchType, query);
   }
 
-  static BrowseItemDataSource favorites(SearchType searchType) {
-    return UserFavoriteBrowseItemDataSource(searchType);
+  static BrowseItemDataSource favorites(SearchType searchType, String filter) {
+    return UserFavoriteBrowseItemDataSource(searchType, filter);
   }
 
   static BrowseItemDataSource empty() {
@@ -152,7 +152,7 @@ class SearchBrowseItemDataSource implements BrowseItemDataSource {
       name: 'Search: $query',
       subname: 'Results for $query',
       id: 'search_${searchType.name}_$query',
-      url: 'search://${searchType.name}/$query',
+      url: '/search/${searchType.name}/$query',
       canBrowse: true,
       canAdd: false,
       catalog: Catalog(
@@ -192,10 +192,11 @@ class SearchBrowseItemDataSource implements BrowseItemDataSource {
 class UserFavoriteBrowseItemDataSource implements BrowseItemDataSource {
   final proxy = KalinkaPlayerProxy();
   final SearchType searchType;
+  final String filter;
   late BrowseItem _item;
   bool _isValid = true;
 
-  UserFavoriteBrowseItemDataSource(this.searchType) {
+  UserFavoriteBrowseItemDataSource(this.searchType, this.filter) {
     String title;
 
     switch (searchType) {
@@ -218,8 +219,8 @@ class UserFavoriteBrowseItemDataSource implements BrowseItemDataSource {
     _item = BrowseItem(
       name: title,
       subname: '',
-      id: 'favorites_${searchType.name}',
-      url: '/favorites/list/${searchType.name}',
+      id: 'favorites_${searchType.name}_$filter',
+      url: '/favorites/list/${searchType.name}?filter=$filter',
       canBrowse: true,
       canAdd: false,
       catalog: Catalog(
@@ -239,7 +240,7 @@ class UserFavoriteBrowseItemDataSource implements BrowseItemDataSource {
     required List<String> genreFilter,
   }) async {
     return proxy
-        .getFavorite(searchType, offset: offset, limit: limit)
+        .getFavorite(searchType, filter: filter, offset: offset, limit: limit)
         .catchError((e) {
       _isValid = false;
       return BrowseItemsList(0, 0, 0, []);
@@ -247,7 +248,7 @@ class UserFavoriteBrowseItemDataSource implements BrowseItemDataSource {
   }
 
   @override
-  String get key => 'favorites_${searchType.name}';
+  String get key => 'favorites_${searchType.name}_$filter';
 
   @override
   BrowseItem get item => _item;

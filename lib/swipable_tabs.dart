@@ -167,7 +167,7 @@ class _SwipableTabsState extends State<SwipableTabs>
       painter: PolkaDotPainter(
         dotSize: 50,
         spacing: 0.75,
-        dotColor: Theme.of(context).colorScheme.primary,
+        dotColor: Theme.of(context).colorScheme.tertiary,
         sizeReductionFactor: 0.05,
       ),
     );
