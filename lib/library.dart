@@ -119,11 +119,7 @@ class _LibraryState extends State<Library> {
   Widget _buildFilterTextField(BuildContext context) {
     final controller = context.watch<TextEditingController>();
     return Padding(
-      padding: EdgeInsets.only(
-          left: 8.0,
-          right: 8.0,
-          bottom: 8.0,
-          top: MediaQuery.of(context).padding.top + 8.0),
+      padding: EdgeInsets.all(8.0),
       child: TextField(
         controller: controller,
         decoration: InputDecoration(
