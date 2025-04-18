@@ -46,6 +46,12 @@ class BrowseItemCacheEntry {
     items.clear();
   }
 
+  void invalidate() {
+    items.clear();
+    _totalCount = 0;
+    _hasLoaded = false;
+  }
+
   Future<void> fetchPage(
       {required BrowseItemDataSource dataSource, required int limit}) async {
     if (!_completer.isCompleted) {
@@ -94,6 +100,6 @@ class BrowseItemCache {
   }
 
   void invalidate() {
-    _browseItemsCache.forEach((key, entry) => entry.items.clear());
+    _browseItemsCache.forEach((key, entry) => entry.invalidate());
   }
 }

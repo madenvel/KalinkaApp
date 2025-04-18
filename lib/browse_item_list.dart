@@ -75,14 +75,6 @@ class _BrowseItemListState extends State<BrowseItemList> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Tracks',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16.0),
           listView,
           if (_shouldShowMoreButton(provider))
             Padding(
@@ -120,26 +112,32 @@ class _BrowseItemListState extends State<BrowseItemList> {
           context, item, index, _createListLeadingText(context, index));
     } else {
       final imageUrl =
-          item.image?.thumbnail ?? item.image?.small ?? item.image?.large ?? '';
+          item.image?.thumbnail ?? item.image?.small ?? item.image?.large;
       return _buildTrackListItemWithImage(context, item, index, imageUrl);
     }
   }
 
   Widget _buildTrackListItemWithImage(
-      BuildContext context, BrowseItem item, int index, String albumImage) {
-    return CachedNetworkImage(
-        fadeInDuration: Duration.zero,
-        fadeOutDuration: Duration.zero,
-        imageUrl: albumImage,
-        fit: BoxFit.cover,
-        imageBuilder: (context, imageProvider) {
-          return _buildTrackListItemTile(context, item, index,
-              _createListLeadingImage(imageProvider, item));
-        },
-        cacheManager: KalinkaMusicCacheManager.instance,
-        placeholder: (context, url) => _buildLoadingListItem(context),
-        errorWidget: (context, url, error) => _buildTrackListItemTile(
-            context, item, index, _createListLeadingIcon(item)));
+      BuildContext context, BrowseItem item, int index, String? albumImage) {
+    if (albumImage != null) {
+      return CachedNetworkImage(
+          fadeInDuration: Duration.zero,
+          fadeOutDuration: Duration.zero,
+          imageUrl: albumImage,
+          fit: BoxFit.cover,
+          imageBuilder: (context, imageProvider) => _buildTrackListItemTile(
+              context,
+              item,
+              index,
+              _createListLeadingImage(imageProvider, item)),
+          cacheManager: KalinkaMusicCacheManager.instance,
+          placeholder: (context, url) => _buildLoadingListItem(context),
+          errorWidget: (context, url, error) => _buildTrackListItemTile(
+              context, item, index, _createListLeadingIcon(item)));
+    } else {
+      return _buildTrackListItemTile(
+          context, item, index, _createListLeadingIcon(item));
+    }
   }
 
   Widget _buildTrackListItemTile(
@@ -175,21 +173,6 @@ class _BrowseItemListState extends State<BrowseItemList> {
       visualDensity: VisualDensity.standard,
     );
   }
-
-  // String _getTextForSubtitle(BrowseItem item) {
-  //   switch (item.browseType) {
-  //     case 'album':
-  //       return '${item.album?.artist?.name} • ${item.album?.trackCount} tracks';
-  //     case 'playlist':
-  //       return '$item.subname';
-  //     case 'track':
-  //       if (widget.provider.itemDataSource.item.browseType == 'album') {
-  //         return '${item.track?.album?.title} • ${item.track?.performer?.name}';
-  //       }
-  //     default:
-  //       return '';
-  //   }
-  // }
 
   Widget _buildLoadingListItem(BuildContext context) {
     return ListTile(
@@ -267,7 +250,7 @@ class _BrowseItemListState extends State<BrowseItemList> {
             backgroundColor: Theme.of(context).colorScheme.secondary,
             child: Icon(iconData, size: 34),
           )
-        : Icon(iconData, size: 48);
+        : Icon(iconData, size: 40);
   }
 
   Widget _createListLeadingImage(ImageProvider imageProvider, BrowseItem item) {

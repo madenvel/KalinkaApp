@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
+import 'package:kalinka/playlist_creation_dialog.dart';
 import 'package:kalinka/search_results_provider.dart' show SearchTypeProvider;
 import 'package:provider/provider.dart';
 import 'package:kalinka/bottom_menu.dart';
@@ -22,7 +23,6 @@ class Library extends StatefulWidget {
 class _LibraryState extends State<Library> {
   _LibraryState();
 
-  final TextEditingController _textEditingController = TextEditingController();
   static final List<SearchType> searchTypes = [
     SearchType.track,
     SearchType.album,
@@ -37,6 +37,7 @@ class _LibraryState extends State<Library> {
   ];
 
   final navigatorKey = GlobalKey<NavigatorState>();
+  String dataProviderKey = '';
 
   @override
   Widget build(BuildContext context) {
@@ -55,50 +56,99 @@ class _LibraryState extends State<Library> {
         child: Navigator(
             key: navigatorKey,
             onGenerateRoute: (settings) => MaterialPageRoute(builder: (_) {
-                  return Scaffold(
-                      appBar: AppBar(
-                        flexibleSpace: Padding(
-                          padding: EdgeInsets.only(
-                              left: 8.0,
-                              right: 8.0,
-                              bottom: 8.0,
-                              top: MediaQuery.of(context).padding.top + 8.0),
-                          child: TextField(
-                            controller: _textEditingController,
-                            onChanged: (text) {
-                              setState(() {});
+                  return MultiProvider(
+                      providers: [
+                        ChangeNotifierProvider(
+                            create: (_) => TextEditingController()),
+                        ChangeNotifierProvider<SearchTypeProvider>(
+                            create: (_) => SearchTypeProvider())
+                      ],
+                      builder: (context, _) {
+                        return ChangeNotifierProxyProvider2<SearchTypeProvider,
+                                TextEditingController, BrowseItemDataProvider>(
+                            create: (context) =>
+                                BrowseItemDataProvider.fromDataSource(
+                                    dataSource: BrowseItemDataSource.empty()),
+                            update: (context, searchTypeProvider,
+                                textEditingController, dataProvider) {
+                              return BrowseItemDataProvider.fromDataSource(
+                                  dataSource: BrowseItemDataSource.favorites(
+                                      searchTypeProvider.searchType,
+                                      textEditingController.text),
+                                  itemsPerRequest: 100,
+                                  invalidateCache: true);
                             },
-                            decoration: InputDecoration(
-                              labelText: 'Type text to filter the list below',
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(20)),
-                              prefixIcon: const Icon(Icons.library_music),
-                              suffixIcon: _textEditingController.text.isNotEmpty
-                                  ? IconButton(
-                                      icon: const Icon(Icons.clear),
-                                      onPressed: () {
-                                        setState(() {
-                                          _textEditingController.clear();
-                                        });
-                                      })
-                                  : null,
-                            ),
-                          ),
-                        ),
-                      ),
-                      body: ChangeNotifierProvider<SearchTypeProvider>(
-                          create: (_) => SearchTypeProvider(),
-                          builder: (context, _) => _buildBody(context)));
+                            builder: (context, _) => Scaffold(
+                                  appBar: AppBar(
+                                    title: const Row(children: [
+                                      Icon(Icons.library_music),
+                                      SizedBox(width: 8),
+                                      Text('My Library')
+                                    ]),
+                                    actions: [
+                                      _buildActionButton(context),
+                                    ],
+                                  ),
+                                  body: _buildBody(context),
+                                ));
+                      });
                 })));
+  }
+
+  Widget _buildActionButton(BuildContext context) {
+    return IconButton(
+        icon: const Icon(Icons.playlist_add),
+        tooltip: 'Create New Playlist',
+        onPressed: () {
+          PlaylistCreationDialog.show(
+              context: context,
+              onCreateCallback: (playlistId) {
+                final textEdit = context.read<TextEditingController>();
+                final searchTypeProvider = context.read<SearchTypeProvider>();
+                if (textEdit.text.isEmpty &&
+                    searchTypeProvider.searchType == SearchType.playlist) {
+                  context.read<BrowseItemDataProvider>().refresh();
+                  return;
+                }
+                textEdit.clear();
+                searchTypeProvider.updateSearchType(SearchType.playlist);
+              });
+        });
+  }
+
+  Widget _buildFilterTextField(BuildContext context) {
+    final controller = context.watch<TextEditingController>();
+    return Padding(
+      padding: EdgeInsets.only(
+          left: 8.0,
+          right: 8.0,
+          bottom: 8.0,
+          top: MediaQuery.of(context).padding.top + 8.0),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: 'Type text to filter the list below',
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: controller.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    controller.clear();
+                  })
+              : null,
+        ),
+      ),
+    );
   }
 
   Widget _buildBody(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.max,
       children: [
-        const Divider(height: 1.0),
+        _buildFilterTextField(context),
         _buildChipList(context),
-        const Divider(height: 1.0),
+        const SizedBox(height: 8),
         Expanded(child: _buildItemList(context)),
       ],
     );
@@ -109,83 +159,70 @@ class _LibraryState extends State<Library> {
     final searchType = provider.searchType;
     return SizedBox(
       width: double.infinity,
-      child: SegmentedButton<SearchType>(
-        segments: List.generate(
-          searchTypes.length,
-          (index) => ButtonSegment(
-            value: searchTypes[index],
-            label: Text(searchTypesStr[index]),
-          ),
-        ),
-        selected: {searchType},
-        onSelectionChanged: (Set<SearchType> newSelection) {
-          if (newSelection.isNotEmpty) {
-            provider.updateSearchType(newSelection.first);
-          }
-        },
-        style: ButtonStyle(
-          side: MaterialStateProperty.all(BorderSide.none),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          shape: MaterialStateProperty.all(
-            const RoundedRectangleBorder(
-              borderRadius: BorderRadius.zero,
+      height: 50,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        itemCount: searchTypes.length,
+        itemBuilder: (context, index) {
+          final isSelected = searchTypes[index] == searchType;
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            child: FilterChip(
+              label: Text(searchTypesStr[index]),
+              selected: isSelected,
+              onSelected: (_) {
+                provider.updateSearchType(searchTypes[index]);
+              },
             ),
-          ),
-        ),
-        showSelectedIcon: false,
+          );
+        },
       ),
     );
   }
 
   Widget _buildItemList(BuildContext context) {
-    return ChangeNotifierProxyProvider<SearchTypeProvider,
-            BrowseItemDataProvider>(
-        create: (context) => BrowseItemDataProvider.fromDataSource(
-              dataSource: BrowseItemDataSource.favorites(
-                  context.read<SearchTypeProvider>().searchType),
-              itemsPerRequest: 30,
-            ),
-        update: (context, searchTypeProvider, dataProvider) {
-          return BrowseItemDataProvider.fromDataSource(
-            dataSource:
-                BrowseItemDataSource.favorites(searchTypeProvider.searchType),
-            itemsPerRequest: 30,
+    return BrowseItemList(
+      provider: context.watch<BrowseItemDataProvider>(),
+      shrinkWrap: false,
+      actionButtonIcon: const Icon(Icons.more_vert),
+      actionButtonTooltip: "More options",
+      onTap: (context, index, item) {
+        if (item.canBrowse) {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) {
+              return BrowseItemView(browseItem: item);
+            }),
           );
-        },
-        builder: (context, _) => BrowseItemList(
-              provider: context.watch<BrowseItemDataProvider>(),
-              shrinkWrap: false,
-              actionButtonIcon: const Icon(Icons.more_vert),
-              actionButtonTooltip: "More options",
-              onTap: (context, index, item) {
-                if (item.canBrowse) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) {
-                      if (item.browseType == 'artist') {
-                        return BrowseItemView(browseItem: item);
-                      }
-                      return BrowseItemView(browseItem: item);
-                    }),
-                  );
-                } else if (item.canAdd) {
-                  _playTrack(context, item.id, index);
-                }
-              },
-              onAction: (context, index, item) {
-                final parentContext = context;
-                showModalBottomSheet(
-                    context: context,
-                    showDragHandle: true,
-                    isScrollControlled: false,
-                    useRootNavigator: true,
-                    scrollControlDisabledMaxHeightRatio: 0.7,
-                    builder: (context) {
-                      return BottomMenu(
-                          parentContext: parentContext, browseItem: item);
-                    });
-              },
-              pageSize: 0,
-            ));
+        } else if (item.canAdd) {
+          _playTrack(context, item.id, index);
+        }
+      },
+      onAction: (context, index, item) {
+        final parentContext = context;
+        // A bit of a hack to reload favorites in case of any changes.
+        // Doesn't always work so needs to be revisited.
+        final favoriteIdsProvider = context.read<UserFavoritesIdsProvider>();
+        final searchTypeProvider = context.read<SearchTypeProvider>();
+        final initialCount = favoriteIdsProvider.countByType;
+        showModalBottomSheet(
+            context: context,
+            showDragHandle: true,
+            isScrollControlled: false,
+            useRootNavigator: true,
+            scrollControlDisabledMaxHeightRatio: 0.7,
+            builder: (context) {
+              return BottomMenu(parentContext: parentContext, browseItem: item);
+            }).then((_) {
+          final newCount = favoriteIdsProvider.countByType;
+          final type = searchTypeProvider.searchType;
+          if (context.mounted && initialCount[type] != newCount[type]) {
+            context.read<BrowseItemDataProvider>().refresh();
+          }
+        });
+      },
+      pageSize: 0,
+    );
   }
 
   void _playTrack(BuildContext context, String trackId, int index) async {

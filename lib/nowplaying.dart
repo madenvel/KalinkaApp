@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:kalinka/shimmer_widget.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/favorite_button.dart';
@@ -461,23 +462,28 @@ class _NowPlayingState extends State<NowPlaying> {
   }
 
   Widget _buildAlbumArtWidget(BuildContext context) {
-    String imageUrl = context
-            .read<PlayerStateProvider>()
-            .state
-            .currentTrack
-            ?.album
-            ?.image
-            ?.large ??
+    final currentTrack = context.read<PlayerStateProvider>().state.currentTrack;
+    String imageUrl = currentTrack?.album?.image?.large ??
+        currentTrack?.album?.image?.small ??
+        currentTrack?.album?.image?.thumbnail ??
         '';
+    '';
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(_NowPlayingConstants.albumArtRadius),
-      child: CachedNetworkImage(
-        cacheManager: KalinkaMusicCacheManager.instance,
-        imageUrl: imageUrl,
-        fit: BoxFit.cover,
-        placeholder: (_, __) => _buildAlbumPlaceholder(),
-        errorWidget: (_, __, ___) => _buildAlbumPlaceholder(),
+    return CachedNetworkImage(
+      fadeInDuration: Duration.zero,
+      fadeOutDuration: Duration.zero,
+      cacheManager: KalinkaMusicCacheManager.instance,
+      imageUrl: imageUrl,
+      fit: BoxFit.cover,
+      placeholder: (_, __) =>
+          ShimmerWidget(width: double.infinity, height: double.infinity),
+      errorWidget: (_, __, ___) => _buildAlbumPlaceholder(),
+      imageBuilder: (context, imageProvider) => Container(
+        decoration: BoxDecoration(
+          borderRadius:
+              BorderRadius.circular(_NowPlayingConstants.albumArtRadius),
+          image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
+        ),
       ),
     );
   }

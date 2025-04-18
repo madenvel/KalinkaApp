@@ -182,9 +182,12 @@ class KalinkaPlayerProxy {
   }
 
   Future<BrowseItemsList> getFavorite(SearchType queryType,
-      {int offset = 0, int limit = 10}) async {
-    final url = _buildUri('/favorite/list/${queryType.toStringValue()}',
-        {'offset': offset.toString(), 'limit': limit.toString()});
+      {int offset = 0, int limit = 10, String filter = ''}) async {
+    final url = _buildUri('/favorite/list/${queryType.toStringValue()}', {
+      'offset': offset.toString(),
+      'limit': limit.toString(),
+      'filter': filter
+    });
     return client.get(url).then((response) {
       if (response.statusCode != 200) {
         throw Exception(

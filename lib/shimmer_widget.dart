@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart'; // Import TickerProvider
+
+// Simple TickerProvider implementation
+class _NoOpTickerProvider implements TickerProvider {
+  @override
+  Ticker createTicker(TickerCallback onTick) => Ticker(onTick);
+}
 
 // Singleton controller to synchronize all shimmer animations
 class ShimmerController {
@@ -8,21 +15,26 @@ class ShimmerController {
 
   AnimationController? _controller;
   Animation<double>? _animation;
+  TickerProvider? _tickerProvider; // Added TickerProvider field
   int _activeWidgets = 0;
 
-  void initialize(TickerProvider vsync, Duration duration) {
-    _controller ??= AnimationController(
-      vsync: vsync,
-      duration: duration,
-    );
+  // Removed TickerProvider vsync parameter
+  void attach(Duration duration) {
+    if (_controller == null) {
+      _tickerProvider = _NoOpTickerProvider(); // Create TickerProvider
+      _controller = AnimationController(
+        vsync: _tickerProvider!, // Use the internal TickerProvider
+        duration: duration,
+      );
 
-    _animation ??= Tween<double>(
-      begin: -2.0,
-      end: 2.0,
-    ).animate(CurvedAnimation(
-      parent: _controller!,
-      curve: Curves.easeInOut,
-    ));
+      _animation = Tween<double>(
+        begin: -2.0,
+        end: 2.0,
+      ).animate(CurvedAnimation(
+        parent: _controller!,
+        curve: Curves.easeInOut,
+      ));
+    }
 
     _activeWidgets++;
     if (_activeWidgets == 1) {
@@ -36,6 +48,7 @@ class ShimmerController {
       _controller!.dispose();
       _controller = null;
       _animation = null;
+      _tickerProvider = null; // Clear the TickerProvider
     }
   }
 
@@ -81,14 +94,14 @@ class ShimmerWidget extends StatefulWidget {
   State<ShimmerWidget> createState() => _ShimmerWidgetState();
 }
 
-class _ShimmerWidgetState extends State<ShimmerWidget>
-    with SingleTickerProviderStateMixin {
+class _ShimmerWidgetState extends State<ShimmerWidget> {
   final ShimmerController _sharedController = ShimmerController();
 
   @override
   void initState() {
     super.initState();
-    _sharedController.initialize(this, widget.duration);
+    // Removed 'this' argument
+    _sharedController.attach(widget.duration);
   }
 
   @override

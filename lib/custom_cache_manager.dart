@@ -5,8 +5,7 @@ class KalinkaMusicCacheManager {
   static final CacheManager instance = CacheManager(Config(
     key,
     stalePeriod: const Duration(days: 1),
-    maxNrOfCacheObjects: 100,
-    repo: JsonCacheInfoRepository(databaseName: key),
+    maxNrOfCacheObjects: 500,
     fileService: HttpFileService(),
   ));
 }
