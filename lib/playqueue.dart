@@ -154,6 +154,8 @@ class ImageWithIndicator extends StatelessWidget {
     return Stack(children: [
       Positioned.fill(
           child: CachedNetworkImage(
+              fadeInDuration: Duration.zero,
+              fadeOutDuration: Duration.zero,
               fit: BoxFit.cover,
               cacheManager: KalinkaMusicCacheManager.instance,
               imageUrl: imageUrl ?? '',
