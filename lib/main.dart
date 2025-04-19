@@ -1,8 +1,10 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:kalinka/connection_manager.dart';
+import 'package:kalinka/search.dart' show SearchScreen;
 import 'package:provider/provider.dart';
-import 'package:flex_color_scheme/flex_color_scheme.dart';
+// import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'data_provider.dart';
 import 'discover.dart';
 import 'library.dart';
@@ -11,7 +13,7 @@ import 'search.dart';
 import 'swipable_tabs.dart';
 
 void main() {
-  runApp(const KalinkaMusic());
+  runApp(ProviderScope(child: const KalinkaMusic()));
 }
 
 class MyCustomScrollBehavior extends MaterialScrollBehavior {
@@ -43,12 +45,8 @@ class KalinkaMusic extends StatelessWidget {
         child: MaterialApp(
           scrollBehavior: MyCustomScrollBehavior(),
           title: 'Kalinka',
-          theme: FlexThemeData.light(
-            scheme: FlexScheme.redWine,
-          ),
-          darkTheme: FlexThemeData.dark(
-            scheme: FlexScheme.redWine,
-          ),
+          theme: ThemeData.light(),
+          darkTheme: ThemeData.dark(),
           themeMode: ThemeMode.system, // Follow system theme by default
           home: const MyHomePage(),
         ));
@@ -67,13 +65,30 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int currentPageIndex = 0;
   final PageStorageBucket bucket = PageStorageBucket();
-  final List<Widget> pages = const <Widget>[
-    Discover(),
-    Library(),
-    Search(key: PageStorageKey<String>('search')),
+
+  // Create a navigator key for each tab to maintain separate navigation states
+  final List<GlobalKey<NavigatorState>> _navigatorKeys = [
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
   ];
 
   _MyHomePageState();
+
+  // Build a navigator for each tab
+  Widget _buildNavigator(int index) {
+    return Navigator(
+        key: _navigatorKeys[index],
+        onGenerateRoute: (RouteSettings settings) {
+          return MaterialPageRoute(
+              settings: settings,
+              builder: (_) => [
+                    const Discover(),
+                    const Library(),
+                    const SearchScreen()
+                  ][index]);
+        });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -123,9 +138,9 @@ class _MyHomePageState extends State<MyHomePage> {
                     ],
                   )
                 ]),
-            body: PageStorage(
-              bucket: bucket,
-              child: pages[currentPageIndex],
+            body: IndexedStack(
+              index: currentPageIndex,
+              children: List.generate(3, (index) => _buildNavigator(index)),
             )));
   }
 }

@@ -22,14 +22,11 @@ abstract class BrowseItemDataProvider extends ChangeNotifier {
   static BrowseItemDataProvider fromDataSource(
       {required BrowseItemDataSource dataSource,
       int itemsPerRequest = 30,
-      int? itemCountLimit,
-      bool invalidateCache = false}) {
+      int? itemCountLimit}) {
     return DefaultBrowseItemDataProvider(
-      dataSource: dataSource,
-      itemsPerRequest: itemsPerRequest,
-      itemCountLimit: itemCountLimit,
-      invalidateCache: invalidateCache,
-    );
+        dataSource: dataSource,
+        itemsPerRequest: itemsPerRequest,
+        itemCountLimit: itemCountLimit);
   }
 
   static BrowseItemDataProvider savedSearches() {
@@ -73,10 +70,9 @@ class DefaultBrowseItemDataProvider extends BrowseItemDataProvider {
   DefaultBrowseItemDataProvider(
       {required this.dataSource,
       this.itemsPerRequest = 30,
-      this.itemCountLimit,
-      bool invalidateCache = false}) {
+      this.itemCountLimit}) {
     _cacheEntry = cache.getEntry(dataSource.key);
-    if (invalidateCache) {
+    if (dataSource.invalidateCache) {
       _cacheEntry.invalidate();
     }
     _genreFilter.addAll(_cacheEntry.genreFilter);
