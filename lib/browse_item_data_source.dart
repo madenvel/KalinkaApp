@@ -74,9 +74,9 @@ class StaticItemsBrowseItemDataSource extends BrowseItemDataSource {
     final pageItems = offset < items.length ? items.sublist(offset, end) : [];
 
     return BrowseItemsList(
-      items.length,
       offset,
-      pageItems.length,
+      limit,
+      items.length,
       pageItems as List<BrowseItem>,
     );
   }

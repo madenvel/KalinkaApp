@@ -117,6 +117,9 @@ class ImageCard extends StatelessWidget {
                         Align(
                             alignment: textAlignment,
                             child: Text(title!,
+                                style: Theme.of(context)
+                                    .listTileTheme
+                                    .titleTextStyle,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.center,
                                 maxLines: subtitle == null ? 2 : 1)),
@@ -124,6 +127,8 @@ class ImageCard extends StatelessWidget {
                         Text(
                           subtitle!,
                           overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).listTileTheme.subtitleTextStyle,
                         ),
                       if (textVertTrailing != null) textVertTrailing!,
                     ]),
