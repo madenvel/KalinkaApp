@@ -75,8 +75,7 @@ class _LibraryState extends State<Library> {
                                   dataSource: BrowseItemDataSource.favorites(
                                       searchTypeProvider.searchType,
                                       textEditingController.text),
-                                  itemsPerRequest: 100,
-                                  invalidateCache: true);
+                                  itemsPerRequest: 100);
                             },
                             builder: (context, _) => Scaffold(
                                   appBar: AppBar(

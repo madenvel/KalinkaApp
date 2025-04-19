@@ -247,7 +247,6 @@ class _BrowseItemListState extends State<BrowseItemList> {
     };
     return item.browseType == 'artist'
         ? CircleAvatar(
-            backgroundColor: Theme.of(context).colorScheme.secondary,
             child: Icon(iconData, size: 34),
           )
         : Icon(iconData, size: 40);

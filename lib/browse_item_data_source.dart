@@ -15,6 +15,8 @@ abstract class BrowseItemDataSource {
 
   bool get isValid;
 
+  bool get invalidateCache => false;
+
   static BrowseItemDataSource browse(BrowseItem parentItem) {
     return DefaultBrowseItemDataSource(parentItem);
   }
@@ -36,7 +38,64 @@ abstract class BrowseItemDataSource {
   }
 }
 
-class EmptyBrowseItemDataSource implements BrowseItemDataSource {
+class StaticItemsBrowseItemDataSource extends BrowseItemDataSource {
+  final String title;
+  final List<BrowseItem> items;
+  late BrowseItem _item;
+
+  @override
+  bool get invalidateCache => true;
+
+  StaticItemsBrowseItemDataSource(this.title, this.items) {
+    _item = BrowseItem(
+      name: title,
+      subname: '',
+      id: 'static_${title.toLowerCase().replaceAll(' ', '_')}',
+      url: '/static/${title.toLowerCase().replaceAll(' ', '_')}',
+      canBrowse: true,
+      canAdd: false,
+      catalog: Catalog(
+        id: 'static_${title.toLowerCase().replaceAll(' ', '_')}',
+        previewConfig: Preview(
+            type: PreviewType.imageText, aspectRatio: 1.0, rowsCount: 1),
+        title: title,
+        canGenreFilter: false,
+      ),
+    );
+  }
+
+  @override
+  Future<BrowseItemsList> fetch({
+    required int offset,
+    required int limit,
+    required List<String> genreFilter,
+  }) async {
+    final end = (offset + limit) > items.length ? items.length : offset + limit;
+    final pageItems = offset < items.length ? items.sublist(offset, end) : [];
+
+    return BrowseItemsList(
+      items.length,
+      offset,
+      pageItems.length,
+      pageItems as List<BrowseItem>,
+    );
+  }
+
+  @override
+  String get key => 'static_${title.toLowerCase().replaceAll(' ', '_')}';
+
+  @override
+  BrowseItem get item => _item;
+
+  @override
+  bool get isValid => true;
+
+  static BrowseItemDataSource create(String title, List<BrowseItem> items) {
+    return StaticItemsBrowseItemDataSource(title, items);
+  }
+}
+
+class EmptyBrowseItemDataSource extends BrowseItemDataSource {
   @override
   Future<BrowseItemsList> fetch({
     required int offset,
@@ -64,7 +123,7 @@ class EmptyBrowseItemDataSource implements BrowseItemDataSource {
   bool get isValid => true;
 }
 
-class DefaultBrowseItemDataSource implements BrowseItemDataSource {
+class DefaultBrowseItemDataSource extends BrowseItemDataSource {
   final proxy = KalinkaPlayerProxy();
   final BrowseItem parentItem;
 
@@ -92,7 +151,7 @@ class DefaultBrowseItemDataSource implements BrowseItemDataSource {
   bool get isValid => parentItem.canBrowse;
 }
 
-class SuggestionsBrowseItemDataSource implements BrowseItemDataSource {
+class SuggestionsBrowseItemDataSource extends BrowseItemDataSource {
   final proxy = KalinkaPlayerProxy();
   final BrowseItem parentItem;
   late BrowseItem catalogItem;
@@ -140,7 +199,7 @@ class SuggestionsBrowseItemDataSource implements BrowseItemDataSource {
   bool get isValid => _isValid;
 }
 
-class SearchBrowseItemDataSource implements BrowseItemDataSource {
+class SearchBrowseItemDataSource extends BrowseItemDataSource {
   final proxy = KalinkaPlayerProxy();
   final SearchType searchType;
   final String query;
@@ -149,7 +208,8 @@ class SearchBrowseItemDataSource implements BrowseItemDataSource {
 
   SearchBrowseItemDataSource(this.searchType, this.query) {
     _item = BrowseItem(
-      name: 'Search: $query',
+      name:
+          '${searchType.name[0].toUpperCase()}${searchType.name.substring(1)}',
       subname: 'Results for $query',
       id: 'search_${searchType.name}_$query',
       url: '/search/${searchType.name}/$query',
@@ -158,7 +218,10 @@ class SearchBrowseItemDataSource implements BrowseItemDataSource {
       catalog: Catalog(
         id: 'search_${searchType.name}_$query',
         previewConfig: Preview(
-            type: PreviewType.imageText, aspectRatio: 1.0, rowsCount: 1),
+            type: PreviewType.imageText,
+            aspectRatio: 1.0,
+            rowsCount: 1,
+            itemsCount: 10),
         title: 'Search Results',
         canGenreFilter: false,
       ),
@@ -189,12 +252,15 @@ class SearchBrowseItemDataSource implements BrowseItemDataSource {
   bool get isValid => _isValid;
 }
 
-class UserFavoriteBrowseItemDataSource implements BrowseItemDataSource {
+class UserFavoriteBrowseItemDataSource extends BrowseItemDataSource {
   final proxy = KalinkaPlayerProxy();
   final SearchType searchType;
   final String filter;
   late BrowseItem _item;
   bool _isValid = true;
+
+  @override
+  bool get invalidateCache => true;
 
   UserFavoriteBrowseItemDataSource(this.searchType, this.filter) {
     String title;

@@ -39,11 +39,19 @@ class BrowseItemCard extends StatelessWidget {
 
     final image =
         item!.image?.large ?? item!.image?.small ?? item!.image?.thumbnail;
-    final bool hasImage = image != null && image.isNotEmpty;
-    return hasImage
+    final iconSize = constraints.smallest.shortestSide * 0.8;
+    return item!.catalog == null
         ? ImageCard(
             key: ValueKey(item!.id),
-            imageUrl: image!,
+            imageUrl: image,
+            failoverIcon: switch (item!.browseType) {
+              'track' => Icon(Icons.music_note, size: iconSize),
+              'album' => Icon(Icons.album, size: iconSize),
+              'artist' =>
+                CircleAvatar(child: Icon(Icons.person, size: iconSize)),
+              'playlist' => Icon(Icons.playlist_play, size: iconSize),
+              _ => null
+            },
             title: item!.name,
             subtitle: item!.subname,
             textVertLeading: textVertLeading,

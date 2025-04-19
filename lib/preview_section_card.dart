@@ -17,11 +17,21 @@ class PreviewSectionCard extends StatelessWidget {
   final BrowseItemDataSource? dataSource;
   final double contentPadding;
   final int? rowsCount;
+  final bool seeAll;
+  final VoidCallback? onSeeAll;
+  final Function(BrowseItem)? onItemSelected;
 
   const PreviewSectionCard(
-      {super.key, this.dataSource, this.contentPadding = 8.0, this.rowsCount});
+      {super.key,
+      this.dataSource,
+      this.contentPadding = 8.0,
+      this.rowsCount,
+      this.seeAll = true,
+      this.onSeeAll,
+      this.onItemSelected});
 
   void _onTap(BuildContext context, BrowseItem item) {
+    onItemSelected?.call(item);
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) {
         if (item.browseType == 'catalog') {
@@ -66,7 +76,7 @@ class PreviewSectionCard extends StatelessWidget {
                     : SectionPreviewGrid(
                         dataProvider: dataProvider,
                         onTap: (item) => _onTap(context, item))),
-            seeAll: !hasImage && !hasNoItems,
+            seeAll: !hasImage && !hasNoItems && seeAll,
           );
         },
       ),
@@ -119,16 +129,17 @@ class PreviewSectionCard extends StatelessWidget {
             const Spacer(),
             if (seeAll)
               TextButton(
-                  child: const Text('See All', style: TextStyle(fontSize: 16)),
-                  onPressed: () {
-                    if (item.canBrowse) {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (context) => CatalogBrowseItemView(
-                                dataSource: dataSource!,
-                                onTap: (item) => _onTap(context, item),
-                              )));
-                    }
-                  })
+                  onPressed: onSeeAll ??
+                      () {
+                        if (item.canBrowse) {
+                          Navigator.of(context).push(MaterialPageRoute(
+                              builder: (context) => CatalogBrowseItemView(
+                                    dataSource: dataSource!,
+                                    onTap: (item) => _onTap(context, item),
+                                  )));
+                        }
+                      },
+                  child: const Text('See More', style: TextStyle(fontSize: 16)))
           ]),
         ),
         if (item.description != null)

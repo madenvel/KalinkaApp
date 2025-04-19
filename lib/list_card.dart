@@ -5,6 +5,7 @@ import 'package:kalinka/shimmer_widget.dart';
 
 class ImageCard extends StatelessWidget {
   final String? imageUrl;
+  final Widget? failoverIcon;
   final String? title;
   final String? subtitle;
   final Widget? textVertLeading;
@@ -19,6 +20,7 @@ class ImageCard extends StatelessWidget {
   const ImageCard(
       {super.key,
       this.imageUrl,
+      this.failoverIcon,
       this.title,
       this.subtitle,
       this.onTap,
@@ -32,6 +34,10 @@ class ImageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (imageUrl == null) {
+      return _buildInnerWidget(context, null);
+    }
+
     return CachedNetworkImage(
         imageUrl: imageUrl!,
         cacheManager: KalinkaMusicCacheManager.instance,
@@ -57,7 +63,24 @@ class ImageCard extends StatelessWidget {
         });
   }
 
-  Widget _buildInnerWidget(BuildContext context, ImageProvider imageProvider) {
+  Widget _buildImage(BuildContext context, ImageProvider imageProvider) {
+    return AspectRatio(
+      aspectRatio: aspectRatio,
+      child: Container(
+        decoration: BoxDecoration(
+          shape: shape,
+          borderRadius:
+              shape == BoxShape.circle ? null : BorderRadius.circular(12),
+          image: DecorationImage(
+            image: imageProvider,
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInnerWidget(BuildContext context, ImageProvider? imageProvider) {
     return InkResponse(
       containedInkWell: true,
       borderRadius: BorderRadius.circular(12.0),
@@ -69,36 +92,41 @@ class ImageCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (imageUrl != null)
+              if (imageProvider != null)
+                _buildImage(context, imageProvider)
+              else
                 AspectRatio(
-                    aspectRatio: aspectRatio,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: shape,
-                        borderRadius: shape == BoxShape.circle
-                            ? null
-                            : BorderRadius.circular(12),
-                        image: DecorationImage(
-                          image: imageProvider,
-                          fit: BoxFit.cover,
+                  aspectRatio: aspectRatio,
+                  child: failoverIcon != null
+                      ? failoverIcon!
+                      : ShimmerWidget(
+                          width: double.infinity,
+                          height: double.infinity,
+                          borderRadius: 12,
+                          shape: shape,
                         ),
-                      ),
-                    )),
+                ),
               const Spacer(),
               if (title != null || subtitle != null)
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  if (textVertLeading != null) textVertLeading!,
-                  if (title != null)
-                    Align(
-                        alignment: textAlignment,
-                        child: Text(title!, overflow: TextOverflow.ellipsis)),
-                  if (subtitle != null)
-                    Text(
-                      subtitle!,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  if (textVertTrailing != null) textVertTrailing!,
-                ]),
+                Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (textVertLeading != null) textVertLeading!,
+                      if (title != null)
+                        Align(
+                            alignment: textAlignment,
+                            child: Text(title!,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                maxLines: subtitle == null ? 2 : 1)),
+                      if (subtitle != null)
+                        Text(
+                          subtitle!,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      if (textVertTrailing != null) textVertTrailing!,
+                    ]),
             ]),
       ),
     );

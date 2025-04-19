@@ -1,257 +1,296 @@
-import 'package:flutter/services.dart' show SystemNavigator;
+import 'package:flex_color_scheme/flex_color_scheme.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
-import 'package:kalinka/browse_item_data_source.dart';
+import 'package:kalinka/browse_item_data_source.dart'
+    show BrowseItemDataSource, StaticItemsBrowseItemDataSource;
 import 'package:kalinka/browse_item_list.dart' show BrowseItemList;
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
-import 'package:kalinka/search_results_provider.dart';
-import 'package:provider/provider.dart';
-import 'package:kalinka/bottom_menu.dart';
-import 'package:kalinka/data_provider.dart';
-import 'package:flutter/material.dart';
-import 'package:kalinka/kalinkaplayer_proxy.dart';
+import 'package:kalinka/data_model.dart' show BrowseItem, SearchType;
+import 'package:kalinka/preview_section_card.dart';
+import 'package:kalinka/recent_items_provider.dart';
+import 'package:provider/provider.dart' as provider
+    show ChangeNotifierProvider, WatchContext;
+import 'search_history_provider.dart';
 
-import 'data_model.dart';
-
-class Search extends StatefulWidget {
-  const Search({super.key});
+class SearchScreen extends ConsumerStatefulWidget {
+  const SearchScreen({super.key});
 
   @override
-  State<Search> createState() => _SearchState();
+  ConsumerState<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchState extends State<Search> {
-  final navigatorKey = GlobalKey<NavigatorState>();
+enum SearchFilter { all, tracks, albums, artists, playlists }
+
+class _SearchScreenState extends ConsumerState<SearchScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  SearchFilter _selectedFilter = SearchFilter.all;
 
   @override
-  Widget build(BuildContext context) {
-    return PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (bool didPop, _) {
-          if (didPop) {
-            return;
-          }
-          if (navigatorKey.currentState!.canPop()) {
-            navigatorKey.currentState!.pop();
-          } else {
-            SystemNavigator.pop();
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _setFilter(SearchFilter filter) {
+    setState(() {
+      _selectedFilter = filter;
+    });
+  }
+
+  Widget _buildChip(String label, SearchFilter filter) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: _selectedFilter == filter,
+        onSelected: (selected) {
+          if (selected) {
+            _setFilter(filter);
           }
         },
-        child: Navigator(
-            key: navigatorKey,
-            onGenerateRoute: (settings) => MaterialPageRoute(builder: (_) {
-                  return _buildProviders();
-                })));
-  }
-
-  Widget _buildProviders() {
-    return MultiProvider(
-        providers: [
-          ChangeNotifierProvider<TextEditingController>(
-              create: (_) => TextEditingController()),
-          ChangeNotifierProvider<SearchTypeProvider>(
-              create: (_) => SearchTypeProvider()),
-          ChangeNotifierProvider<SavedSearchProvider>(
-            create: (_) => SavedSearchProvider(),
-          )
-        ],
-        child: ChangeNotifierProxyProvider2<TextEditingController,
-                SearchTypeProvider, BrowseItemDataProvider>(
-            create: (_) => BrowseItemDataProvider.fromDataSource(
-                dataSource: BrowseItemDataSource.empty()),
-            update: (_, textController, searchTypeProvider, __) {
-              if (textController.text.isEmpty) {
-                return BrowseItemDataProvider.fromDataSource(
-                    dataSource: BrowseItemDataSource.empty());
-              }
-              return BrowseItemDataProvider.fromDataSource(
-                  dataSource: BrowseItemDataSource.search(
-                      searchTypeProvider.searchType, textController.text));
-            },
-            builder: (context, _) => _buildSearchPage(context)));
-  }
-
-  Widget _buildSearchPage(BuildContext context) {
-    final textFieldController = context.watch<TextEditingController>();
-    final searchTypeProvider = context.watch<SearchTypeProvider>();
-    return Scaffold(
-      appBar: AppBar(
-        flexibleSpace: Padding(
-          padding: EdgeInsets.only(
-              left: 8.0,
-              right: 8.0,
-              bottom: 8.0,
-              top: MediaQuery.of(context).padding.top + 8.0),
-          child: TextField(
-            clipBehavior: Clip.antiAlias,
-            controller: textFieldController,
-            decoration: InputDecoration(
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
-              labelText: 'Search for albums, artists, tracks, playlists',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: textFieldController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        textFieldController.clear();
-                      })
-                  : null,
-            ),
-          ),
-        ),
       ),
-      body: Column(children: [
-        Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: textFieldController.text.isNotEmpty
-                ? _buildChipGroup(searchTypeProvider)
-                : const SizedBox.shrink()),
-        Expanded(
-          child: textFieldController.text.isEmpty
-              ? _buildSearchHistory(context)
-              : _buildSearchResults(context),
-        ),
-      ]),
     );
   }
 
-  Widget _buildChipGroup(SearchTypeProvider provider) {
-    final List<String> searchTypesStr = [
-      'Albums',
-      'Artists',
-      'Tracks',
-      'Playlists'
-    ];
-    final List<SearchType> searchTypes = [
-      SearchType.album,
-      SearchType.artist,
-      SearchType.track,
-      SearchType.playlist
-    ];
-    return Row(
-      children: [
-        const Divider(height: 1),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Wrap(
-            spacing: 8.0,
-            children: List.generate(searchTypes.length, (index) {
-              return ChoiceChip(
-                label: Text(searchTypesStr[index]),
-                selected: provider.searchType == searchTypes[index],
-                onSelected: (_) {
-                  provider.updateSearchType(searchTypes[index]);
-                },
-              );
-            }),
-          ),
+  Widget _buildHorizontalList(BrowseItemDataSource dataSource,
+      {VoidCallback? onSeeMore, Function(BrowseItem)? onItemSelected}) {
+    // Use a key based on dataSource hashCode to ensure rebuild when it changes
+    return PreviewSectionCard(
+      key: ValueKey(dataSource.hashCode),
+      dataSource: dataSource,
+      seeAll: onSeeMore != null,
+      onSeeAll: onSeeMore,
+      onItemSelected: onItemSelected,
+    );
+  }
+
+  Widget _buildLandingPage() {
+    // Get search history from the provider
+    // Get recent items from their respective providers
+    final recentTracks = ref.watch(recentTracksProvider);
+    final recentAlbums = ref.watch(recentAlbumsProvider);
+    final recentArtists = ref.watch(recentArtistsProvider);
+    final recentPlaylists = ref.watch(recentPlaylistsProvider);
+
+    // Group all recent items by SearchType
+    final Map<SearchType, List<BrowseItem>> recentItems = {
+      SearchType.track: recentTracks,
+      SearchType.album: recentAlbums,
+      SearchType.artist: recentArtists,
+      SearchType.playlist: recentPlaylists,
+    };
+
+    final searchHistory = ref.watch(searchHistoryProvider);
+
+    if (searchHistory.isEmpty &&
+        recentTracks.isEmpty &&
+        recentAlbums.isEmpty &&
+        recentArtists.isEmpty &&
+        recentPlaylists.isEmpty) {
+      return Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.search, size: 48),
+            Text('Search for albums, artists, tracks, playlists',
+                style: Theme.of(context).textTheme.bodyLarge),
+          ],
         ),
-        const Divider(height: 1),
+      );
+    }
+
+    return ListView(
+      children: [
+        if (searchHistory.isNotEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0),
+            child: Text('Previous searches',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Wrap(
+              spacing: 8.0,
+              runSpacing: 4.0,
+              children: searchHistory
+                  .map((search) => ActionChip(
+                        label: Text(search),
+                        onPressed: () {
+                          setState(() {
+                            _searchController.text = search;
+                            _selectedFilter = SearchFilter.all;
+                          });
+                        },
+                      ))
+                  .toList(),
+            ),
+          ),
+          const SizedBox(height: 20),
+          ..._buildRecentItemsList(recentItems)
+        ],
+        // Loop through all SearchType values except for 'none'
       ],
     );
   }
 
-  Widget _buildSearchResults(BuildContext context) {
-    final provider = context.watch<BrowseItemDataProvider>();
-    final savedSearchProvider = context.read<SavedSearchProvider>();
-    return BrowseItemList(
-        provider: provider,
-        onTap: (context, index, item) {
-          savedSearchProvider.addSearch(item);
-          if (item.canBrowse) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) {
-                return BrowseItemView(browseItem: item);
-              }),
-            );
-          } else if (item.canAdd) {
-            _playTrack(context, item.id);
-          }
-        },
-        onAction: (_, __, BrowseItem item) {
-          final parentContext = navigatorKey.currentState?.context ?? context;
-          showModalBottomSheet(
-              context: context,
-              showDragHandle: true,
-              isScrollControlled: false,
-              useRootNavigator: true,
-              scrollControlDisabledMaxHeightRatio: 0.7,
-              builder: (context) {
-                return BottomMenu(
-                    parentContext: parentContext, browseItem: item);
-              });
-        },
-        pageSize: 0,
-        shrinkWrap: false);
+  List<Widget> _buildRecentItemsList(
+      Map<SearchType, List<BrowseItem>> recentItems) {
+    List<Widget> recentItemsWidgets = [];
+    for (var searchType in SearchType.values.sublist(1)) {
+      final items = recentItems[searchType] ?? [];
+      if (items.isNotEmpty) {
+        final title = 'Recently Viewed ${searchType.name.capitalize}s';
+        recentItemsWidgets.add(_buildHorizontalList(
+          StaticItemsBrowseItemDataSource.create(title, items),
+          onItemSelected: _updateRecentItems,
+        ));
+      }
+    }
+    return recentItemsWidgets;
   }
 
-  Widget _buildSearchHistory(BuildContext context) {
-    final provider = context.watch<SavedSearchProvider>();
-    return Column(children: [
-      provider.totalItemCount > 0
-          ? _buildSearchHistoryHeader(provider)
-          : const SizedBox.shrink(),
-      Expanded(
-          child: BrowseItemList(
-        provider: provider,
-        onTap: (__, index, item) {
-          if (item.canBrowse) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) {
-                return BrowseItemView(browseItem: item);
-              }),
-            );
-          } else if (item.canAdd) {
-            _playTrack(context, item.id);
-          }
-
-          provider.moveToTop(index);
-        },
-        onAction: (_, index, item) {
-          provider.removeSearchAt(index);
-        },
-        actionButtonIcon: const Icon(Icons.delete),
-        actionButtonTooltip: 'Delete',
-        pageSize: 0,
-        shrinkWrap: false,
-      ))
-    ]);
+  Widget _buildSearchResults() {
+    final query = _searchController.text;
+    return ListView(
+      children: [
+        for (var i = 1; i < SearchType.values.length; i++)
+          _buildHorizontalList(
+              BrowseItemDataSource.search(SearchType.values[i], query),
+              onSeeMore: () => _setFilter(SearchFilter.values[i]),
+              onItemSelected: _updateSearchHistoryAndRecentItems),
+      ],
+    );
   }
 
-  Widget _buildSearchHistoryHeader(SavedSearchProvider provider) {
-    return Row(children: [
-      const Padding(
-          padding: EdgeInsets.only(left: 15, top: 4, bottom: 4),
-          child: Text('Previous searches',
-              style: TextStyle(fontWeight: FontWeight.bold))),
-      const Spacer(),
-      Padding(
-          padding: const EdgeInsets.only(right: 15, top: 4, bottom: 4),
-          child: ElevatedButton(
-              child: Text(
-                'Delete All',
+  Widget _buildCategoryResults(SearchFilter filter) {
+    // Adding a key that changes whenever filter or search text changes
+    // ensures the provider is recreated with new data
+    final searchKey = Key('${_selectedFilter.name}-${_searchController.text}');
+
+    return provider.ChangeNotifierProvider<BrowseItemDataProvider>(
+      key: searchKey,
+      create: (context) => BrowseItemDataProvider.fromDataSource(
+        dataSource: BrowseItemDataSource.search(
+          SearchType.values[filter.index],
+          _searchController.text,
+        ),
+      ),
+      builder: (context, __) {
+        return BrowseItemList(
+          provider: context.watch<BrowseItemDataProvider>(),
+          onTap: (context, index, item) {
+            if (_searchController.text.isNotEmpty) {
+              // Add search term to history
+              ref
+                  .read(searchHistoryProvider.notifier)
+                  .addSearchQuery(_searchController.text);
+            }
+
+            if (item.track != null) {
+              return;
+            }
+
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => BrowseItemView(
+                    browseItem: item, onItemSelected: _updateRecentItems),
               ),
-              onPressed: () {
-                provider.clearHistory();
-              })),
-    ]);
+            );
+          },
+          onAction: (context, index, item) {},
+          pageSize: 0,
+          shrinkWrap: false,
+        );
+      },
+    );
   }
 
-  void _playTrack(BuildContext context, String trackId) async {
-    PlayerState state = context.read<PlayerStateProvider>().state;
-
-    bool needToAdd = true;
-    if (state.currentTrack?.id == trackId) {
-      needToAdd = false;
+  void _updateRecentItems(BrowseItem item) {
+    if (item.track != null) {
+      ref.read(recentTracksProvider.notifier).addItem(item);
+    } else if (item.album != null) {
+      ref.read(recentAlbumsProvider.notifier).addItem(item);
+    } else if (item.artist != null) {
+      ref.read(recentArtistsProvider.notifier).addItem(item);
+    } else if (item.playlist != null) {
+      ref.read(recentPlaylistsProvider.notifier).addItem(item);
     }
+  }
 
-    if (!needToAdd) {
-      KalinkaPlayerProxy().play(state.index);
-    } else {
-      await KalinkaPlayerProxy().clear();
-      await KalinkaPlayerProxy().addTracks([trackId]);
-      await KalinkaPlayerProxy().play();
+  void _updateSearchHistory() {
+    if (_searchController.text.isNotEmpty) {
+      ref
+          .read(searchHistoryProvider.notifier)
+          .addSearchQuery(_searchController.text);
     }
+  }
+
+  void _updateSearchHistoryAndRecentItems(BrowseItem item) {
+    _updateSearchHistory();
+    _updateRecentItems(item);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        titleSpacing: 8.0,
+        title: Center(
+          child: SearchBar(
+            controller: _searchController,
+            elevation: WidgetStateProperty.all(0.0),
+            hintText: 'Search...',
+            leading: const Icon(Icons.search),
+            trailing: [
+              if (_searchController.text.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {});
+                  },
+                ),
+            ],
+            onSubmitted: (value) {
+              setState(() {});
+            },
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          if (_searchController
+              .text.isNotEmpty) // Show chips when focused or text exists
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                child: Wrap(
+                  // Use Wrap for chips
+                  spacing: 8.0,
+                  children: [
+                    _buildChip('All', SearchFilter.all),
+                    _buildChip('Tracks', SearchFilter.tracks),
+                    _buildChip('Albums', SearchFilter.albums),
+                    _buildChip('Artists', SearchFilter.artists),
+                    _buildChip('Playlists', SearchFilter.playlists),
+                  ],
+                ),
+              ),
+            ),
+          Expanded(
+            child: _searchController.text.isNotEmpty
+                ? (_selectedFilter == SearchFilter.all
+                    ? _buildSearchResults()
+                    : _buildCategoryResults(_selectedFilter))
+                : _buildLandingPage(),
+          ),
+        ],
+      ),
+    );
   }
 }
