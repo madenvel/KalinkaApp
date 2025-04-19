@@ -181,16 +181,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         return BrowseItemList(
           provider: context.watch<BrowseItemDataProvider>(),
           onTap: (context, index, item) {
-            if (_searchController.text.isNotEmpty) {
-              // Add search term to history
-              ref
-                  .read(searchHistoryProvider.notifier)
-                  .addSearchQuery(_searchController.text);
-            }
-
             if (item.track != null) {
               return;
             }
+
+            _updateSearchHistoryAndRecentItems(item);
 
             Navigator.of(context).push(
               MaterialPageRoute(
