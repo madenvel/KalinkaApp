@@ -1,17 +1,21 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kalinka/bottom_menu.dart' show BottomMenu;
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
 import 'package:kalinka/browse_item_data_source.dart'
     show BrowseItemDataSource, StaticItemsBrowseItemDataSource;
 import 'package:kalinka/browse_item_list.dart' show BrowseItemList;
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
-import 'package:kalinka/data_model.dart' show BrowseItem, SearchType;
+import 'package:kalinka/data_model.dart'
+    show BrowseItem, PlayerState, SearchType;
+import 'package:kalinka/data_provider.dart' show PlayerStateProvider;
+import 'package:kalinka/kalinkaplayer_proxy.dart' show KalinkaPlayerProxy;
 import 'package:kalinka/preview_section_card.dart';
 import 'package:kalinka/recent_items_provider.dart';
 import 'package:provider/provider.dart' as provider
-    show ChangeNotifierProvider, WatchContext;
+    show ChangeNotifierProvider, ReadContext, WatchContext;
 import 'search_history_provider.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
@@ -142,13 +146,77 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       final items = recentItems[searchType] ?? [];
       if (items.isNotEmpty) {
         final title = 'Recently Viewed ${searchType.name.capitalize}s';
-        recentItemsWidgets.add(_buildHorizontalList(
-          StaticItemsBrowseItemDataSource.create(title, items),
-          onItemSelected: _updateRecentItems,
-        ));
+        if (searchType == SearchType.track) {
+          recentItemsWidgets.add(_buildRecentTracksList(title, items));
+        } else {
+          // For other types, we can use a different data source
+          recentItemsWidgets.add(_buildHorizontalList(
+            StaticItemsBrowseItemDataSource.create(title, items),
+            onItemSelected: _updateRecentItems,
+          ));
+        }
       }
     }
     return recentItemsWidgets;
+  }
+
+  Widget _buildRecentTracksList(String title, List<BrowseItem> items) {
+    return provider.ChangeNotifierProvider<BrowseItemDataProvider>(
+        create: (context) => BrowseItemDataProvider.fromDataSource(
+            dataSource: StaticItemsBrowseItemDataSource.create(title, items)),
+        builder: (context, _) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: Text(title,
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              BrowseItemList(
+                  pageSize: 5,
+                  shrinkWrap: true,
+                  provider: context.watch<BrowseItemDataProvider>(),
+                  onTap: (context, index, item) {
+                    _updateRecentItems(item);
+                    _playTrack(context, item.track!.id, index);
+                  },
+                  onAction: (context, index, item) {
+                    showModalBottomSheet(
+                      context: context, // Use the builder context
+                      showDragHandle: true,
+                      isScrollControlled: false,
+                      useRootNavigator:
+                          true, // Good practice if navigating from the sheet
+                      scrollControlDisabledMaxHeightRatio: 0.7,
+                      builder: (_) => BottomMenu(
+                        // Use parentContext if needed for actions *outside* the sheet
+                        parentContext: context,
+                        browseItem: item, // Use specific item or the main one
+                      ),
+                    );
+                  }),
+            ],
+          );
+        });
+  }
+
+  void _playTrack(BuildContext context, String trackId, int index) async {
+    PlayerState state = context.read<PlayerStateProvider>().state;
+
+    bool needToAdd = true;
+    if (state.currentTrack?.id == trackId) {
+      needToAdd = false;
+    }
+
+    if (!needToAdd) {
+      KalinkaPlayerProxy().play(index);
+    } else {
+      await KalinkaPlayerProxy().clear();
+      await KalinkaPlayerProxy().addTracks([trackId]);
+      await KalinkaPlayerProxy().play();
+    }
   }
 
   Widget _buildSearchResults() {
@@ -254,27 +322,30 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
         ),
       ),
-      body: Column(
+      body: _buildBody(context),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
         children: [
           if (_searchController
               .text.isNotEmpty) // Show chips when focused or text exists
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                child: Wrap(
-                  // Use Wrap for chips
-                  spacing: 8.0,
-                  children: [
-                    _buildChip('All', SearchFilter.all),
-                    _buildChip('Tracks', SearchFilter.tracks),
-                    _buildChip('Albums', SearchFilter.albums),
-                    _buildChip('Artists', SearchFilter.artists),
-                    _buildChip('Playlists', SearchFilter.playlists),
-                  ],
-                ),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: Wrap(
+                // Use Wrap for chips
+                spacing: 8.0,
+                children: [
+                  _buildChip('All', SearchFilter.all),
+                  _buildChip('Tracks', SearchFilter.tracks),
+                  _buildChip('Albums', SearchFilter.albums),
+                  _buildChip('Artists', SearchFilter.artists),
+                  _buildChip('Playlists', SearchFilter.playlists),
+                ],
               ),
             ),
           Expanded(
