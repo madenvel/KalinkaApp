@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:kalinka/connection_manager.dart';
 import 'package:kalinka/search.dart' show SearchScreen;
@@ -75,6 +76,22 @@ class _MyHomePageState extends State<MyHomePage> {
 
   _MyHomePageState();
 
+  Widget _withPopScope(Widget child) {
+    return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (bool didPop, _) {
+          if (didPop) {
+            return;
+          }
+          if (_navigatorKeys[currentPageIndex].currentState!.canPop()) {
+            _navigatorKeys[currentPageIndex].currentState!.pop();
+          } else {
+            SystemNavigator.pop();
+          }
+        },
+        child: child);
+  }
+
   // Build a navigator for each tab
   Widget _buildNavigator(int index) {
     return Navigator(
@@ -93,54 +110,55 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return ConnectionManager(
-        child: Scaffold(
-            bottomNavigationBar: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Consumer<TrackListProvider>(builder: (context, provider, _) {
-                    if (provider.trackList.isNotEmpty) {
-                      return Playbar(onTap: () {
-                        Navigator.push(
-                            context,
-                            PageRouteBuilder(
-                                opaque: false,
-                                pageBuilder:
-                                    (context, animation, secondaryAnimation) =>
-                                        const SwipableTabs()));
-                      });
-                    } else {
-                      return const SizedBox.shrink();
-                    }
-                  }),
-                  NavigationBar(
-                    onDestinationSelected: (int index) {
-                      setState(() {
-                        currentPageIndex = index;
-                      });
-                    },
-                    selectedIndex: currentPageIndex,
-                    destinations: const <Widget>[
-                      NavigationDestination(
-                        selectedIcon: Icon(Icons.explore),
-                        icon: Icon(Icons.explore_outlined),
-                        label: 'Discover',
-                      ),
-                      NavigationDestination(
-                        selectedIcon: Icon(Icons.library_music),
-                        icon: Icon(Icons.library_music_outlined),
-                        label: 'My Library',
-                      ),
-                      NavigationDestination(
-                          icon: Icon(Icons.search),
-                          selectedIcon: Icon(Icons.search_outlined),
-                          label: 'Search'),
-                    ],
-                  )
-                ]),
-            body: IndexedStack(
-              index: currentPageIndex,
-              children: List.generate(3, (index) => _buildNavigator(index)),
-            )));
+      child: _withPopScope(Scaffold(
+          bottomNavigationBar: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Consumer<TrackListProvider>(builder: (context, provider, _) {
+                  if (provider.trackList.isNotEmpty) {
+                    return Playbar(onTap: () {
+                      Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                              opaque: false,
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) =>
+                                      const SwipableTabs()));
+                    });
+                  } else {
+                    return const SizedBox.shrink();
+                  }
+                }),
+                NavigationBar(
+                  onDestinationSelected: (int index) {
+                    setState(() {
+                      currentPageIndex = index;
+                    });
+                  },
+                  selectedIndex: currentPageIndex,
+                  destinations: const <Widget>[
+                    NavigationDestination(
+                      selectedIcon: Icon(Icons.explore),
+                      icon: Icon(Icons.explore_outlined),
+                      label: 'Discover',
+                    ),
+                    NavigationDestination(
+                      selectedIcon: Icon(Icons.library_music),
+                      icon: Icon(Icons.library_music_outlined),
+                      label: 'My Library',
+                    ),
+                    NavigationDestination(
+                        icon: Icon(Icons.search),
+                        selectedIcon: Icon(Icons.search_outlined),
+                        label: 'Search'),
+                  ],
+                )
+              ]),
+          body: IndexedStack(
+            index: currentPageIndex,
+            children: List.generate(3, (index) => _buildNavigator(index)),
+          ))),
+    );
   }
 }
