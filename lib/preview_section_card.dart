@@ -13,7 +13,7 @@ import 'package:kalinka/browse_item_view.dart';
 import 'package:provider/provider.dart'
     show ChangeNotifierProxyProvider, Consumer;
 
-const double _kVerticalPaddingLarge = 24.0;
+const double _kVerticalPaddingSmall = 8.0;
 
 class PreviewSectionCard extends StatelessWidget {
   final BrowseItemDataSource? dataSource;
@@ -119,8 +119,10 @@ class PreviewSectionCard extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(
-              horizontal: contentPadding, vertical: _kVerticalPaddingLarge),
+          padding: EdgeInsets.only(
+              left: contentPadding,
+              right: contentPadding,
+              bottom: _kVerticalPaddingSmall),
           child: Row(children: [
             Text(
               item.name ?? 'Unknown Section',

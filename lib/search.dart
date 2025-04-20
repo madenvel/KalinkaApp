@@ -114,7 +114,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            padding: const EdgeInsets.only(
+                left: 8.0, right: 8.0, top: 8.0, bottom: 24.0),
             child: Wrap(
               spacing: 8.0,
               runSpacing: 4.0,
@@ -131,10 +132,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   .toList(),
             ),
           ),
-          const SizedBox(height: 20),
           ..._buildRecentItemsList(recentItems)
+              .expand((item) => [item, const SizedBox(height: 24)])
+              .toList()
+            ..removeLast(),
         ],
-        // Loop through all SearchType values except for 'none'
       ],
     );
   }
@@ -184,7 +186,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 24.0),
+          padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
           child: Row(
             children: [
               Text(title,
@@ -362,20 +364,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             padding: const EdgeInsets.symmetric(vertical: 16.0),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              // padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Wrap(
-                  // Use Wrap for chips
-                  // spacing: 4.0,
-                  children: [
-                    _buildChip('All', SearchFilter.all),
-                    _buildChip('Tracks', SearchFilter.tracks),
-                    _buildChip('Albums', SearchFilter.albums),
-                    _buildChip('Artists', SearchFilter.artists),
-                    _buildChip('Playlists', SearchFilter.playlists),
-                  ],
-                ),
+              padding: const EdgeInsets.symmetric(horizontal: 2.0),
+              child: Wrap(
+                // Use Wrap for chips
+                children: [
+                  _buildChip('All', SearchFilter.all),
+                  _buildChip('Tracks', SearchFilter.tracks),
+                  _buildChip('Albums', SearchFilter.albums),
+                  _buildChip('Artists', SearchFilter.artists),
+                  _buildChip('Playlists', SearchFilter.playlists),
+                ],
               ),
             ),
           ),
