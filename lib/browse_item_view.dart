@@ -433,6 +433,9 @@ class _BrowseItemViewState extends State<BrowseItemView> {
 
   Widget _buildButtonsBar(BuildContext context) {
     final isArtist = widget.browseItem.artist != null;
+    final isTrack = widget.browseItem.track != null;
+    final isPlaylist = widget.browseItem.playlist != null;
+    final isAlbum = widget.browseItem.album != null;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -470,17 +473,16 @@ class _BrowseItemViewState extends State<BrowseItemView> {
             tooltip: 'Add to playlist',
             onPressed: () => _addToPlaylistAction(context),
           ),
-        // Favorite Button (always shown)
-        _buildLabeledButton(
-          context,
-          iconWidget: FavoriteButton(
-            item: widget.browseItem,
-            size: _kIconSizeSmall,
+        if (isArtist || isTrack || isPlaylist || isAlbum)
+          _buildLabeledButton(
+            context,
+            iconWidget: FavoriteButton(
+              item: widget.browseItem,
+              size: _kIconSizeSmall,
+            ),
+            label: 'Like',
+            tooltip: 'Add to favorites',
           ),
-          label: 'Like',
-          tooltip: 'Add to favorites',
-          // onPressed handled internally by FavoriteButton
-        ),
       ],
     );
   }
@@ -499,13 +501,14 @@ class _BrowseItemViewState extends State<BrowseItemView> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        IconButton(
-          icon: iconWidget ?? Icon(icon!, size: _kIconSizeSmall),
-          onPressed: onPressed,
-          tooltip: tooltip,
-          // Consider adding visual density constraints if needed
-          // visualDensity: VisualDensity.compact,
-        ),
+        iconWidget ??
+            IconButton(
+              icon: Icon(icon!, size: _kIconSizeSmall),
+              onPressed: onPressed,
+              tooltip: tooltip,
+              // Consider adding visual density constraints if needed
+              // visualDensity: VisualDensity.compact,
+            ),
         Text(
           label,
           style: const TextStyle(fontSize: _kFontSizeSmall),
