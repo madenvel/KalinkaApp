@@ -291,7 +291,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               ),
             );
           },
-          onAction: (context, index, item) {},
+          onAction: (context, index, item) {
+            showModalBottomSheet(
+              context: context, // Use the builder context
+              showDragHandle: true,
+              isScrollControlled: false,
+              useRootNavigator:
+                  true, // Good practice if navigating from the sheet
+              scrollControlDisabledMaxHeightRatio: 0.7,
+              builder: (_) => BottomMenu(
+                // Use parentContext if needed for actions *outside* the sheet
+                parentContext: context,
+                browseItem: item, // Use specific item or the main one
+              ),
+            );
+          },
           pageSize: 0,
           shrinkWrap: false,
         );
