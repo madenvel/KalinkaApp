@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
 import 'package:kalinka/playlist_creation_dialog.dart';
 import 'package:kalinka/search_results_provider.dart' show SearchTypeProvider;
@@ -13,15 +12,8 @@ import 'package:kalinka/browse_item_list.dart';
 import 'data_model.dart';
 import 'kalinkaplayer_proxy.dart';
 
-class Library extends StatefulWidget {
+class Library extends StatelessWidget {
   const Library({super.key});
-
-  @override
-  State<Library> createState() => _LibraryState();
-}
-
-class _LibraryState extends State<Library> {
-  _LibraryState();
 
   static final List<SearchType> searchTypes = [
     SearchType.track,
@@ -36,62 +28,41 @@ class _LibraryState extends State<Library> {
     'Playlists'
   ];
 
-  final navigatorKey = GlobalKey<NavigatorState>();
-  String dataProviderKey = '';
-
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (bool didPop, _) {
-          if (didPop) {
-            return;
-          }
-          if (navigatorKey.currentState!.canPop()) {
-            navigatorKey.currentState!.pop();
-          } else {
-            SystemNavigator.pop();
-          }
-        },
-        child: Navigator(
-            key: navigatorKey,
-            onGenerateRoute: (settings) => MaterialPageRoute(builder: (_) {
-                  return MultiProvider(
-                      providers: [
-                        ChangeNotifierProvider(
-                            create: (_) => TextEditingController()),
-                        ChangeNotifierProvider<SearchTypeProvider>(
-                            create: (_) => SearchTypeProvider())
+    return MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => TextEditingController()),
+          ChangeNotifierProvider<SearchTypeProvider>(
+              create: (_) => SearchTypeProvider())
+        ],
+        builder: (context, _) {
+          return ChangeNotifierProxyProvider2<SearchTypeProvider,
+                  TextEditingController, BrowseItemDataProvider>(
+              create: (context) => BrowseItemDataProvider.fromDataSource(
+                  dataSource: BrowseItemDataSource.empty()),
+              update: (context, searchTypeProvider, textEditingController,
+                  dataProvider) {
+                return BrowseItemDataProvider.fromDataSource(
+                    dataSource: BrowseItemDataSource.favorites(
+                        searchTypeProvider.searchType,
+                        textEditingController.text),
+                    itemsPerRequest: 100);
+              },
+              builder: (context, _) => Scaffold(
+                    appBar: AppBar(
+                      title: const Row(children: [
+                        Icon(Icons.library_music),
+                        SizedBox(width: 8),
+                        Text('My Library')
+                      ]),
+                      actions: [
+                        _buildActionButton(context),
                       ],
-                      builder: (context, _) {
-                        return ChangeNotifierProxyProvider2<SearchTypeProvider,
-                                TextEditingController, BrowseItemDataProvider>(
-                            create: (context) =>
-                                BrowseItemDataProvider.fromDataSource(
-                                    dataSource: BrowseItemDataSource.empty()),
-                            update: (context, searchTypeProvider,
-                                textEditingController, dataProvider) {
-                              return BrowseItemDataProvider.fromDataSource(
-                                  dataSource: BrowseItemDataSource.favorites(
-                                      searchTypeProvider.searchType,
-                                      textEditingController.text),
-                                  itemsPerRequest: 100);
-                            },
-                            builder: (context, _) => Scaffold(
-                                  appBar: AppBar(
-                                    title: const Row(children: [
-                                      Icon(Icons.library_music),
-                                      SizedBox(width: 8),
-                                      Text('My Library')
-                                    ]),
-                                    actions: [
-                                      _buildActionButton(context),
-                                    ],
-                                  ),
-                                  body: _buildBody(context),
-                                ));
-                      });
-                })));
+                    ),
+                    body: _buildBody(context),
+                  ));
+        });
   }
 
   Widget _buildActionButton(BuildContext context) {

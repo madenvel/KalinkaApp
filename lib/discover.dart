@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
 import 'package:kalinka/browse_item_data_source.dart'
@@ -11,40 +10,11 @@ import 'package:kalinka/settings_tab.dart';
 
 import 'data_model.dart';
 
-class Discover extends StatefulWidget {
+class Discover extends StatelessWidget {
   const Discover({super.key});
 
-  @override
-  State<Discover> createState() => _DiscoverState();
-}
-
-class _DiscoverState extends State<Discover> {
-  _DiscoverState();
-
-  final navigatorKey = GlobalKey<NavigatorState>();
-  final double textLabelHeight = 52;
+  static const double textLabelHeight = 52;
   static const double contentPadding = 8.0;
-
-  @override
-  Widget build(BuildContext context) {
-    return PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (bool didPop, _) {
-          if (didPop) {
-            return;
-          }
-          if (navigatorKey.currentState!.canPop()) {
-            navigatorKey.currentState!.pop();
-          } else {
-            SystemNavigator.pop();
-          }
-        },
-        child: Navigator(
-            key: navigatorKey,
-            onGenerateRoute: (settings) => MaterialPageRoute(builder: (_) {
-                  return _buildWithProviders();
-                })));
-  }
 
   BrowseItemDataProvider _createProvider() {
     return BrowseItemDataProvider.fromDataSource(
@@ -54,7 +24,8 @@ class _DiscoverState extends State<Discover> {
     );
   }
 
-  Widget _buildWithProviders() {
+  @override
+  Widget build(BuildContext context) {
     return ChangeNotifierProvider<BrowseItemDataProvider>(
         create: (context) => _createProvider(),
         child: Scaffold(
