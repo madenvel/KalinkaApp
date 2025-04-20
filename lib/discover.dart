@@ -14,7 +14,6 @@ class Discover extends StatelessWidget {
   const Discover({super.key});
 
   static const double textLabelHeight = 52;
-  static const double contentPadding = 8.0;
 
   BrowseItemDataProvider _createProvider() {
     return BrowseItemDataProvider.fromDataSource(
@@ -56,29 +55,22 @@ class Discover extends StatelessWidget {
           child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Flexible(
-            child: ListView.separated(
-                physics: const NeverScrollableScrollPhysics(),
-                hitTestBehavior: HitTestBehavior.deferToChild,
-                shrinkWrap: true,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 16),
-                itemCount: provider.maybeItemCount,
-                itemBuilder: (context, index) =>
-                    _buildSection(context, provider.getItem(index).item)),
-          )
+          ListView.separated(
+              physics: const NeverScrollableScrollPhysics(),
+              hitTestBehavior: HitTestBehavior.deferToChild,
+              shrinkWrap: true,
+              separatorBuilder: (context, index) => const SizedBox(height: 24),
+              itemCount: provider.maybeItemCount,
+              itemBuilder: (context, index) =>
+                  _buildSection(context, provider.getItem(index).item))
         ],
       ));
     });
   }
 
   Widget _buildSection(BuildContext context, BrowseItem? section) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: PreviewSectionCard(
-          dataSource:
-              section != null ? BrowseItemDataSource.browse(section) : null,
-          contentPadding: contentPadding),
-    );
+    return PreviewSectionCard(
+        dataSource:
+            section != null ? BrowseItemDataSource.browse(section) : null);
   }
 }

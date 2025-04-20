@@ -145,23 +145,14 @@ class _BrowseItemListState extends State<BrowseItemList> {
   Widget _buildTrackListItemTile(
       BuildContext context, BrowseItem item, int index, Widget leading) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 8.0),
       leading: _withPlaybackAnimationOverlay(context, item.id, leading),
       title: Text('${item.name}'),
-      subtitle: item.subname != null
-          ? Text(
-              item.subname!,
-              style: TextStyle(
-                fontSize: 14,
-              ),
-            )
-          : null,
+      subtitle: item.subname != null ? Text(item.subname!) : null,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (item.duration != null)
             Text(formatTime(item.duration!), style: TextStyle(fontSize: 12)),
-          const SizedBox(width: 8),
           IconButton(
             icon: widget.actionButtonIcon,
             onPressed: () => widget.onAction(context, index, item),

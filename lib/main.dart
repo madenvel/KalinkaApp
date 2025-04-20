@@ -1,3 +1,4 @@
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemNavigator;
@@ -5,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:kalinka/connection_manager.dart';
 import 'package:kalinka/search.dart' show SearchScreen;
 import 'package:provider/provider.dart';
-// import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'data_provider.dart';
 import 'discover.dart';
 import 'library.dart';
@@ -46,8 +46,34 @@ class KalinkaMusic extends StatelessWidget {
         child: MaterialApp(
           scrollBehavior: MyCustomScrollBehavior(),
           title: 'Kalinka',
-          theme: ThemeData.light(),
-          darkTheme: ThemeData.dark(),
+          theme: ThemeData.light().copyWith(
+              listTileTheme: ThemeData.light().listTileTheme.copyWith(
+                    titleTextStyle: TextStyle(
+                        overflow: TextOverflow.ellipsis,
+                        color:
+                            ThemeData.light().colorScheme.onSurface.darken(20),
+                        fontWeight: FontWeight.w400,
+                        fontSize: 15),
+                    subtitleTextStyle: TextStyle(
+                        overflow: TextOverflow.ellipsis,
+                        color: ThemeData.light()
+                            .colorScheme
+                            .onSurface
+                            .brighten(30)),
+                  )),
+          darkTheme: ThemeData.dark().copyWith(
+              listTileTheme: ThemeData.dark().listTileTheme.copyWith(
+                    titleTextStyle: TextStyle(
+                        overflow: TextOverflow.ellipsis,
+                        color:
+                            ThemeData.dark().colorScheme.onSurface.brighten(20),
+                        fontWeight: FontWeight.w400,
+                        fontSize: 15),
+                    subtitleTextStyle: TextStyle(
+                        overflow: TextOverflow.ellipsis,
+                        color:
+                            ThemeData.dark().colorScheme.onSurface.darken(30)),
+                  )),
           themeMode: ThemeMode.system, // Follow system theme by default
           home: const MyHomePage(),
         ));

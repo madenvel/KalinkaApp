@@ -375,21 +375,19 @@ class _BrowseItemViewState extends State<BrowseItemView> {
       children: [
         Text(
           name,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: _kFontSizeTitle,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).listTileTheme.titleTextStyle?.copyWith(
+              fontWeight: FontWeight.bold,
+              fontSize: _kFontSizeTitle,
+              overflow: TextOverflow.visible),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4.0), // Specific spacing from original
         if (subname.isNotEmpty)
           Text(
             subname,
-            style: const TextStyle(
-              fontSize: _kFontSizeSubtitle,
-            ),
+            style: Theme.of(context).listTileTheme.subtitleTextStyle?.copyWith(
+                  fontSize: _kFontSizeSubtitle,
+                ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
@@ -419,7 +417,10 @@ class _BrowseItemViewState extends State<BrowseItemView> {
       padding: const EdgeInsets.only(bottom: _kVerticalPaddingMedium),
       child: Text(
         '$durationString$trackCountString',
-        style: const TextStyle(fontSize: _kFontSizeBody),
+        style: Theme.of(context)
+            .listTileTheme
+            .subtitleTextStyle
+            ?.copyWith(fontSize: _kFontSizeBody),
         textAlign: TextAlign.center,
       ),
     );
@@ -434,50 +435,59 @@ class _BrowseItemViewState extends State<BrowseItemView> {
     final colorScheme = theme.colorScheme;
 
     // Use Wrap for better responsiveness if buttons might overflow
-    return Wrap(
-      alignment: WrapAlignment.center,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: _kButtonSpacing, // Horizontal spacing
-      runSpacing: _kVerticalPaddingSmall, // Vertical spacing if wrapped
-      children: [
-        if (!isArtist)
-          IconButton(
-            icon: Icon(Icons.play_arrow,
-                size: _kIconSizeMedium, color: colorScheme.surface),
-            onPressed: () => _replaceAndPlay(context, 0),
-            style: IconButton.styleFrom(
-              backgroundColor: colorScheme.secondary,
-              padding: const EdgeInsets.all(_kVerticalPaddingSmall),
-            ),
-            tooltip: 'Play',
-          ),
-        if (!isArtist)
-          _buildLabeledButton(
-            context,
-            icon: Icons.queue,
-            label: 'Queue',
-            tooltip: 'Add to queue',
-            onPressed: () => _addToQueueAction(context),
-          ),
-        if (!isArtist)
-          _buildLabeledButton(
-            context,
-            icon: Icons.playlist_add,
-            label: 'Add',
-            tooltip: 'Add to playlist',
-            onPressed: () => _addToPlaylistAction(context),
-          ),
-        if (isArtist || isTrack || isPlaylist || isAlbum)
-          _buildLabeledButton(
-            context,
-            iconWidget: FavoriteButton(
-              item: widget.browseItem,
-              size: _kIconSizeSmall,
-            ),
-            label: 'Like',
-            tooltip: 'Add to favorites',
-          ),
-      ],
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 48,
+          // alignment: WrapAlignment.center,
+          // crossAxisAlignment: WrapCrossAlignment.center,
+          // spacing: _kButtonSpacing, // Horizontal spacing
+          // runSpacing: _kVerticalPaddingSmall, // Vertical spacing if wrapped
+          children: [
+            if (!isArtist)
+              IconButton(
+                icon: Icon(Icons.play_arrow,
+                    size: _kIconSizeMedium, color: colorScheme.surface),
+                onPressed: () => _replaceAndPlay(context, 0),
+                style: IconButton.styleFrom(
+                  backgroundColor: colorScheme.secondary,
+                  padding: const EdgeInsets.all(_kVerticalPaddingSmall),
+                ),
+                tooltip: 'Play',
+              ),
+            if (!isArtist)
+              _buildLabeledButton(
+                context,
+                icon: Icons.queue,
+                label: 'Queue',
+                tooltip: 'Add to queue',
+                onPressed: () => _addToQueueAction(context),
+              ),
+            if (!isArtist)
+              _buildLabeledButton(
+                context,
+                icon: Icons.playlist_add,
+                label: 'Add To Playlist',
+                tooltip: 'Add to playlist',
+                onPressed: () => _addToPlaylistAction(context),
+              ),
+            if (isArtist || isTrack || isPlaylist || isAlbum)
+              _buildLabeledButton(
+                context,
+                iconWidget: FavoriteButton(
+                  item: widget.browseItem,
+                  size: _kIconSizeSmall,
+                ),
+                label: 'Like',
+                tooltip: 'Add to favorites',
+              ),
+          ],
+        ),
+      ),
     );
   }
 
