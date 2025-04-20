@@ -89,7 +89,7 @@ class Library extends StatelessWidget {
   Widget _buildFilterTextField(BuildContext context) {
     final controller = context.watch<TextEditingController>();
     return Padding(
-      padding: EdgeInsets.all(8.0),
+      padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
       child: TextField(
         controller: controller,
         decoration: InputDecoration(
