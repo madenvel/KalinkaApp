@@ -13,6 +13,8 @@ import 'package:kalinka/browse_item_view.dart';
 import 'package:provider/provider.dart'
     show ChangeNotifierProxyProvider, Consumer;
 
+const double _kVerticalPaddingLarge = 24.0;
+
 class PreviewSectionCard extends StatelessWidget {
   final BrowseItemDataSource? dataSource;
   final double contentPadding;
@@ -70,7 +72,7 @@ class PreviewSectionCard extends StatelessWidget {
                     section: updatedSection, contentPadding: contentPadding)
                 : (hasNoItems
                     ? Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
+                        padding: const EdgeInsets.only(left: 8.0, top: 16.0),
                         child: const Text('No items found'),
                       )
                     : SectionPreviewGrid(
@@ -117,7 +119,8 @@ class PreviewSectionCard extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.all(contentPadding),
+          padding: EdgeInsets.symmetric(
+              horizontal: contentPadding, vertical: _kVerticalPaddingLarge),
           child: Row(children: [
             Text(
               item.name ?? 'Unknown Section',
@@ -139,7 +142,7 @@ class PreviewSectionCard extends StatelessWidget {
                                   )));
                         }
                       },
-                  child: const Text('See More', style: TextStyle(fontSize: 16)))
+                  child: Text('See More')),
           ]),
         ),
         if (item.description != null)

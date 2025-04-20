@@ -164,42 +164,66 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return provider.ChangeNotifierProvider<BrowseItemDataProvider>(
         create: (context) => BrowseItemDataProvider.fromDataSource(
             dataSource: StaticItemsBrowseItemDataSource.create(title, items)),
-        builder: (context, _) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        builder: (context, _) => _buildTrackList(context, title));
+  }
+
+  Widget _buildSearchResultTrackList(String title) {
+    return provider.ChangeNotifierProvider<BrowseItemDataProvider>(
+        create: (context) => BrowseItemDataProvider.fromDataSource(
+            dataSource: BrowseItemDataSource.search(
+                SearchType.track, _searchController.text)),
+        builder: (context, _) =>
+            _buildTrackList(context, title, totalSize: 5, onSeeMore: () {
+              _setFilter(SearchFilter.tracks);
+            }));
+  }
+
+  Widget _buildTrackList(BuildContext context, String title,
+      {int? totalSize, VoidCallback? onSeeMore}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 24.0),
+          child: Row(
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: Text(title,
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
-              BrowseItemList(
-                  pageSize: 5,
-                  shrinkWrap: true,
-                  provider: context.watch<BrowseItemDataProvider>(),
-                  onTap: (context, index, item) {
-                    _updateRecentItems(item);
-                    _playTrack(context, item.track!.id, index);
-                  },
-                  onAction: (context, index, item) {
-                    showModalBottomSheet(
-                      context: context, // Use the builder context
-                      showDragHandle: true,
-                      isScrollControlled: false,
-                      useRootNavigator:
-                          true, // Good practice if navigating from the sheet
-                      scrollControlDisabledMaxHeightRatio: 0.7,
-                      builder: (_) => BottomMenu(
-                        // Use parentContext if needed for actions *outside* the sheet
-                        parentContext: context,
-                        browseItem: item, // Use specific item or the main one
-                      ),
-                    );
-                  }),
+              Text(title,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              if (onSeeMore != null)
+                TextButton(
+                  onPressed: onSeeMore,
+                  child: const Text('See more'),
+                ),
             ],
-          );
-        });
+          ),
+        ),
+        BrowseItemList(
+            pageSize: 5,
+            size: totalSize,
+            shrinkWrap: true,
+            provider: context.watch<BrowseItemDataProvider>(),
+            onTap: (context, index, item) {
+              _updateRecentItems(item);
+              _playTrack(context, item.track!.id, index);
+            },
+            onAction: (context, index, item) {
+              showModalBottomSheet(
+                context: context, // Use the builder context
+                showDragHandle: true,
+                isScrollControlled: false,
+                useRootNavigator:
+                    true, // Good practice if navigating from the sheet
+                scrollControlDisabledMaxHeightRatio: 0.7,
+                builder: (_) => BottomMenu(
+                  // Use parentContext if needed for actions *outside* the sheet
+                  parentContext: context,
+                  browseItem: item, // Use specific item or the main one
+                ),
+              );
+            }),
+      ],
+    );
   }
 
   void _playTrack(BuildContext context, String trackId, int index) async {
@@ -224,10 +248,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return ListView(
       children: [
         for (var i = 1; i < SearchType.values.length; i++)
-          _buildHorizontalList(
-              BrowseItemDataSource.search(SearchType.values[i], query),
-              onSeeMore: () => _setFilter(SearchFilter.values[i]),
-              onItemSelected: _updateSearchHistoryAndRecentItems),
+          if (SearchType.values[i] == SearchType.track)
+            _buildSearchResultTrackList('Tracks')
+          else
+            _buildHorizontalList(
+                BrowseItemDataSource.search(SearchType.values[i], query),
+                onSeeMore: () => _setFilter(SearchFilter.values[i]),
+                onItemSelected: _updateSearchHistoryAndRecentItems),
       ],
     );
   }
@@ -327,36 +354,39 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildBody(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        children: [
-          if (_searchController
-              .text.isNotEmpty) // Show chips when focused or text exists
-            SingleChildScrollView(
+    return Column(
+      children: [
+        if (_searchController
+            .text.isNotEmpty) // Show chips when focused or text exists
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16.0),
+            child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: Wrap(
-                // Use Wrap for chips
-                spacing: 8.0,
-                children: [
-                  _buildChip('All', SearchFilter.all),
-                  _buildChip('Tracks', SearchFilter.tracks),
-                  _buildChip('Albums', SearchFilter.albums),
-                  _buildChip('Artists', SearchFilter.artists),
-                  _buildChip('Playlists', SearchFilter.playlists),
-                ],
+              // padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Wrap(
+                  // Use Wrap for chips
+                  // spacing: 4.0,
+                  children: [
+                    _buildChip('All', SearchFilter.all),
+                    _buildChip('Tracks', SearchFilter.tracks),
+                    _buildChip('Albums', SearchFilter.albums),
+                    _buildChip('Artists', SearchFilter.artists),
+                    _buildChip('Playlists', SearchFilter.playlists),
+                  ],
+                ),
               ),
             ),
-          Expanded(
-            child: _searchController.text.isNotEmpty
-                ? (_selectedFilter == SearchFilter.all
-                    ? _buildSearchResults()
-                    : _buildCategoryResults(_selectedFilter))
-                : _buildLandingPage(),
           ),
-        ],
-      ),
+        Expanded(
+          child: _searchController.text.isNotEmpty
+              ? (_selectedFilter == SearchFilter.all
+                  ? _buildSearchResults()
+                  : _buildCategoryResults(_selectedFilter))
+              : _buildLandingPage(),
+        ),
+      ],
     );
   }
 }

@@ -18,8 +18,7 @@ import 'package:provider/provider.dart';
 import 'data_model.dart';
 
 // --- Constants ---
-const double _kDefaultPadding = 16.0;
-const double _kHorizontalPadding = 8.0;
+const double _kDefaultPadding = 8.0;
 const double _kVerticalPaddingSmall = 8.0;
 const double _kVerticalPaddingMedium = 16.0;
 const double _kVerticalPaddingLarge = 24.0;
@@ -150,9 +149,7 @@ class _BrowseItemViewState extends State<BrowseItemView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(context, albumImage),
-          const SizedBox(height: _kVerticalPaddingLarge),
-          _buildSectionHeader(context),
-          _buildItemList(context),
+          ..._buildItemList(context),
           ..._buildExtraSections(context),
           const SizedBox
               .shrink(), // Ensures column takes minimum required space
@@ -165,7 +162,6 @@ class _BrowseItemViewState extends State<BrowseItemView> {
     final browseItem = widget.browseItem;
     return Padding(
       padding: const EdgeInsets.only(
-        top: _kVerticalPaddingMedium,
         bottom: _kVerticalPaddingSmall,
         left: _kDefaultPadding,
       ),
@@ -179,17 +175,18 @@ class _BrowseItemViewState extends State<BrowseItemView> {
     );
   }
 
-  Widget _buildItemList(BuildContext context) {
+  List<Widget> _buildItemList(BuildContext context) {
     final parentContext = context; // Needed for modal sheet context
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: _kHorizontalPadding),
-      child: BrowseItemList(
+    return [
+      const SizedBox(height: _kVerticalPaddingLarge),
+      _buildSectionHeader(context),
+      BrowseItemList(
         provider: context.watch<BrowseItemDataProvider>(),
         onTap: _onListItemTapAction,
         onAction: (_, __, BrowseItem item) =>
             _showItemMenu(context, parentContext, item: item),
-      ),
-    );
+      )
+    ];
   }
 
   void _onListItemTapAction(BuildContext context, int index, BrowseItem item) {
@@ -246,13 +243,10 @@ class _BrowseItemViewState extends State<BrowseItemView> {
 
   Widget _buildHeaderView(BuildContext context, ImageProvider? imageProvider) {
     // Calculate top padding dynamically based on safe area
-    final topPadding =
-        MediaQuery.paddingOf(context).top + _kVerticalPaddingLarge;
+    final topPadding = MediaQuery.paddingOf(context).top + kToolbarHeight;
 
     return Padding(
       padding: EdgeInsets.only(
-        left: _kDefaultPadding,
-        right: _kDefaultPadding,
         top: topPadding,
       ),
       child: Column(
@@ -522,8 +516,7 @@ class _BrowseItemViewState extends State<BrowseItemView> {
   List<Widget> _buildExtraSections(BuildContext context) {
     return widget.browseItem.extraSections
             ?.map((section) => Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: _kHorizontalPadding),
+                  padding: const EdgeInsets.only(top: _kVerticalPaddingLarge),
                   child: PreviewSectionCard(
                     dataSource: BrowseItemDataSource.browse(section),
                   ),

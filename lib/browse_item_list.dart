@@ -17,6 +17,7 @@ class BrowseItemList extends StatefulWidget {
   final String actionButtonTooltip;
   final bool shrinkWrap;
   final int pageSize;
+  final int? size;
 
   const BrowseItemList({
     super.key,
@@ -24,6 +25,7 @@ class BrowseItemList extends StatefulWidget {
     required this.onTap,
     required this.onAction,
     this.pageSize = 15,
+    this.size,
     this.shrinkWrap = true,
     this.actionButtonIcon = const Icon(Icons.more_vert),
     this.actionButtonTooltip = "More options",
@@ -70,40 +72,40 @@ class _BrowseItemListState extends State<BrowseItemList> {
     }
 
     // For finite list mode (when shrinkWrap is true), return the original layout
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          listView,
-          if (_shouldShowMoreButton(provider))
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Center(
-                child: TextButton.icon(
-                  icon: const Icon(Icons.expand_more),
-                  label: Text(_getShowMoreButtonText(provider.totalItemCount)),
-                  onPressed: _showMoreTracks,
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        listView,
+        if (_shouldShowMoreButton(provider))
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Center(
+              child: TextButton.icon(
+                icon: const Icon(Icons.expand_more),
+                label: Text(_getShowMoreButtonText(
+                    (widget.size ?? provider.totalItemCount))),
+                onPressed: _showMoreTracks,
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 
   int _getItemCount(BrowseItemDataProvider provider) {
+    final size = widget.size ?? provider.maybeItemCount;
     // If pageSize is 0, use the data provider's maybeItemCount for infinite scrolling
     if (widget.pageSize <= 0) {
-      return provider.maybeItemCount;
+      return size;
     }
     // Otherwise use the paged approach with _visibleTrackCount
-    return _visibleTrackCount.clamp(0, provider.totalItemCount);
+    return _visibleTrackCount.clamp(0, size);
   }
 
   bool _shouldShowMoreButton(BrowseItemDataProvider provider) {
     // Only show "more" button when using paged mode (pageSize > 0) and there are more items to show
-    return widget.pageSize > 0 && _visibleTrackCount < provider.totalItemCount;
+    return widget.pageSize > 0 &&
+        _visibleTrackCount < (widget.size ?? provider.totalItemCount);
   }
 
   Widget _buildTrackListItem(BuildContext context, BrowseItem item, int index) {
