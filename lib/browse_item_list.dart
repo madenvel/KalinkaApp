@@ -151,8 +151,18 @@ class _BrowseItemListState extends State<BrowseItemList> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (item.duration != null)
-            Text(formatTime(item.duration!), style: TextStyle(fontSize: 12)),
+          if (item.track != null && item.duration != null)
+            Text(formatTime(item.duration!),
+                style: Theme.of(context)
+                    .listTileTheme
+                    .subtitleTextStyle
+                    ?.copyWith(fontSize: 12))
+          else if (item.playlist != null || item.album != null)
+            Text('${item.trackCount} track${item.trackCount != 1 ? "s" : ""}',
+                style: Theme.of(context)
+                    .listTileTheme
+                    .subtitleTextStyle
+                    ?.copyWith(fontSize: 12)),
           IconButton(
             icon: widget.actionButtonIcon,
             onPressed: () => widget.onAction(context, index, item),
@@ -169,7 +179,6 @@ class _BrowseItemListState extends State<BrowseItemList> {
 
   Widget _buildLoadingListItem(BuildContext context) {
     return ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8.0),
         leading: ShimmerWidget(
           width: leadingIconSize,
           height: leadingIconSize,
