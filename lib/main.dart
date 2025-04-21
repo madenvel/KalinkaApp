@@ -52,7 +52,7 @@ class KalinkaMusic extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         color:
                             ThemeData.light().colorScheme.onSurface.darken(20),
-                        fontWeight: FontWeight.w400,
+                        fontWeight: FontWeight.w500,
                         fontSize: 15),
                     subtitleTextStyle: TextStyle(
                         overflow: TextOverflow.ellipsis,
@@ -67,7 +67,7 @@ class KalinkaMusic extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         color:
                             ThemeData.dark().colorScheme.onSurface.brighten(20),
-                        fontWeight: FontWeight.w400,
+                        fontWeight: FontWeight.w500,
                         fontSize: 15),
                     subtitleTextStyle: TextStyle(
                         overflow: TextOverflow.ellipsis,

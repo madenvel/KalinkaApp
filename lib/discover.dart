@@ -3,6 +3,7 @@ import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
 import 'package:kalinka/browse_item_data_source.dart'
     show BrowseItemDataSource, DefaultBrowseItemDataSource;
+import 'package:kalinka/constants.dart';
 import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
 import 'package:provider/provider.dart';
 import 'package:kalinka/genre_select_filter.dart';
@@ -59,7 +60,8 @@ class Discover extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               hitTestBehavior: HitTestBehavior.deferToChild,
               shrinkWrap: true,
-              separatorBuilder: (context, index) => const SizedBox(height: 24),
+              separatorBuilder: (context, index) => const SizedBox(
+                  height: KalinkaConstants.kSpaceBetweenSections),
               itemCount: provider.maybeItemCount,
               itemBuilder: (context, index) =>
                   _buildSection(context, provider.getItem(index).item))

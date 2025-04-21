@@ -8,6 +8,7 @@ import 'package:kalinka/browse_item_data_source.dart'
     show BrowseItemDataSource, StaticItemsBrowseItemDataSource;
 import 'package:kalinka/browse_item_list.dart' show BrowseItemList;
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
+import 'package:kalinka/constants.dart';
 import 'package:kalinka/data_model.dart'
     show BrowseItem, PlayerState, SearchType;
 import 'package:kalinka/data_provider.dart' show PlayerStateProvider;
@@ -44,17 +45,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildChip(String label, SearchFilter filter) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: _selectedFilter == filter,
-        onSelected: (selected) {
-          if (selected) {
-            _setFilter(filter);
-          }
-        },
-      ),
+    return ChoiceChip(
+      label: Text(label),
+      selected: _selectedFilter == filter,
+      onSelected: (selected) {
+        if (selected) {
+          _setFilter(filter);
+        }
+      },
     );
   }
 
@@ -110,7 +108,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         if (searchHistory.isNotEmpty) ...[
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0),
-            child: Text('Previous searches',
+            child: Text('Previous Searches',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
           Padding(
@@ -186,17 +184,24 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
+          padding: const EdgeInsets.only(
+              left: KalinkaConstants.kScreenContentHorizontalPadding,
+              right: KalinkaConstants.kScreenContentHorizontalPadding,
+              bottom: KalinkaConstants.kContentVerticalPadding),
           child: Row(
             children: [
               Text(title,
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const Spacer(),
               if (onSeeMore != null)
-                TextButton(
-                  onPressed: onSeeMore,
-                  child: const Text('See more'),
-                ),
+                ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        padding: KalinkaConstants.kElevatedButtonPadding,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        )),
+                    onPressed: onSeeMore,
+                    child: Text('See More'))
             ],
           ),
         ),
@@ -247,18 +252,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Widget _buildSearchResults() {
     final query = _searchController.text;
-    return ListView(
-      children: [
-        for (var i = 1; i < SearchType.values.length; i++)
-          if (SearchType.values[i] == SearchType.track)
-            _buildSearchResultTrackList('Tracks')
-          else
-            _buildHorizontalList(
-                BrowseItemDataSource.search(SearchType.values[i], query),
-                onSeeMore: () => _setFilter(SearchFilter.values[i]),
-                onItemSelected: _updateSearchHistoryAndRecentItems),
-      ],
-    );
+    return ListView.separated(
+        itemCount: SearchType.values.length - 1,
+        separatorBuilder: (_, __) =>
+            const SizedBox(height: KalinkaConstants.kSpaceBetweenSections),
+        itemBuilder: (_, index) {
+          final searchType = SearchType.values[index + 1];
+          if (searchType == SearchType.track) {
+            return _buildSearchResultTrackList('Tracks');
+          }
+
+          return _buildHorizontalList(
+              BrowseItemDataSource.search(searchType, query),
+              onSeeMore: () => _setFilter(SearchFilter.values[index + 1]),
+              onItemSelected: _updateSearchHistoryAndRecentItems);
+        });
   }
 
   Widget _buildCategoryResults(SearchFilter filter) {
@@ -342,7 +350,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        titleSpacing: 8.0,
+        titleSpacing: KalinkaConstants.kScreenContentHorizontalPadding,
         title: Center(
           child: SearchBar(
             controller: _searchController,
@@ -374,20 +382,26 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       children: [
         if (_searchController
             .text.isNotEmpty) // Show chips when focused or text exists
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
+          Align(
+            alignment: Alignment.centerLeft,
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 2.0),
-              child: Wrap(
-                // Use Wrap for chips
-                children: [
-                  _buildChip('All', SearchFilter.all),
-                  _buildChip('Tracks', SearchFilter.tracks),
-                  _buildChip('Albums', SearchFilter.albums),
-                  _buildChip('Artists', SearchFilter.artists),
-                  _buildChip('Playlists', SearchFilter.playlists),
-                ],
+              padding: const EdgeInsets.symmetric(
+                  horizontal: KalinkaConstants.kScreenContentHorizontalPadding,
+                  vertical: KalinkaConstants.kContentVerticalPadding),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    vertical: KalinkaConstants.kContentVerticalPadding),
+                child: Row(
+                  spacing: KalinkaConstants.kContentHorizontalPadding,
+                  children: List.generate(SearchFilter.values.length, (index) {
+                    final filter = SearchFilter.values[index];
+                    return _buildChip(
+                      filter.name.capitalize,
+                      filter,
+                    );
+                  }),
+                ),
               ),
             ),
           ),

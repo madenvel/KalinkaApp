@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
+import 'package:kalinka/constants.dart';
 import 'package:kalinka/playlist_creation_dialog.dart';
 import 'package:kalinka/search_results_provider.dart' show SearchTypeProvider;
 import 'package:provider/provider.dart';
@@ -89,7 +90,9 @@ class Library extends StatelessWidget {
   Widget _buildFilterTextField(BuildContext context) {
     final controller = context.watch<TextEditingController>();
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      padding: EdgeInsets.symmetric(
+          horizontal: KalinkaConstants.kScreenContentHorizontalPadding,
+          vertical: KalinkaConstants.kContentVerticalPadding),
       child: TextField(
         controller: controller,
         decoration: InputDecoration(
@@ -123,26 +126,29 @@ class Library extends StatelessWidget {
   Widget _buildChipList(BuildContext context) {
     final provider = context.watch<SearchTypeProvider>();
     final searchType = provider.searchType;
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: ListView.builder(
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        itemCount: searchTypes.length,
-        itemBuilder: (context, index) {
-          final isSelected = searchTypes[index] == searchType;
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: FilterChip(
-              label: Text(searchTypesStr[index]),
-              selected: isSelected,
-              onSelected: (_) {
-                provider.updateSearchType(searchTypes[index]);
-              },
-            ),
-          );
-        },
+        padding: EdgeInsets.symmetric(
+            horizontal: KalinkaConstants.kScreenContentHorizontalPadding,
+            vertical: KalinkaConstants.kContentVerticalPadding),
+        child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: List.generate(searchTypes.length, (index) {
+              final isSelected = searchTypes[index] == searchType;
+              return Padding(
+                padding: EdgeInsets.only(
+                  right: KalinkaConstants.kContentHorizontalPadding,
+                ),
+                child: FilterChip(
+                    label: Text(searchTypesStr[index]),
+                    selected: isSelected,
+                    onSelected: (_) {
+                      provider.updateSearchType(searchTypes[index]);
+                    }),
+              );
+            })),
       ),
     );
   }

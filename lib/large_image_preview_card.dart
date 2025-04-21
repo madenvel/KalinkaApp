@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart'
     show CachedNetworkImage;
 import 'package:flutter/material.dart';
+import 'package:kalinka/constants.dart';
 import 'package:kalinka/custom_cache_manager.dart'
     show KalinkaMusicCacheManager;
 import 'package:kalinka/data_model.dart' show BrowseItem, CardSize;
@@ -9,10 +10,8 @@ import 'package:kalinka/shimmer_widget.dart';
 
 class LargeImagePreviewCard extends StatelessWidget {
   final BrowseItem section;
-  final double contentPadding;
 
-  const LargeImagePreviewCard(
-      {super.key, required this.section, this.contentPadding = 8.0});
+  const LargeImagePreviewCard({super.key, required this.section});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +21,8 @@ class LargeImagePreviewCard extends StatelessWidget {
 
     return Material(
       type: MaterialType.transparency,
-      child: InkWell(
+      child: InkResponse(
+          containedInkWell: true,
           borderRadius: BorderRadius.circular(12.0),
           onTap: () {
             if (!section.canAdd) {
@@ -34,9 +34,14 @@ class LargeImagePreviewCard extends StatelessWidget {
             );
           },
           child: Padding(
-            padding: EdgeInsets.all(contentPadding),
+            padding: EdgeInsets.only(
+                left: KalinkaConstants.kScreenContentHorizontalPadding,
+                right: KalinkaConstants.kScreenContentHorizontalPadding,
+                top: KalinkaConstants.kContentVerticalPadding),
             child: CachedNetworkImage(
-              height: cardSize + contentPadding * 2,
+              fadeInDuration: Duration.zero,
+              fadeOutDuration: Duration.zero,
+              height: cardSize,
               cacheManager: KalinkaMusicCacheManager.instance,
               imageUrl: imageUrl,
               imageBuilder: (context, imageProvider) => Container(
@@ -49,8 +54,8 @@ class LargeImagePreviewCard extends StatelessWidget {
                 ),
               ),
               placeholder: (context, url) => ShimmerWidget(
-                width: cardSize,
-                height: cardSize + contentPadding * 2,
+                width: double.infinity,
+                height: cardSize,
                 borderRadius: 12.0,
               ),
             ),

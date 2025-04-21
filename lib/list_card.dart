@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:kalinka/constants.dart';
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/shimmer_widget.dart';
 
@@ -109,6 +110,7 @@ class ImageCard extends StatelessWidget {
               const Spacer(),
               if (title != null || subtitle != null)
                 Column(
+                    mainAxisSize: MainAxisSize.max,
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -116,20 +118,24 @@ class ImageCard extends StatelessWidget {
                       if (title != null)
                         Align(
                             alignment: textAlignment,
-                            child: Text(title!,
-                                style: Theme.of(context)
-                                    .listTileTheme
-                                    .titleTextStyle,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                maxLines: subtitle == null ? 2 : 1)),
+                            child: Text(
+                              title!,
+                              style: Theme.of(context)
+                                  .listTileTheme
+                                  .titleTextStyle,
+                              overflow: TextOverflow.ellipsis,
+                            )),
                       if (subtitle != null)
                         Text(
                           subtitle!,
                           overflow: TextOverflow.ellipsis,
                           style:
                               Theme.of(context).listTileTheme.subtitleTextStyle,
-                        ),
+                        )
+                      else
+                        SizedBox(
+                            height:
+                                KalinkaConstants.kTitleContentVerticalSpace),
                       if (textVertTrailing != null) textVertTrailing!,
                     ]),
             ]),

@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:kalinka/browse_item_card.dart' show BrowseItemCard;
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
+import 'package:kalinka/constants.dart';
 import 'package:kalinka/data_model.dart';
 
 typedef BrowseItemTapCallback = void Function(BrowseItem item);
 
 class SectionPreviewGrid extends StatelessWidget {
   final BrowseItemDataProvider? dataProvider;
-  final double contentPadding;
   final double textLabelHeight;
   final BrowseItemTapCallback? onTap;
   final int? rowsCount;
@@ -16,7 +16,6 @@ class SectionPreviewGrid extends StatelessWidget {
   const SectionPreviewGrid({
     super.key,
     this.dataProvider,
-    this.contentPadding = 8.0,
     this.textLabelHeight = 52.0,
     this.rowsCount,
     this.onTap,
@@ -33,6 +32,7 @@ class SectionPreviewGrid extends StatelessWidget {
     if (dataProvider == null) {
       return _buildEmptyGrid(context);
     }
+    final contentPadding = KalinkaConstants.kSpaceBetweenTiles * 0.5;
     final catalog = dataProvider!.itemDataSource.item.catalog;
     final sizeDescription = catalog?.previewConfig?.cardSize ?? CardSize.small;
     final cardSize = calculateCardSize(context, sizeDescription);
@@ -66,7 +66,10 @@ class SectionPreviewGrid extends StatelessWidget {
           height: sectionHeight,
           child: dataProvider != null && dataProvider.maybeItemCount > 0
               ? GridView.builder(
-                  padding: EdgeInsets.all(0),
+                  padding: EdgeInsets.symmetric(
+                      horizontal:
+                          KalinkaConstants.kScreenContentHorizontalPadding -
+                              KalinkaConstants.kSpaceBetweenTiles * 0.5),
                   scrollDirection: Axis.horizontal,
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
@@ -78,6 +81,7 @@ class SectionPreviewGrid extends StatelessWidget {
                     return BrowseItemCard(
                       item: item,
                       onTap: item != null ? onTap : null,
+                      contentPadding: KalinkaConstants.kSpaceBetweenTiles * 0.5,
                       constraints:
                           BoxConstraints.tight(Size(cardSize, sectionHeight)),
                       imageAspectRatio: cardSizeRatio,
@@ -97,6 +101,7 @@ class SectionPreviewGrid extends StatelessWidget {
   }
 
   Widget _buildEmptyGrid(BuildContext context) {
+    final contentPadding = KalinkaConstants.kSpaceBetweenTiles * 0.5;
     final sizeDescription = CardSize.small;
     final cardSize = calculateCardSize(context, sizeDescription);
     final crossAxisCount = 2;
@@ -124,7 +129,12 @@ class SectionPreviewGrid extends StatelessWidget {
   }
 
   double calculateCardSize(BuildContext context, CardSize cardSizeSelection) {
-    final size = MediaQuery.sizeOf(context);
+    final size = MediaQuery.sizeOf(context) +
+        Offset(
+            -2 *
+                (KalinkaConstants.kScreenContentHorizontalPadding -
+                    KalinkaConstants.kSpaceBetweenTiles),
+            0);
     final double screenCardSizeRatio =
         cardSizeSelection == CardSize.large ? 2.0 : 2.5;
     final double cardSize = (size.shortestSide / screenCardSizeRatio)
