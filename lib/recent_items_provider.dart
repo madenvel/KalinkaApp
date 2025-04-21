@@ -4,7 +4,7 @@ import 'package:logger/logger.dart' show Logger;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'data_model.dart';
 
-const int maxRecentItemsSize = 10;
+const int maxRecentItemsSize = 5;
 
 /// State notifier for managing recent browse items
 class RecentItemsNotifier extends StateNotifier<List<BrowseItem>> {

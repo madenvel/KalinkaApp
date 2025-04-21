@@ -4,20 +4,19 @@ import 'package:kalinka/browse_item_data_provider.dart'
 import 'package:kalinka/browse_item_data_source.dart' show BrowseItemDataSource;
 import 'package:kalinka/catalog_browse_item_view.dart'
     show CatalogBrowseItemView;
+import 'package:kalinka/constants.dart';
 import 'package:kalinka/data_model.dart' show BrowseItem;
 import 'package:kalinka/data_provider.dart' show GenreFilterProvider;
 import 'package:kalinka/large_image_preview_card.dart'
     show LargeImagePreviewCard;
 import 'package:kalinka/preview_section_grid.dart' show SectionPreviewGrid;
 import 'package:kalinka/browse_item_view.dart';
+import 'package:kalinka/shimmer_widget.dart';
 import 'package:provider/provider.dart'
     show ChangeNotifierProxyProvider, Consumer;
 
-const double _kVerticalPaddingSmall = 8.0;
-
 class PreviewSectionCard extends StatelessWidget {
   final BrowseItemDataSource? dataSource;
-  final double contentPadding;
   final int? rowsCount;
   final bool seeAll;
   final VoidCallback? onSeeAll;
@@ -26,7 +25,6 @@ class PreviewSectionCard extends StatelessWidget {
   const PreviewSectionCard(
       {super.key,
       this.dataSource,
-      this.contentPadding = 8.0,
       this.rowsCount,
       this.seeAll = true,
       this.onSeeAll,
@@ -54,8 +52,7 @@ class PreviewSectionCard extends StatelessWidget {
         section?.image?.small ??
         section?.image?.thumbnail;
     final hasImage = image != null && image.isNotEmpty;
-    final updatedSection = dataSource?.item;
-    if (updatedSection == null) {
+    if (section == null) {
       return _buildSectionPlaceholder(context, const SectionPreviewGrid());
     }
 
@@ -66,13 +63,15 @@ class PreviewSectionCard extends StatelessWidget {
           final hasNoItems = dataProvider.totalItemCount == 0;
           return _buildSectionPreview(
             context,
-            updatedSection,
+            section,
             hasImage
-                ? LargeImagePreviewCard(
-                    section: updatedSection, contentPadding: contentPadding)
+                ? LargeImagePreviewCard(section: section)
                 : (hasNoItems
                     ? Padding(
-                        padding: const EdgeInsets.only(left: 8.0, top: 16.0),
+                        padding: const EdgeInsets.only(
+                            left: KalinkaConstants
+                                .kScreenContentHorizontalPadding,
+                            top: 16.0),
                         child: const Text('No items found'),
                       )
                     : SectionPreviewGrid(
@@ -120,9 +119,9 @@ class PreviewSectionCard extends StatelessWidget {
       children: [
         Padding(
           padding: EdgeInsets.only(
-              left: contentPadding,
-              right: contentPadding,
-              bottom: _kVerticalPaddingSmall),
+              left: KalinkaConstants.kScreenContentHorizontalPadding,
+              right: KalinkaConstants.kScreenContentHorizontalPadding,
+              bottom: KalinkaConstants.kTitleContentVerticalSpace),
           child: Row(children: [
             Text(
               item.name ?? 'Unknown Section',
@@ -133,7 +132,12 @@ class PreviewSectionCard extends StatelessWidget {
             ),
             const Spacer(),
             if (seeAll)
-              TextButton(
+              ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      padding: KalinkaConstants.kElevatedButtonPadding,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      )),
                   onPressed: onSeeAll ??
                       () {
                         if (item.canBrowse) {
@@ -149,7 +153,9 @@ class PreviewSectionCard extends StatelessWidget {
         ),
         if (item.description != null)
           Padding(
-            padding: const EdgeInsets.only(left: 8, right: 8, bottom: 4.0),
+            padding: const EdgeInsets.symmetric(
+                horizontal: KalinkaConstants.kScreenContentHorizontalPadding,
+                vertical: KalinkaConstants.kContentVerticalPadding),
             child: Text(item.description!),
           ),
         child
@@ -163,33 +169,18 @@ class PreviewSectionCard extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.all(contentPadding),
+          padding: const EdgeInsets.symmetric(
+              horizontal: KalinkaConstants.kScreenContentHorizontalPadding),
           child: Row(children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Container(
-                width: 100,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: Colors.grey,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
+            ShimmerWidget(width: 100, height: 20),
             const Spacer(),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Container(
-                width: 40,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: Colors.grey,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
+            ShimmerWidget(
+              width: 40,
+              height: 20,
             )
           ]),
         ),
+        const SizedBox(height: KalinkaConstants.kTitleContentVerticalSpace),
         child
       ],
     );
