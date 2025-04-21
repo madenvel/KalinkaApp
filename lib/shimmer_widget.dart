@@ -66,7 +66,7 @@ class ShimmerColors {
   /// Get highlight color for shimmer effect
   static Color getHighlightColor(BuildContext context) {
     final theme = Theme.of(context);
-    return theme.colorScheme.surface;
+    return theme.colorScheme.surfaceBright;
   }
 }
 
