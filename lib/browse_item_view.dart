@@ -7,6 +7,7 @@ import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
 import 'package:kalinka/browse_item_data_source.dart'
     show BrowseItemDataSource, DefaultBrowseItemDataSource;
+import 'package:kalinka/constants.dart';
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/favorite_button.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart' show KalinkaPlayerProxy;
@@ -32,7 +33,6 @@ const double _kFontSizeSubtitle = 17.0;
 const double _kFontSizeBody = 14.0;
 const double _kFontSizeSmall = 12.0;
 const double _kFontSizeSectionHeader = 18.0;
-const double _kButtonSpacing = 32.0;
 const double _kAppBarTitleScrollOffsetBuffer = 100.0; // Buffer after image
 const double _kBorderRadius = 12.0;
 const Duration _kZeroDuration = Duration.zero;
@@ -162,9 +162,9 @@ class _BrowseItemViewState extends State<BrowseItemView> {
     final browseItem = widget.browseItem;
     return Padding(
       padding: const EdgeInsets.only(
-        bottom: _kVerticalPaddingSmall,
-        left: _kDefaultPadding,
-      ),
+          bottom: KalinkaConstants.kContentVerticalPadding,
+          left: KalinkaConstants.kScreenContentHorizontalPadding,
+          right: KalinkaConstants.kScreenContentHorizontalPadding),
       child: Text(
         _itemTypeToTextHint[browseItem.browseType] ?? 'Items',
         style: const TextStyle(
@@ -295,14 +295,11 @@ class _BrowseItemViewState extends State<BrowseItemView> {
   }
 
   Widget _buildHeaderPlaceholder(BuildContext context) {
-    final topPadding =
-        MediaQuery.paddingOf(context).top + _kVerticalPaddingLarge;
+    final topPadding = MediaQuery.paddingOf(context).top + kToolbarHeight;
     final isArtist = widget.browseItem.artist != null;
 
     return Padding(
       padding: EdgeInsets.only(
-        left: _kDefaultPadding,
-        right: _kDefaultPadding,
         top: topPadding,
       ),
       child: Column(
@@ -311,37 +308,30 @@ class _BrowseItemViewState extends State<BrowseItemView> {
           ShimmerWidget(
             width: _kImageSize,
             height: _kImageSize,
-            borderRadius: _kBorderRadius,
+            borderRadius: isArtist ? _kCircleAvatarRadius : _kBorderRadius,
             shape: isArtist ? BoxShape.circle : BoxShape.rectangle,
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(
+          Padding(
+            padding: const EdgeInsets.symmetric(
                 horizontal: _kDefaultPadding,
-                vertical: _kVerticalPaddingMedium),
+                vertical: _kVerticalPaddingMedium + 4),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                ShimmerWidget(height: _kFontSizeTitle, width: 180),
-                SizedBox(height: _kVerticalPaddingSmall),
-                ShimmerWidget(height: _kFontSizeSubtitle, width: 140),
-                SizedBox(height: 12.0), // Specific spacing from original
-                ShimmerWidget(height: _kFontSizeBody, width: 100),
+                ShimmerWidget(height: _kFontSizeTitle * 1.3, width: 180),
+                const SizedBox(height: 8.0),
+                ShimmerWidget(height: _kFontSizeSubtitle * 1.3, width: 140),
+                const SizedBox(height: 16.0),
+                ShimmerWidget(height: _kFontSizeBody * 1.3, width: 100),
               ],
             ),
           ),
-          const SizedBox(height: _kVerticalPaddingMedium), // Consistent spacing
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Simulate button placeholders if needed, adjust count/size
-              ShimmerWidget(height: 48, width: 48, borderRadius: 10),
-              SizedBox(width: _kButtonSpacing),
-              ShimmerWidget(height: 48, width: 48, borderRadius: 10),
-              SizedBox(width: _kButtonSpacing),
-              ShimmerWidget(height: 48, width: 48, borderRadius: 10),
-              SizedBox(width: _kButtonSpacing),
-              ShimmerWidget(height: 48, width: 48, borderRadius: 10),
-            ],
+          Card.filled(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ShimmerWidget(
+                  height: _kIconSizeMedium + 20, width: 240, borderRadius: 10),
+            ),
           ),
         ],
       ),
@@ -358,7 +348,8 @@ class _BrowseItemViewState extends State<BrowseItemView> {
       child: Container(
         key: _albumCoverKey, // Assign key here
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width - (_kDefaultPadding * 2),
+          maxWidth: MediaQuery.sizeOf(context).width -
+              (KalinkaConstants.kScreenContentHorizontalPadding * 2),
           maxHeight: _kImageSize,
         ),
         child:
@@ -381,7 +372,7 @@ class _BrowseItemViewState extends State<BrowseItemView> {
               overflow: TextOverflow.visible),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 4.0), // Specific spacing from original
+        const SizedBox(height: 4.0),
         if (subname.isNotEmpty)
           Text(
             subname,
@@ -434,19 +425,14 @@ class _BrowseItemViewState extends State<BrowseItemView> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Use Wrap for better responsiveness if buttons might overflow
-    return Card(
-      elevation: 0,
+    return Card.filled(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(
+            KalinkaConstants.kScreenContentHorizontalPadding),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
-          spacing: 48,
-          // alignment: WrapAlignment.center,
-          // crossAxisAlignment: WrapCrossAlignment.center,
-          // spacing: _kButtonSpacing, // Horizontal spacing
-          // runSpacing: _kVerticalPaddingSmall, // Vertical spacing if wrapped
+          spacing: 36,
           children: [
             if (!isArtist)
               IconButton(
@@ -526,7 +512,8 @@ class _BrowseItemViewState extends State<BrowseItemView> {
   List<Widget> _buildExtraSections(BuildContext context) {
     return widget.browseItem.extraSections
             ?.map((section) => Padding(
-                  padding: const EdgeInsets.only(top: _kVerticalPaddingLarge),
+                  padding: const EdgeInsets.only(
+                      top: KalinkaConstants.kSpaceBetweenSections),
                   child: PreviewSectionCard(
                     dataSource: BrowseItemDataSource.browse(section),
                   ),

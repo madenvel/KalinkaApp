@@ -536,12 +536,12 @@ class ConnectionSettingsProvider with ChangeNotifier {
 
 class GenreFilterProvider with ChangeNotifier {
   final List<Genre> _genres = [];
-  final List<String> _filter = [];
+  final Set<String> _filter = {};
   late Completer _isLoaded;
   late String subscriptionId;
 
   List<Genre> get genres => _genres;
-  List<String> get filter => _filter;
+  Set<String> get filter => _filter;
   Future get isLoaded => _isLoaded.future;
 
   GenreFilterProvider() {

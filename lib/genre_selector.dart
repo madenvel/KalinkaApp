@@ -2,8 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_provider.dart';
 
-class GenreSelector extends StatelessWidget {
+class GenreSelector extends StatefulWidget {
   const GenreSelector({super.key});
+
+  @override
+  State<GenreSelector> createState() => _GenreSelectorState();
+}
+
+class _GenreSelectorState extends State<GenreSelector> {
+  final Set<String> _selectedGenres = {};
+
+  void setGenreFilters() {
+    final provider = context.read<GenreFilterProvider>();
+    // Check if both lists contain the same elements (ignoring order)
+    if (_selectedGenres.length == provider.filter.length &&
+        _selectedGenres.containsAll(provider.filter)) {
+      return;
+    }
+    setState(() {
+      _selectedGenres.clear();
+      _selectedGenres.addAll(provider.filter);
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<GenreFilterProvider>().addListener(setGenreFilters);
+    setGenreFilters();
+  }
+
+  @override
+  void dispose() {
+    context.read<GenreFilterProvider>().removeListener(setGenreFilters);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,9 +44,13 @@ class GenreSelector extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Select Genres'),
         actions: [
-          IconButton(
-              icon: const Icon(Icons.check),
+          TextButton(
+              child: const Text('Done'),
               onPressed: () {
+                final provider = context.read<GenreFilterProvider>();
+                provider.filter.clear();
+                provider.filter.addAll(_selectedGenres);
+                provider.commitFilterChange();
                 Navigator.pop(context);
               })
         ],
@@ -38,17 +75,17 @@ class GenreSelector extends StatelessWidget {
               itemBuilder: (context, index) {
                 return SwitchListTile(
                   title: Text(provider.genres[index].name),
-                  value: provider.filter.contains(provider.genres[index].id) ||
-                      provider.filter.isEmpty,
+                  value: _selectedGenres.contains(provider.genres[index].id) ||
+                      _selectedGenres.isEmpty,
                   onChanged: (value) {
-                    if (value == true || provider.filter.isEmpty) {
-                      provider.filter.add(provider.genres[index].id);
-                    } else {
-                      provider.filter.remove(provider.genres[index].id);
-                    }
-                    provider.commitFilterChange();
+                    setState(() {
+                      if (value == true || _selectedGenres.isEmpty) {
+                        _selectedGenres.add(provider.genres[index].id);
+                      } else {
+                        _selectedGenres.remove(provider.genres[index].id);
+                      }
+                    });
                   },
-                  // activeColor: KalinkaColors.switchMainColor,
                   controlAffinity: ListTileControlAffinity.leading,
                 );
               },

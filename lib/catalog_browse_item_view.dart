@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:kalinka/browse_item_card.dart' show BrowseItemCard;
 import 'package:kalinka/browse_item_data_source.dart' show BrowseItemDataSource;
+import 'package:kalinka/constants.dart';
 import 'package:kalinka/data_model.dart';
 import 'package:kalinka/data_provider.dart' show GenreFilterProvider;
-import 'package:kalinka/genre_select_filter.dart' show GenreFilterButton;
+import 'package:kalinka/genre_filter_chips.dart';
 import 'package:provider/provider.dart';
 
 import 'browse_item_data_provider.dart';
@@ -11,10 +12,8 @@ import 'browse_item_data_provider.dart';
 class CatalogBrowseItemView extends StatelessWidget {
   final BrowseItemDataSource dataSource;
   final Function(BrowseItem)? onTap;
-  final double padding;
 
-  CatalogBrowseItemView(
-      {super.key, required this.dataSource, this.onTap, this.padding = 8.0})
+  CatalogBrowseItemView({super.key, required this.dataSource, this.onTap})
       : assert(dataSource.item.browseType == 'catalog',
             'parentItem.browseType must be "catalog"');
 
@@ -25,29 +24,24 @@ class CatalogBrowseItemView extends StatelessWidget {
       appBar: AppBar(
         titleSpacing: 0.0,
         title: Text(parentItem.name ?? 'Unknown'),
-        actions: [const GenreFilterButton()],
       ),
       body: ChangeNotifierProxyProvider<GenreFilterProvider,
           BrowseItemDataProvider>(
         create: (context) =>
             BrowseItemDataProvider.fromDataSource(dataSource: dataSource),
         update: (_, genreFilterProvider, dataProvider) {
+          final filterList = genreFilterProvider.filter.toList();
           if (dataProvider == null) {
             return BrowseItemDataProvider.fromDataSource(dataSource: dataSource)
-              ..maybeUpdateGenreFilter(genreFilterProvider.filter);
+              ..maybeUpdateGenreFilter(filterList);
           }
-          dataProvider.maybeUpdateGenreFilter(genreFilterProvider.filter);
+          dataProvider.maybeUpdateGenreFilter(filterList);
           return dataProvider;
         },
         child: Consumer<BrowseItemDataProvider>(
             builder: (context, dataProvider, child) => LayoutBuilder(
-                builder: (context, constraints) => Padding(
-                    padding: EdgeInsets.symmetric(horizontal: padding),
-                    child: _buildGrid(
-                        context,
-                        constraints
-                            .deflate(EdgeInsets.symmetric(horizontal: padding)),
-                        dataProvider)))),
+                builder: (context, constraints) =>
+                    _buildGrid(context, constraints, dataProvider))),
       ),
     );
   }
@@ -62,7 +56,7 @@ class CatalogBrowseItemView extends StatelessWidget {
     final bool hasImage = previewType != PreviewType.textOnly;
     final double imageAspectRatio =
         parentItem.catalog?.previewConfig?.aspectRatio ?? 1.0;
-    const contentPadding = 8.0;
+    const contentPadding = KalinkaConstants.kSpaceBetweenTiles / 2;
     final double cardHeight = hasImage
         ? ((imageWidth - contentPadding * 2) * imageAspectRatio +
             contentPadding +
@@ -70,22 +64,40 @@ class CatalogBrowseItemView extends StatelessWidget {
             6)
         : (imageWidth - contentPadding * 2) * imageAspectRatio +
             contentPadding * 2;
-    return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          mainAxisExtent: cardHeight, crossAxisCount: crossAxisCount),
-      itemCount: provider.maybeItemCount,
-      itemBuilder: (context, index) {
-        final itemData = provider.getItem(index);
 
-        return BrowseItemCard(
-          item: itemData.item,
-          onTap: onTap,
-          contentPadding: contentPadding,
-          imageAspectRatio: imageAspectRatio,
-          previewTypeHint: previewType,
-          constraints: BoxConstraints.tight(Size(imageWidth, cardHeight)),
-        );
-      },
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: GenreFilterChips(),
+        ),
+
+        // Add the grid content
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: KalinkaConstants.kScreenContentHorizontalPadding -
+                  contentPadding),
+          sliver: SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                mainAxisExtent: cardHeight, crossAxisCount: crossAxisCount),
+            delegate: SliverChildBuilderDelegate(
+              (BuildContext context, int index) {
+                final itemData = provider.getItem(index);
+
+                return BrowseItemCard(
+                  item: itemData.item,
+                  onTap: onTap,
+                  contentPadding: contentPadding,
+                  imageAspectRatio: imageAspectRatio,
+                  previewTypeHint: previewType,
+                  constraints:
+                      BoxConstraints.tight(Size(imageWidth, cardHeight)),
+                );
+              },
+              childCount: provider.maybeItemCount,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
