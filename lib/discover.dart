@@ -6,8 +6,8 @@ import 'package:kalinka/browse_item_data_source.dart'
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
 import 'package:provider/provider.dart';
-import 'package:kalinka/genre_select_filter.dart';
 import 'package:kalinka/settings_tab.dart';
+import 'package:kalinka/genre_filter_chips.dart';
 
 import 'data_model.dart';
 
@@ -36,7 +36,6 @@ class Discover extends StatelessWidget {
                 Text('Discover')
               ]),
               actions: <Widget>[
-                const GenreFilterButton(),
                 IconButton(
                     icon: const Icon(Icons.settings),
                     onPressed: () {
@@ -56,6 +55,8 @@ class Discover extends StatelessWidget {
           child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Add GenreFilterChips at the top
+          const GenreFilterChips(),
           ListView.separated(
               physics: const NeverScrollableScrollPhysics(),
               hitTestBehavior: HitTestBehavior.deferToChild,

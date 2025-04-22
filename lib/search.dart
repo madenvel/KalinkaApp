@@ -106,20 +106,35 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return ListView(
       children: [
         if (searchHistory.isNotEmpty) ...[
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0),
-            child: Text('Previous Searches',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ),
           Padding(
-            padding: const EdgeInsets.only(
-                left: 8.0, right: 8.0, top: 8.0, bottom: 24.0),
+            padding: const EdgeInsets.symmetric(
+                horizontal: KalinkaConstants.kScreenContentHorizontalPadding,
+                vertical: KalinkaConstants.kContentVerticalPadding),
             child: Wrap(
               spacing: 8.0,
-              runSpacing: 4.0,
+              runSpacing: 8.0,
               children: searchHistory
-                  .map((search) => ActionChip(
-                        label: Text(search),
+                  .map((search) => ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: KalinkaConstants.kElevatedButtonPadding,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.history),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                search,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ],
+                        ),
                         onPressed: () {
                           setState(() {
                             _searchController.text = search;
@@ -164,7 +179,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return provider.ChangeNotifierProvider<BrowseItemDataProvider>(
         create: (context) => BrowseItemDataProvider.fromDataSource(
             dataSource: StaticItemsBrowseItemDataSource.create(title, items)),
-        builder: (context, _) => _buildTrackList(context, title));
+        builder: (context, _) =>
+            _buildTrackList(context, title, onTap: _updateRecentItems));
   }
 
   Widget _buildSearchResultTrackList(String title) {
@@ -175,11 +191,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         builder: (context, _) =>
             _buildTrackList(context, title, totalSize: 5, onSeeMore: () {
               _setFilter(SearchFilter.tracks);
-            }));
+            }, onTap: _updateSearchHistoryAndRecentItems));
   }
 
   Widget _buildTrackList(BuildContext context, String title,
-      {int? totalSize, VoidCallback? onSeeMore}) {
+      {int? totalSize, VoidCallback? onSeeMore, Function(BrowseItem)? onTap}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -211,7 +227,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             shrinkWrap: true,
             provider: context.watch<BrowseItemDataProvider>(),
             onTap: (context, index, item) {
-              _updateRecentItems(item);
+              onTap?.call(item);
               _playTrack(context, item.track!.id, index);
             },
             onAction: (context, index, item) {

@@ -2,6 +2,7 @@ import 'dart:async' show Completer;
 
 import 'package:kalinka/browse_item_data_source.dart' show BrowseItemDataSource;
 import 'package:kalinka/data_model.dart' show BrowseItem;
+import 'package:logger/logger.dart';
 
 class BrowseItemCacheEntry {
   final List<BrowseItem> items = [];
@@ -10,6 +11,8 @@ class BrowseItemCacheEntry {
   bool _hasLoaded = false;
   Completer<void> _completer;
   int _totalCount = 0;
+
+  final logger = Logger();
 
   // Backout time in seconds
   static const int backoutTime = 10;
@@ -72,6 +75,7 @@ class BrowseItemCacheEntry {
       _completer.complete();
     }).catchError((error) {
       _shouldBackout = true;
+      logger.w('Error fetching page: $error');
       _completer.completeError(error);
     });
     return _completer.future;

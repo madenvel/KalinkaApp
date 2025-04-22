@@ -133,6 +133,28 @@ class _MyHomePageState extends State<MyHomePage> {
         });
   }
 
+  // Clear the navigator stack when switching tabs
+  void _handleTabChange(int index) {
+    if (currentPageIndex == index) {
+      // If tapping the same tab, pop to first route
+      if (_navigatorKeys[index].currentState!.canPop()) {
+        _navigatorKeys[index].currentState!.popUntil((route) => route.isFirst);
+      }
+    } else {
+      // If we're switching tabs and there are routes in the stack, pop to first route
+      if (_navigatorKeys[currentPageIndex].currentState != null &&
+          _navigatorKeys[currentPageIndex].currentState!.canPop()) {
+        _navigatorKeys[currentPageIndex]
+            .currentState!
+            .popUntil((route) => route.isFirst);
+      }
+
+      setState(() {
+        currentPageIndex = index;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ConnectionManager(
@@ -157,11 +179,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
                 }),
                 NavigationBar(
-                  onDestinationSelected: (int index) {
-                    setState(() {
-                      currentPageIndex = index;
-                    });
-                  },
+                  onDestinationSelected: _handleTabChange,
                   selectedIndex: currentPageIndex,
                   destinations: const <Widget>[
                     NavigationDestination(

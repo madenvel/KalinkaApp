@@ -68,10 +68,10 @@ class PreviewSectionCard extends StatelessWidget {
                 ? LargeImagePreviewCard(section: section)
                 : (hasNoItems
                     ? Padding(
-                        padding: const EdgeInsets.only(
-                            left: KalinkaConstants
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: KalinkaConstants
                                 .kScreenContentHorizontalPadding,
-                            top: 16.0),
+                            vertical: KalinkaConstants.kContentVerticalPadding),
                         child: const Text('No items found'),
                       )
                     : SectionPreviewGrid(
@@ -95,12 +95,13 @@ class PreviewSectionCard extends StatelessWidget {
         create: (context) => BrowseItemDataProvider.fromDataSource(
             dataSource: dataSource!, itemCountLimit: itemsCount),
         update: (_, genreFilterProvider, dataProvider) {
+          final filterList = genreFilterProvider.filter.toList();
           if (dataProvider == null) {
             return BrowseItemDataProvider.fromDataSource(
                 dataSource: dataSource!)
-              ..maybeUpdateGenreFilter(genreFilterProvider.filter);
+              ..maybeUpdateGenreFilter(filterList);
           }
-          dataProvider.maybeUpdateGenreFilter(genreFilterProvider.filter);
+          dataProvider.maybeUpdateGenreFilter(filterList);
           return dataProvider;
         },
         child: child);
