@@ -67,9 +67,12 @@ class BrowseItemCard extends StatelessWidget {
             key: ValueKey(item!.id),
             title: item!.name ?? 'Unknown category',
             onTap: () => onTap?.call(item!),
-            titleStyle:
-                const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            color: TextCardColors.generateColor(item!.name ?? ''),
+            titleStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                overflow: TextOverflow.ellipsis),
+            color: TextCardColors.generateColor(item!.name ?? '',
+                brightness: Theme.of(context).brightness),
             constraints: constraints,
             aspectRatio: imageAspectRatio);
   }

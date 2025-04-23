@@ -425,54 +425,52 @@ class _BrowseItemViewState extends State<BrowseItemView> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Card.filled(
-      child: Padding(
-        padding: const EdgeInsets.all(
-            KalinkaConstants.kScreenContentHorizontalPadding),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          spacing: 36,
-          children: [
-            if (!isArtist)
-              IconButton(
-                icon: Icon(Icons.play_arrow,
-                    size: _kIconSizeMedium, color: colorScheme.surface),
-                onPressed: () => _replaceAndPlay(context, 0),
-                style: IconButton.styleFrom(
-                  backgroundColor: colorScheme.secondary,
-                  padding: const EdgeInsets.all(_kVerticalPaddingSmall),
-                ),
-                tooltip: 'Play',
+    return Padding(
+      padding: const EdgeInsets.all(
+          KalinkaConstants.kScreenContentHorizontalPadding),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        spacing: 36,
+        children: [
+          if (!isArtist)
+            IconButton(
+              icon: Icon(Icons.play_arrow,
+                  size: _kIconSizeMedium, color: colorScheme.surface),
+              onPressed: () => _replaceAndPlay(context, 0),
+              style: IconButton.styleFrom(
+                backgroundColor: colorScheme.secondary,
+                padding: const EdgeInsets.all(_kVerticalPaddingSmall),
               ),
-            if (!isArtist)
-              _buildLabeledButton(
-                context,
-                icon: Icons.queue,
-                label: 'Queue',
-                tooltip: 'Add to queue',
-                onPressed: () => _addToQueueAction(context),
+              tooltip: 'Play',
+            ),
+          if (!isArtist)
+            _buildLabeledButton(
+              context,
+              icon: Icons.queue,
+              label: 'Queue',
+              tooltip: 'Add to queue',
+              onPressed: () => _addToQueueAction(context),
+            ),
+          if (!isArtist)
+            _buildLabeledButton(
+              context,
+              icon: Icons.playlist_add,
+              label: 'Add To Playlist',
+              tooltip: 'Add to playlist',
+              onPressed: () => _addToPlaylistAction(context),
+            ),
+          if (isArtist || isTrack || isPlaylist || isAlbum)
+            _buildLabeledButton(
+              context,
+              iconWidget: FavoriteButton(
+                item: widget.browseItem,
+                size: _kIconSizeSmall,
               ),
-            if (!isArtist)
-              _buildLabeledButton(
-                context,
-                icon: Icons.playlist_add,
-                label: 'Add To Playlist',
-                tooltip: 'Add to playlist',
-                onPressed: () => _addToPlaylistAction(context),
-              ),
-            if (isArtist || isTrack || isPlaylist || isAlbum)
-              _buildLabeledButton(
-                context,
-                iconWidget: FavoriteButton(
-                  item: widget.browseItem,
-                  size: _kIconSizeSmall,
-                ),
-                label: 'Like',
-                tooltip: 'Add to favorites',
-              ),
-          ],
-        ),
+              label: 'Like',
+              tooltip: 'Add to favorites',
+            ),
+        ],
       ),
     );
   }

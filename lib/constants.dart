@@ -11,6 +11,8 @@ class KalinkaConstants {
     horizontal: 8.0,
     vertical: 4.0,
   );
+  static const kFilterChipPadding = EdgeInsets.only(right: 4.0);
+  static const kFilterChipSpace = 4.0;
 
   static const kSpaceBetweenTiles = 20.0;
 }
