@@ -45,8 +45,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildChip(String label, SearchFilter filter) {
-    return ChoiceChip(
+    return FilterChip(
       label: Text(label),
+      showCheckmark: false,
       selected: _selectedFilter == filter,
       onSelected: (selected) {
         if (selected) {
@@ -108,41 +109,51 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         if (searchHistory.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.symmetric(
-                horizontal: KalinkaConstants.kScreenContentHorizontalPadding,
                 vertical: KalinkaConstants.kContentVerticalPadding),
-            child: Wrap(
-              spacing: 8.0,
-              runSpacing: 8.0,
-              children: searchHistory
-                  .map((search) => ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          padding: KalinkaConstants.kElevatedButtonPadding,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal:
+                          KalinkaConstants.kScreenContentHorizontalPadding),
+                  child: Text('Recent Searches',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal:
+                            KalinkaConstants.kScreenContentHorizontalPadding,
+                        vertical: KalinkaConstants.kContentVerticalPadding),
+                    child: Row(
+                      spacing: KalinkaConstants.kFilterChipSpace,
+                      children: List.generate(searchHistory.length, (index) {
+                        final search = searchHistory[index];
+                        return FilterChip(
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.history, size: 16),
+                              const SizedBox(width: 8),
+                              Text(search),
+                            ],
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.history),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                search,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _searchController.text = search;
-                            _selectedFilter = SearchFilter.all;
-                          });
-                        },
-                      ))
-                  .toList(),
+                          onSelected: (_) {
+                            setState(() {
+                              _searchController.text = search;
+                              _selectedFilter = SearchFilter.all;
+                            });
+                          },
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           ..._buildRecentItemsList(recentItems)
@@ -184,7 +195,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildSearchResultTrackList(String title) {
+    // Adding a key that changes when search text changes to ensure provider recreation
+    final searchKey = Key('tracks-${_searchController.text}');
+
     return provider.ChangeNotifierProvider<BrowseItemDataProvider>(
+        key: searchKey,
         create: (context) => BrowseItemDataProvider.fromDataSource(
             dataSource: BrowseItemDataSource.search(
                 SearchType.track, _searchController.text)),
@@ -369,6 +384,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         titleSpacing: KalinkaConstants.kScreenContentHorizontalPadding,
         title: Center(
           child: SearchBar(
+            constraints: BoxConstraints(minHeight: 40),
             controller: _searchController,
             elevation: WidgetStateProperty.all(0.0),
             hintText: 'Search...',
@@ -409,7 +425,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 padding: const EdgeInsets.symmetric(
                     vertical: KalinkaConstants.kContentVerticalPadding),
                 child: Row(
-                  spacing: KalinkaConstants.kContentHorizontalPadding,
+                  spacing: KalinkaConstants.kFilterChipSpace,
                   children: List.generate(SearchFilter.values.length, (index) {
                     final filter = SearchFilter.values[index];
                     return _buildChip(

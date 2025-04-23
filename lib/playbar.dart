@@ -58,7 +58,7 @@ class _PlaybarState extends State<Playbar> {
 
   @override
   Widget build(BuildContext context) {
-    final highlightColor = Theme.of(context).colorScheme.secondary;
+    final highlightColor = Theme.of(context).colorScheme.primaryContainer;
     return InkWell(
         child: Container(
             width: double.infinity,

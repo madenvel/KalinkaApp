@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-final int maxSearchHistorySize = 10;
+final int maxSearchHistorySize = 5;
 
 /// State notifier for managing search history
 class SearchHistoryNotifier extends StateNotifier<List<String>> {

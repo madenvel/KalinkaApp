@@ -60,7 +60,7 @@ class ImageCard extends StatelessWidget {
           );
         },
         errorWidget: (context, url, error) {
-          return const Expanded(child: Text("Error!"));
+          return _buildInnerWidget(context, null);
         });
   }
 
@@ -192,6 +192,13 @@ class CategoryCard extends StatelessWidget {
                       aspectRatio,
                   decoration: BoxDecoration(
                     color: color,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
                     borderRadius: BorderRadius.circular(12),
                   ),
                 )),
@@ -218,15 +225,6 @@ class CategoryCard extends StatelessWidget {
                         Text(
                           subtitle!,
                           overflow: TextOverflow.ellipsis,
-                          style: subtitleStyle?.copyWith(
-                            shadows: [
-                              Shadow(
-                                offset: Offset(2.0, 2.0),
-                                blurRadius: 3.0,
-                                color: Colors.black,
-                              ),
-                            ],
-                          ),
                         ),
                     ]),
               ),

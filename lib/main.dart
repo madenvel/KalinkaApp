@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:kalinka/connection_manager.dart';
+import 'package:kalinka/constants.dart';
 import 'package:kalinka/search.dart' show SearchScreen;
 import 'package:provider/provider.dart';
 import 'data_provider.dart';
@@ -44,10 +45,15 @@ class KalinkaMusic extends StatelessWidget {
           ChangeNotifierProvider(create: (context) => UserPlaylistProvider())
         ],
         child: MaterialApp(
+          debugShowCheckedModeBanner: false,
           scrollBehavior: MyCustomScrollBehavior(),
           title: 'Kalinka',
           theme: ThemeData.light().copyWith(
+              chipTheme: ThemeData.light().chipTheme.copyWith(
+                  selectedColor: ThemeData.dark().colorScheme.primaryContainer),
               listTileTheme: ThemeData.light().listTileTheme.copyWith(
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: KalinkaConstants.kContentHorizontalPadding),
                     titleTextStyle: TextStyle(
                         overflow: TextOverflow.ellipsis,
                         color:
@@ -62,7 +68,11 @@ class KalinkaMusic extends StatelessWidget {
                             .brighten(30)),
                   )),
           darkTheme: ThemeData.dark().copyWith(
+              chipTheme: ThemeData.dark().chipTheme.copyWith(
+                  selectedColor: ThemeData.dark().colorScheme.primaryContainer),
               listTileTheme: ThemeData.dark().listTileTheme.copyWith(
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: KalinkaConstants.kContentHorizontalPadding),
                     titleTextStyle: TextStyle(
                         overflow: TextOverflow.ellipsis,
                         color:

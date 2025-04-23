@@ -1,3 +1,5 @@
+import 'dart:math' show min;
+
 import 'package:cached_network_image/cached_network_image.dart'
     show CachedNetworkImage;
 import 'package:flutter/material.dart';
@@ -27,7 +29,7 @@ class BrowseItemList extends StatefulWidget {
     this.pageSize = 15,
     this.size,
     this.shrinkWrap = true,
-    this.actionButtonIcon = const Icon(Icons.more_vert),
+    this.actionButtonIcon = const Icon(Icons.more_horiz),
     this.actionButtonTooltip = "More options",
   });
 
@@ -93,7 +95,9 @@ class _BrowseItemListState extends State<BrowseItemList> {
   }
 
   int _getItemCount(BrowseItemDataProvider provider) {
-    final size = widget.size ?? provider.maybeItemCount;
+    final size = widget.size != null
+        ? min(widget.size!, provider.maybeItemCount)
+        : provider.maybeItemCount;
     // If pageSize is 0, use the data provider's maybeItemCount for infinite scrolling
     if (widget.pageSize <= 0) {
       return size;
@@ -150,6 +154,7 @@ class _BrowseItemListState extends State<BrowseItemList> {
       subtitle: item.subname != null ? Text(item.subname!) : null,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
           if (item.track != null && item.duration != null)
             Text(formatTime(item.duration!),
@@ -203,7 +208,7 @@ class _BrowseItemListState extends State<BrowseItemList> {
               borderRadius: 4.0,
             ),
             const SizedBox(width: 8),
-            const IconButton(icon: Icon(Icons.more_vert), onPressed: null),
+            const IconButton(icon: Icon(Icons.more), onPressed: null),
           ],
         ),
         visualDensity: VisualDensity.standard);

@@ -13,7 +13,7 @@ import 'package:kalinka/browse_item_list.dart';
 import 'data_model.dart';
 import 'kalinkaplayer_proxy.dart';
 
-class Library extends StatelessWidget {
+class Library extends StatefulWidget {
   const Library({super.key});
 
   static final List<SearchType> searchTypes = [
@@ -30,39 +30,84 @@ class Library extends StatelessWidget {
   ];
 
   @override
+  State<Library> createState() => _LibraryState();
+}
+
+class _LibraryState extends State<Library> {
+  bool searchBarVisible = false;
+  String previousSearchText = '';
+  SearchType previousSearchType = SearchType.invalid;
+
+  @override
   Widget build(BuildContext context) {
     return MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => TextEditingController()),
+          ChangeNotifierProvider(create: (_) => SearchController()),
           ChangeNotifierProvider<SearchTypeProvider>(
               create: (_) => SearchTypeProvider())
         ],
         builder: (context, _) {
           return ChangeNotifierProxyProvider2<SearchTypeProvider,
-                  TextEditingController, BrowseItemDataProvider>(
+                  SearchController, BrowseItemDataProvider>(
               create: (context) => BrowseItemDataProvider.fromDataSource(
                   dataSource: BrowseItemDataSource.empty()),
-              update: (context, searchTypeProvider, textEditingController,
+              update: (context, searchTypeProvider, searchController,
                   dataProvider) {
-                return BrowseItemDataProvider.fromDataSource(
-                    dataSource: BrowseItemDataSource.favorites(
-                        searchTypeProvider.searchType,
-                        textEditingController.text),
-                    itemsPerRequest: 100);
+                if (dataProvider == null ||
+                    searchController.text != previousSearchText ||
+                    previousSearchType != searchTypeProvider.searchType) {
+                  previousSearchText = searchController.text;
+                  previousSearchType = searchTypeProvider.searchType;
+                  return BrowseItemDataProvider.fromDataSource(
+                      dataSource: BrowseItemDataSource.favorites(
+                          searchTypeProvider.searchType, searchController.text),
+                      itemsPerRequest: 100);
+                }
+                return dataProvider;
               },
               builder: (context, _) => Scaffold(
                     appBar: AppBar(
-                      title: const Row(children: [
-                        Icon(Icons.library_music),
-                        SizedBox(width: 8),
-                        Text('My Library')
-                      ]),
-                      actions: [
-                        _buildActionButton(context),
-                      ],
+                      titleSpacing: KalinkaConstants.kContentHorizontalPadding,
+                      title: _buildAppBarTitle(context),
+                      actions: !searchBarVisible
+                          ? [
+                              _buildSearchButton(context),
+                              _buildActionButton(context),
+                            ]
+                          : [_buildCancelSearchButton(context)],
                     ),
                     body: _buildBody(context),
                   ));
+        });
+  }
+
+  Widget _buildAppBarTitle(BuildContext context) {
+    if (searchBarVisible) {
+      final controller = context.watch<SearchController>();
+      return SearchBar(
+        autoFocus: true,
+        constraints: BoxConstraints(minHeight: 40),
+        controller: controller,
+        elevation: WidgetStateProperty.all(0.0),
+        hintText: 'Search...',
+        leading: const Icon(Icons.search),
+      );
+    }
+    return const Row(children: [
+      Icon(Icons.library_music),
+      SizedBox(width: 8),
+      Text('My Library')
+    ]);
+  }
+
+  Widget _buildSearchButton(BuildContext context) {
+    return IconButton(
+        icon: const Icon(Icons.search),
+        tooltip: 'Search',
+        onPressed: () {
+          setState(() {
+            searchBarVisible = !searchBarVisible;
+          });
         });
   }
 
@@ -74,7 +119,7 @@ class Library extends StatelessWidget {
           PlaylistCreationDialog.show(
               context: context,
               onCreateCallback: (playlistId) {
-                final textEdit = context.read<TextEditingController>();
+                final textEdit = context.read<SearchController>();
                 final searchTypeProvider = context.read<SearchTypeProvider>();
                 if (textEdit.text.isEmpty &&
                     searchTypeProvider.searchType == SearchType.playlist) {
@@ -87,35 +132,10 @@ class Library extends StatelessWidget {
         });
   }
 
-  Widget _buildFilterTextField(BuildContext context) {
-    final controller = context.watch<TextEditingController>();
-    return Padding(
-      padding: EdgeInsets.symmetric(
-          horizontal: KalinkaConstants.kScreenContentHorizontalPadding,
-          vertical: KalinkaConstants.kContentVerticalPadding),
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: 'Type text to filter the list below',
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: controller.text.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    controller.clear();
-                  })
-              : null,
-        ),
-      ),
-    );
-  }
-
   Widget _buildBody(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.max,
       children: [
-        _buildFilterTextField(context),
         _buildChipList(context),
         const SizedBox(height: 8),
         Expanded(child: _buildItemList(context)),
@@ -135,17 +155,18 @@ class Library extends StatelessWidget {
             vertical: KalinkaConstants.kContentVerticalPadding),
         child: Row(
             mainAxisAlignment: MainAxisAlignment.start,
-            children: List.generate(searchTypes.length, (index) {
-              final isSelected = searchTypes[index] == searchType;
+            children: List.generate(Library.searchTypes.length, (index) {
+              final isSelected = Library.searchTypes[index] == searchType;
               return Padding(
-                padding: EdgeInsets.only(
-                  right: KalinkaConstants.kContentHorizontalPadding,
-                ),
+                padding: KalinkaConstants.kFilterChipPadding,
                 child: FilterChip(
-                    label: Text(searchTypesStr[index]),
+                    label: Text(Library.searchTypesStr[index]),
                     selected: isSelected,
+                    selectedColor:
+                        Theme.of(context).colorScheme.primaryContainer,
+                    showCheckmark: false,
                     onSelected: (_) {
-                      provider.updateSearchType(searchTypes[index]);
+                      provider.updateSearchType(Library.searchTypes[index]);
                     }),
               );
             })),
@@ -154,8 +175,40 @@ class Library extends StatelessWidget {
   }
 
   Widget _buildItemList(BuildContext context) {
+    final provider = context.watch<BrowseItemDataProvider>();
+    if (provider.maybeItemCount == 0) {
+      final searchController = context.read<SearchController>();
+      return Column(
+        children: [
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const Icon(Icons.search, size: 96),
+            Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(
+                      bottom: KalinkaConstants.kContentVerticalPadding),
+                  child: const Text('No items found',
+                      style: TextStyle(fontSize: 18)),
+                ),
+                if (searchBarVisible && searchController.text.isNotEmpty)
+                  ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          context.read<SearchController>().clear();
+                          searchBarVisible = false;
+                        });
+                      },
+                      child: const Text('Clear filter'))
+              ],
+            ),
+            const SizedBox(width: 96),
+          ]),
+          const Spacer()
+        ],
+      );
+    }
     return BrowseItemList(
-      provider: context.watch<BrowseItemDataProvider>(),
+      provider: provider,
       shrinkWrap: false,
       actionButtonIcon: const Icon(Icons.more_vert),
       actionButtonTooltip: "More options",
@@ -212,5 +265,17 @@ class Library extends StatelessWidget {
       await KalinkaPlayerProxy().addTracks([trackId]);
       await KalinkaPlayerProxy().play();
     }
+  }
+
+  _buildCancelSearchButton(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.cancel),
+      onPressed: () {
+        setState(() {
+          searchBarVisible = false;
+          context.read<SearchController>().clear();
+        });
+      },
+    );
   }
 }
