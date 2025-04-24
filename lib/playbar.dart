@@ -58,7 +58,7 @@ class _PlaybarState extends State<Playbar> {
 
   @override
   Widget build(BuildContext context) {
-    final highlightColor = Theme.of(context).colorScheme.primaryContainer;
+    // final highlightColor = Theme.of(context).colorScheme.primaryContainer;
     return InkWell(
         child: Container(
             width: double.infinity,
@@ -74,8 +74,8 @@ class _PlaybarState extends State<Playbar> {
                   builder: (context, child) => RepaintBoundary(
                           child: LinearProgressIndicator(
                         value: _calculateRelativeProgress(context),
-                        color: highlightColor,
-                        backgroundColor: Theme.of(context).colorScheme.surface,
+                        // color: highlightColor,
+                        // backgroundColor: Theme.of(context).colorScheme.surface,
                       ))),
               const Divider(height: 0)
             ])),

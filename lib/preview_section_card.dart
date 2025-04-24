@@ -133,8 +133,8 @@ class PreviewSectionCard extends StatelessWidget {
             ),
             const Spacer(),
             if (seeAll)
-              ElevatedButton(
-                  style: ElevatedButton.styleFrom(
+              TextButton(
+                  style: TextButton.styleFrom(
                       padding: KalinkaConstants.kElevatedButtonPadding,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -149,7 +149,7 @@ class PreviewSectionCard extends StatelessWidget {
                                   )));
                         }
                       },
-                  child: Text('See More')),
+                  child: Text('See more')),
           ]),
         ),
         if (item.description != null)

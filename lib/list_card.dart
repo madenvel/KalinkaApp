@@ -192,13 +192,9 @@ class CategoryCard extends StatelessWidget {
                       aspectRatio,
                   decoration: BoxDecoration(
                     color: color,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        blurRadius: 2,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
+                    border: Border.all(
+                        color:
+                            Theme.of(context).colorScheme.onPrimaryContainer),
                     borderRadius: BorderRadius.circular(12),
                   ),
                 )),

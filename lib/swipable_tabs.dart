@@ -165,10 +165,10 @@ class _SwipableTabsState extends State<SwipableTabs>
     return CustomPaint(
       size: Size.infinite,
       painter: PolkaDotPainter(
-        dotSize: 50,
-        spacing: 0.75,
-        dotColor: Theme.of(context).colorScheme.tertiary,
-        sizeReductionFactor: 0.05,
+        dotSize: 15,
+        spacing: 2.0,
+        dotColor: Theme.of(context).colorScheme.primary,
+        sizeReductionFactor: 0.0,
       ),
     );
   }

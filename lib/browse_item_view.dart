@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart'
     show CachedNetworkImage;
 import 'package:flutter/material.dart';
+import 'package:kalinka/action_button.dart' show ActionButton;
 import 'package:kalinka/add_to_playlist.dart';
 import 'package:kalinka/bottom_menu.dart' show BottomMenu;
 import 'package:kalinka/browse_item_data_provider.dart'
@@ -20,18 +21,15 @@ import 'data_model.dart';
 
 // --- Constants ---
 const double _kDefaultPadding = 8.0;
-const double _kVerticalPaddingSmall = 8.0;
 const double _kVerticalPaddingMedium = 16.0;
 const double _kVerticalPaddingLarge = 24.0;
 const double _kImageSize = 250.0;
 const double _kCircleAvatarRadius = 125.0;
 const double _kIconSizeLarge = 100.0;
 const double _kIconSizeMedium = 40.0;
-const double _kIconSizeSmall = 22.0;
 const double _kFontSizeTitle = 20.0;
 const double _kFontSizeSubtitle = 17.0;
 const double _kFontSizeBody = 14.0;
-const double _kFontSizeSmall = 12.0;
 const double _kFontSizeSectionHeader = 18.0;
 const double _kAppBarTitleScrollOffsetBuffer = 100.0; // Buffer after image
 const double _kBorderRadius = 12.0;
@@ -257,9 +255,10 @@ class _BrowseItemViewState extends State<BrowseItemView> {
           else
             _buildImagePlaceholder(context),
           Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: _kDefaultPadding,
-                vertical: _kVerticalPaddingMedium),
+            padding: const EdgeInsets.only(
+                left: KalinkaConstants.kScreenContentHorizontalPadding,
+                right: KalinkaConstants.kScreenContentHorizontalPadding,
+                top: _kVerticalPaddingMedium),
             child: _buildCoverInfo(context),
           ),
           _buildButtonsBar(context),
@@ -424,12 +423,15 @@ class _BrowseItemViewState extends State<BrowseItemView> {
     final isAlbum = widget.browseItem.album != null;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    const double kButtonSize = 56;
 
     return Padding(
-      padding: const EdgeInsets.all(
-          KalinkaConstants.kScreenContentHorizontalPadding),
+      padding: const EdgeInsets.symmetric(
+        horizontal: KalinkaConstants.kScreenContentHorizontalPadding,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isArtist)
             FilledButton.icon(
@@ -445,7 +447,7 @@ class _BrowseItemViewState extends State<BrowseItemView> {
               style: FilledButton.styleFrom(
                 backgroundColor: colorScheme.secondary,
                 foregroundColor: colorScheme.surface,
-                minimumSize: const Size(0, 56), // Standard height
+                fixedSize: const Size(double.infinity, kButtonSize),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16.0,
                   vertical: 8.0,
@@ -454,38 +456,20 @@ class _BrowseItemViewState extends State<BrowseItemView> {
             ),
           const SizedBox(width: 12),
           if (!isArtist)
-            IconButton.filled(
-              icon: Icon(Icons.queue, size: _kIconSizeMedium - 8),
-              onPressed: () => _addToQueueAction(context),
-              tooltip: 'Add to queue',
-              style: IconButton.styleFrom(
-                backgroundColor: colorScheme.primaryContainer,
-                foregroundColor: colorScheme.onPrimaryContainer,
-                fixedSize: const Size(56, 56), // Match Play All height
-                minimumSize: const Size(56, 56),
-                padding: const EdgeInsets.all(8.0),
-              ),
-            ),
+            ActionButton(
+                icon: Icons.queue_music,
+                onPressed: () => _addToQueueAction(context),
+                tooltip: 'Add to queue'),
           if (!isArtist) const SizedBox(width: 12),
           if (!isArtist)
-            IconButton.filled(
-              icon: Icon(Icons.playlist_add, size: _kIconSizeMedium - 8),
-              onPressed: () => _addToPlaylistAction(context),
-              tooltip: 'Add to playlist',
-              style: IconButton.styleFrom(
-                backgroundColor: colorScheme.primaryContainer,
-                foregroundColor: colorScheme.onPrimaryContainer,
-                fixedSize: const Size(56, 56), // Match Play All height
-                minimumSize: const Size(56, 56),
-                padding: const EdgeInsets.all(8.0),
-              ),
-            ),
-          if (isArtist || isTrack || isPlaylist || isAlbum) const Spacer(),
+            ActionButton(
+                icon: Icons.playlist_add,
+                onPressed: () => _addToPlaylistAction(context),
+                tooltip: 'Add to playlist'),
+          if (isTrack || isPlaylist || isAlbum) const Spacer(),
           if (isArtist || isTrack || isPlaylist || isAlbum)
             FavoriteButton(
               item: widget.browseItem,
-              size: _kIconSizeMedium - 8,
-              color: colorScheme.onPrimary,
             ),
         ],
       ),

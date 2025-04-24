@@ -210,7 +210,6 @@ class _LibraryState extends State<Library> {
     return BrowseItemList(
       provider: provider,
       shrinkWrap: false,
-      actionButtonIcon: const Icon(Icons.more_vert),
       actionButtonTooltip: "More options",
       onTap: (context, index, item) {
         if (item.canBrowse) {
