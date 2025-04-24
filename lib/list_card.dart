@@ -193,8 +193,7 @@ class CategoryCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: color,
                     border: Border.all(
-                        color:
-                            Theme.of(context).colorScheme.onPrimaryContainer),
+                        color: Theme.of(context).colorScheme.primaryFixed),
                     borderRadius: BorderRadius.circular(12),
                   ),
                 )),
