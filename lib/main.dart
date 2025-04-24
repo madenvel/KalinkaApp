@@ -33,6 +33,8 @@ class KalinkaMusic extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    final lightTheme = FlexThemeData.light();
+    final darkTheme = FlexThemeData.dark();
     return MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (context) => TrackListProvider()),
@@ -48,42 +50,36 @@ class KalinkaMusic extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           scrollBehavior: MyCustomScrollBehavior(),
           title: 'Kalinka',
-          theme: ThemeData.light().copyWith(
-              chipTheme: ThemeData.light().chipTheme.copyWith(
-                  selectedColor: ThemeData.dark().colorScheme.primaryContainer),
-              listTileTheme: ThemeData.light().listTileTheme.copyWith(
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: KalinkaConstants.kContentHorizontalPadding),
-                    titleTextStyle: TextStyle(
-                        overflow: TextOverflow.ellipsis,
-                        color:
-                            ThemeData.light().colorScheme.onSurface.darken(20),
-                        fontWeight: FontWeight.w500,
-                        fontSize: 15),
-                    subtitleTextStyle: TextStyle(
-                        overflow: TextOverflow.ellipsis,
-                        color: ThemeData.light()
-                            .colorScheme
-                            .onSurface
-                            .brighten(30)),
-                  )),
-          darkTheme: ThemeData.dark().copyWith(
-              chipTheme: ThemeData.dark().chipTheme.copyWith(
-                  selectedColor: ThemeData.dark().colorScheme.primaryContainer),
-              listTileTheme: ThemeData.dark().listTileTheme.copyWith(
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: KalinkaConstants.kContentHorizontalPadding),
-                    titleTextStyle: TextStyle(
-                        overflow: TextOverflow.ellipsis,
-                        color:
-                            ThemeData.dark().colorScheme.onSurface.brighten(20),
-                        fontWeight: FontWeight.w500,
-                        fontSize: 15),
-                    subtitleTextStyle: TextStyle(
-                        overflow: TextOverflow.ellipsis,
-                        color:
-                            ThemeData.dark().colorScheme.onSurface.darken(30)),
-                  )),
+          theme: lightTheme.copyWith(
+              chipTheme: lightTheme.chipTheme.copyWith(
+                  selectedColor: lightTheme.colorScheme.primaryContainer),
+              listTileTheme: lightTheme.listTileTheme.copyWith(
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: KalinkaConstants.kContentHorizontalPadding),
+                titleTextStyle: TextStyle(
+                    overflow: TextOverflow.ellipsis,
+                    color: lightTheme.colorScheme.onSurface.darken(20),
+                    fontWeight: FontWeight.w500,
+                    fontSize: 15),
+                subtitleTextStyle: TextStyle(
+                    overflow: TextOverflow.ellipsis,
+                    color: lightTheme.colorScheme.onSurface.brighten(30)),
+              )),
+          darkTheme: darkTheme.copyWith(
+              chipTheme: darkTheme.chipTheme.copyWith(
+                  selectedColor: darkTheme.colorScheme.primaryContainer),
+              listTileTheme: darkTheme.listTileTheme.copyWith(
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: KalinkaConstants.kContentHorizontalPadding),
+                titleTextStyle: TextStyle(
+                    overflow: TextOverflow.ellipsis,
+                    color: darkTheme.colorScheme.onSurface.brighten(20),
+                    fontWeight: FontWeight.w500,
+                    fontSize: 15),
+                subtitleTextStyle: TextStyle(
+                    overflow: TextOverflow.ellipsis,
+                    color: darkTheme.colorScheme.onSurface.darken(30)),
+              )),
           themeMode: ThemeMode.system, // Follow system theme by default
           home: const MyHomePage(),
         ));
