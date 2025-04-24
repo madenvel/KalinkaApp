@@ -429,79 +429,66 @@ class _BrowseItemViewState extends State<BrowseItemView> {
       padding: const EdgeInsets.all(
           KalinkaConstants.kScreenContentHorizontalPadding),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
-        spacing: 36,
         children: [
           if (!isArtist)
-            IconButton(
-              icon: Icon(Icons.play_arrow,
-                  size: _kIconSizeMedium, color: colorScheme.surface),
+            FilledButton.icon(
+              icon: Icon(Icons.play_arrow, size: _kIconSizeMedium - 8),
+              label: const Text(
+                'Play All',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               onPressed: () => _replaceAndPlay(context, 0),
-              style: IconButton.styleFrom(
+              style: FilledButton.styleFrom(
                 backgroundColor: colorScheme.secondary,
-                padding: const EdgeInsets.all(_kVerticalPaddingSmall),
+                foregroundColor: colorScheme.surface,
+                minimumSize: const Size(0, 56), // Standard height
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
               ),
-              tooltip: 'Play',
             ),
+          const SizedBox(width: 12),
           if (!isArtist)
-            _buildLabeledButton(
-              context,
-              icon: Icons.queue,
-              label: 'Queue',
-              tooltip: 'Add to queue',
+            IconButton.filled(
+              icon: Icon(Icons.queue, size: _kIconSizeMedium - 8),
               onPressed: () => _addToQueueAction(context),
-            ),
-          if (!isArtist)
-            _buildLabeledButton(
-              context,
-              icon: Icons.playlist_add,
-              label: 'Add To Playlist',
-              tooltip: 'Add to playlist',
-              onPressed: () => _addToPlaylistAction(context),
-            ),
-          if (isArtist || isTrack || isPlaylist || isAlbum)
-            _buildLabeledButton(
-              context,
-              iconWidget: FavoriteButton(
-                item: widget.browseItem,
-                size: _kIconSizeSmall,
+              tooltip: 'Add to queue',
+              style: IconButton.styleFrom(
+                backgroundColor: colorScheme.primaryContainer,
+                foregroundColor: colorScheme.onPrimaryContainer,
+                fixedSize: const Size(56, 56), // Match Play All height
+                minimumSize: const Size(56, 56),
+                padding: const EdgeInsets.all(8.0),
               ),
-              label: 'Like',
-              tooltip: 'Add to favorites',
+            ),
+          if (!isArtist) const SizedBox(width: 12),
+          if (!isArtist)
+            IconButton.filled(
+              icon: Icon(Icons.playlist_add, size: _kIconSizeMedium - 8),
+              onPressed: () => _addToPlaylistAction(context),
+              tooltip: 'Add to playlist',
+              style: IconButton.styleFrom(
+                backgroundColor: colorScheme.primaryContainer,
+                foregroundColor: colorScheme.onPrimaryContainer,
+                fixedSize: const Size(56, 56), // Match Play All height
+                minimumSize: const Size(56, 56),
+                padding: const EdgeInsets.all(8.0),
+              ),
+            ),
+          if (isArtist || isTrack || isPlaylist || isAlbum) const Spacer(),
+          if (isArtist || isTrack || isPlaylist || isAlbum)
+            FavoriteButton(
+              item: widget.browseItem,
+              size: _kIconSizeMedium - 8,
+              color: colorScheme.onPrimary,
             ),
         ],
       ),
-    );
-  }
-
-  // Helper for buttons with text labels below them
-  Widget _buildLabeledButton(
-    BuildContext context, {
-    IconData? icon,
-    Widget? iconWidget, // Allow passing a custom widget like FavoriteButton
-    required String label,
-    String? tooltip,
-    VoidCallback? onPressed,
-  }) {
-    assert(icon != null || iconWidget != null,
-        'Either icon or iconWidget must be provided');
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        iconWidget ??
-            IconButton(
-              icon: Icon(icon!, size: _kIconSizeSmall),
-              onPressed: onPressed,
-              tooltip: tooltip,
-              // Consider adding visual density constraints if needed
-              // visualDensity: VisualDensity.compact,
-            ),
-        Text(
-          label,
-          style: const TextStyle(fontSize: _kFontSizeSmall),
-        ),
-      ],
     );
   }
 

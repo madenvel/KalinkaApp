@@ -235,10 +235,18 @@ class _BrowseItemListState extends State<BrowseItemList> {
     return SizedBox(
       width: leadingIconSize,
       height: leadingIconSize,
-      child: Center(
-        child: Text(
-          '${index + 1}',
-          style: const TextStyle(fontSize: 16),
+      child: Container(
+        width: leadingIconSize,
+        height: leadingIconSize,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(4.0),
+        ),
+        child: Center(
+          child: Text(
+            '${index + 1}',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
         ),
       ),
     );

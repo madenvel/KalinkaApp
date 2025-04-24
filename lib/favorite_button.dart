@@ -6,11 +6,13 @@ import 'package:kalinka/data_provider.dart';
 class FavoriteButton extends StatelessWidget {
   final BrowseItem item;
   final double size;
+  final Color? color;
 
   const FavoriteButton({
     super.key,
     required this.item,
     this.size = 32.0,
+    this.color = Colors.white,
   });
 
   @override
@@ -27,7 +29,7 @@ class FavoriteButton extends StatelessWidget {
         .ids
         .contains(item.id);
 
-    return IconButton(
+    return IconButton.filled(
       onPressed: () {
         if (isFavorite) {
           favoritesProvider.remove(item).catchError((error) {
@@ -49,10 +51,8 @@ class FavoriteButton extends StatelessWidget {
           });
         }
       },
-      icon: Icon(
-        isFavorite ? Icons.favorite : Icons.favorite_border,
-        size: size,
-      ),
+      icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border,
+          size: size, color: color),
       tooltip: '${isFavorite ? 'Remove from' : 'Add to'} favorites',
     );
   }
