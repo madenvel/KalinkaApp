@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:kalinka/action_button.dart' show ActionButton;
 import 'package:kalinka/shimmer_widget.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
@@ -16,8 +17,6 @@ class _NowPlayingConstants {
   static const double horizontalPadding = 24.0;
   static const double verticalPadding = 16.0;
   static const double sectionSpacing = 16.0;
-  static const double standardIconSize = 28.0;
-  static const double largeIconSize = 42.0;
   static const double playIconSize = 60.0;
   static const double smallTextSize = 14.0;
   static const double mediumTextSize = 14.0;
@@ -70,13 +69,13 @@ class _NowPlayingState extends State<NowPlaying> {
           horizontal: _NowPlayingConstants.horizontalPadding,
           vertical: _NowPlayingConstants.verticalPadding),
       child: Column(children: [
-        Expanded(child: _buildAlbumArtWidget(context)),
+        Expanded(child: Center(child: _buildAlbumArtWidget(context))),
         const SizedBox(height: _NowPlayingConstants.sectionSpacing),
         _buildTrackInfoWidget(context),
         const SizedBox(height: _NowPlayingConstants.sectionSpacing),
         _buildAudioInfoWidget(context),
         const SizedBox(height: _NowPlayingConstants.sectionSpacing),
-        _buildTrackProgressSection(context),
+        _buildTrackProgressSection(),
         _buildButtonsBar(context),
         _buildVolumeSection(context),
         const SizedBox(height: _NowPlayingConstants.sectionSpacing)
@@ -84,7 +83,7 @@ class _NowPlayingState extends State<NowPlaying> {
     );
   }
 
-  Widget _buildTrackProgressSection(BuildContext context) {
+  Widget _buildTrackProgressSection() {
     return ChangeNotifierProvider(
       create: (context) => TrackPositionProvider(),
       builder: (context, _) =>
@@ -127,16 +126,14 @@ class _NowPlayingState extends State<NowPlaying> {
     return Row(
       children: [
         if (item != null)
-          _makeButtonWithLabel(
-            context,
-            icon: Icons.playlist_add,
-            label: 'Add',
-            onPressed: () => _addToPlaylist(context, item),
-          ),
+          ActionButton(
+              icon: Icons.playlist_add,
+              tooltip: 'Add to playlist',
+              onPressed: () => _addToPlaylist(context, item)),
         const Spacer(),
         _buildAudioFormatBadge(context, decoderType, sampleRate, bitDepth),
         const Spacer(),
-        if (item != null) _buildLikeButton(item),
+        if (item != null) FavoriteButton(item: item),
       ],
     );
   }
@@ -165,37 +162,6 @@ class _NowPlayingState extends State<NowPlaying> {
           style: const TextStyle(fontSize: 13.0, fontWeight: FontWeight.bold),
         ),
       ),
-    );
-  }
-
-  Widget _buildLikeButton(BrowseItem item) {
-    return Column(
-      children: [
-        FavoriteButton(item: item, size: _NowPlayingConstants.standardIconSize),
-        const Text('Like',
-            style: TextStyle(fontSize: _NowPlayingConstants.smallTextSize)),
-      ],
-    );
-  }
-
-  Widget _makeButtonWithLabel(BuildContext context,
-      {required IconData icon,
-      required String label,
-      String? tooltip,
-      VoidCallback? onPressed}) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          icon: Icon(icon, size: _NowPlayingConstants.standardIconSize),
-          onPressed: onPressed,
-          tooltip: tooltip,
-        ),
-        Text(
-          label,
-          style: const TextStyle(fontSize: _NowPlayingConstants.smallTextSize),
-        ),
-      ],
     );
   }
 
@@ -239,10 +205,6 @@ class _NowPlayingState extends State<NowPlaying> {
                 trackShape: CustomTrackShape(),
                 thumbShape: CustomThumbShape(),
                 overlayShape: SliderComponentShape.noOverlay,
-                inactiveTrackColor:
-                    Theme.of(context).colorScheme.surfaceContainerHigh,
-                thumbColor: Theme.of(context).colorScheme.secondary,
-                activeTrackColor: Theme.of(context).colorScheme.secondary,
                 trackHeight: 4,
               ),
           child: Slider(
@@ -351,14 +313,31 @@ class _NowPlayingState extends State<NowPlaying> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16.0),
-      child: Stack(alignment: Alignment.center, children: [
+      child: Row(children: [
+        _buildRepeatButton(),
+        const Spacer(),
         _buildPlaybackControls(context, state),
-        Positioned(
-          right: 0,
-          child: _buildRepeatButton(),
-        )
+        const Spacer(),
+        _buildVolumeControlButton(context),
       ]),
     );
+  }
+
+  Widget _buildVolumeControlButton(BuildContext context) {
+    return ChangeNotifierProvider(
+        create: (context) => VolumeControlProvider(),
+        builder: (context, _) {
+          final provider = context.watch<VolumeControlProvider>();
+          final IconData iconData = provider.volume > provider.maxVolume / 2
+              ? Icons.volume_up
+              : provider.volume == 0
+                  ? Icons.volume_off
+                  : Icons.volume_down;
+          return IconButton(
+              icon: Icon(iconData),
+              onPressed: provider.supported ? () {} : null,
+              tooltip: 'Volume Control');
+        });
   }
 
   IconData _getPlaybackIcon(PlayerStateType state) {
@@ -377,29 +356,29 @@ class _NowPlayingState extends State<NowPlaying> {
 
   Widget _buildPlaybackControls(BuildContext context, PlayerStateType state) {
     final IconData playIcon = _getPlaybackIcon(state);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      IconButton(
-        icon: const Icon(Icons.fast_rewind),
-        iconSize: _NowPlayingConstants.largeIconSize,
+      ActionButton(
+        icon: Icons.fast_rewind,
         onPressed: () => KalinkaPlayerProxy().previous(),
       ),
       const SizedBox(width: 16),
-      IconButton(
+      IconButton.filled(
         icon: Icon(playIcon,
             size: _NowPlayingConstants.playIconSize,
             color: Theme.of(context).colorScheme.surface),
         onPressed: () => _handlePlayPause(state),
         style: IconButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.secondary,
+          backgroundColor: colorScheme.secondary,
+          foregroundColor: colorScheme.surface,
           padding: const EdgeInsets.all(8),
         ),
         tooltip: 'Play',
       ),
       const SizedBox(width: 16),
-      IconButton(
-        icon: const Icon(Icons.fast_forward),
-        iconSize: _NowPlayingConstants.largeIconSize,
+      ActionButton(
+        icon: Icons.fast_forward,
         onPressed: () => KalinkaPlayerProxy().next(),
       ),
     ]);
@@ -469,21 +448,21 @@ class _NowPlayingState extends State<NowPlaying> {
         '';
     '';
 
-    return CachedNetworkImage(
-      fadeInDuration: Duration.zero,
-      fadeOutDuration: Duration.zero,
-      cacheManager: KalinkaMusicCacheManager.instance,
-      imageUrl: imageUrl,
-      fit: BoxFit.cover,
-      placeholder: (_, __) =>
-          ShimmerWidget(width: double.infinity, height: double.infinity),
-      errorWidget: (_, __, ___) => _buildAlbumPlaceholder(),
-      imageBuilder: (context, imageProvider) => Container(
-        decoration: BoxDecoration(
-          borderRadius:
-              BorderRadius.circular(_NowPlayingConstants.albumArtRadius),
-          image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
-        ),
+    if (imageUrl.isEmpty) {
+      return _buildAlbumPlaceholder();
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(_NowPlayingConstants.albumArtRadius),
+      child: CachedNetworkImage(
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
+        cacheManager: KalinkaMusicCacheManager.instance,
+        imageUrl: imageUrl,
+        fit: BoxFit.contain,
+        placeholder: (_, __) =>
+            ShimmerWidget(width: double.infinity, height: double.infinity),
+        errorWidget: (_, __, ___) => _buildAlbumPlaceholder(),
       ),
     );
   }

@@ -225,8 +225,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const Spacer(),
               if (onSeeMore != null)
-                ElevatedButton(
-                    style: ElevatedButton.styleFrom(
+                TextButton(
+                    style: TextButton.styleFrom(
                         padding: KalinkaConstants.kElevatedButtonPadding,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),

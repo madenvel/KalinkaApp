@@ -208,7 +208,7 @@ class _BrowseItemListState extends State<BrowseItemList> {
               borderRadius: 4.0,
             ),
             const SizedBox(width: 8),
-            const IconButton(icon: Icon(Icons.more), onPressed: null),
+            const IconButton(icon: Icon(Icons.more_horiz), onPressed: null),
           ],
         ),
         visualDensity: VisualDensity.standard);
