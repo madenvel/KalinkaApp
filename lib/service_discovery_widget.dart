@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kalinka/constants.dart';
 import 'package:provider/provider.dart';
 import 'service_discovery.dart';
 import 'package:bonsoir/bonsoir.dart';
@@ -64,7 +65,122 @@ class ServiceDiscoveryWidget extends StatelessWidget {
         .then((_) => provider.start(timeout: const Duration(seconds: 15)));
   }
 
+  void _showServerDetails(ServerItem server, BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Server tile with improved styling
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: colorScheme.primaryContainer,
+                    radius: 28,
+                    child: Image.asset(
+                      'assets/kalinka_icon.png',
+                      height: 36,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          server.name,
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                        Text(
+                          server.ipAddress,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurface
+                                        .withValues(alpha: 0.7),
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24.0),
+
+              // // Server details with consistent styling
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    _buildDetailRow(context, "Server Version", server.version),
+                    const SizedBox(height: 12),
+                    _buildDetailRow(context, "API Version", server.apiVersion),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 32.0),
+
+              // Row of buttons instead of full-width buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: Text(
+                      "Cancel",
+                      style: TextStyle(
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  FilledButton.icon(
+                    icon: const Icon(Icons.link, size: 18),
+                    label: const Text(
+                      "Connect",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colorScheme.secondary,
+                      foregroundColor: colorScheme.onSecondary,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.pop(context, server);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _showAddCustomServerDialog(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final nameController = TextEditingController();
     final ipController = TextEditingController();
     final portController = TextEditingController(text: '8080'); // Default port
@@ -74,27 +190,45 @@ class ServiceDiscoveryWidget extends StatelessWidget {
       builder: (context) {
         return AlertDialog(
           title: const Text('Add Custom Server'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(
-                      labelText: 'Server Name', hintText: 'My Music Server'),
+                  decoration: InputDecoration(
+                    labelText: 'Server Name',
+                    hintText: 'My Music Server',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 TextField(
                   controller: ipController,
-                  decoration: const InputDecoration(
-                      labelText: 'IP Address', hintText: '192.168.1.100'),
+                  decoration: InputDecoration(
+                    labelText: 'IP Address',
+                    hintText: '192.168.1.100',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                   keyboardType: TextInputType.number,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 TextField(
                   controller: portController,
-                  decoration: const InputDecoration(
-                      labelText: 'Port', hintText: '8080'),
+                  decoration: InputDecoration(
+                    labelText: 'Port',
+                    hintText: '8080',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                   keyboardType: TextInputType.number,
                 ),
               ],
@@ -103,12 +237,17 @@ class ServiceDiscoveryWidget extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('CANCEL'),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: colorScheme.primary,
+                ),
+              ),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  // backgroundColor: KalinkaColors.primaryButtonColor,
-                  ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: colorScheme.secondary,
+              ),
               onPressed: () {
                 // Validate input
                 if (nameController.text.isEmpty ||
@@ -135,10 +274,7 @@ class ServiceDiscoveryWidget extends StatelessWidget {
                 Navigator.of(context).pop();
                 _showServerDetails(customServer, context);
               },
-              child: Text(
-                'ADD',
-                // style: TextStyle(color: KalinkaColors.buttonTextColor),
-              ),
+              child: Text('Add'),
             ),
           ],
         );
@@ -146,115 +282,23 @@ class ServiceDiscoveryWidget extends StatelessWidget {
     );
   }
 
-  void _showServerDetails(ServerItem server, BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Server tile (similar to list but slightly bigger)
-              ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  radius: 24, // Slightly bigger for the bottom sheet
-                  child: Image.asset(
-                    'assets/kalinka_icon.png',
-                    height: 32,
-                  ),
-                ),
-                title: Text(
-                  server.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                subtitle: Text(
-                  server.ipAddress,
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-              ),
-
-              const SizedBox(height: 16.0),
-
-              // Server version field
-              Row(children: [
-                const Text("Server Version"),
-                const Spacer(),
-                Text(
-                  server.version,
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ]),
-              const SizedBox(height: 8),
-              Row(children: [
-                const Text("API Version"),
-                const Spacer(),
-                Text(
-                  server.apiVersion,
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ]),
-              const SizedBox(height: 24.0),
-
-              // Connect button (highlighted with playButtonColor)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    // backgroundColor: KalinkaColors.primaryButtonColor,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 20.0), // Taller button
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.pop(context, server);
-                  },
-                  child: Text(
-                    "CONNECT",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      // color: KalinkaColors.buttonTextColor
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 12.0),
-
-              // Cancel button (dark grey color)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[800], // Dark grey color
-                    padding: const EdgeInsets.symmetric(vertical: 20.0),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text(
-                    "CANCEL",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      // color: KalinkaColors.buttonTextColor,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+  Widget _buildDetailRow(BuildContext context, String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
           ),
-        );
-      },
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 
@@ -272,34 +316,40 @@ class ServiceDiscoveryWidget extends StatelessWidget {
           title: const Text(
             "Connect to Streamer",
           ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () {
-                Navigator.of(context).pop();
-              }),
         ),
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 24),
-                _buildTitleSection(),
-                const SizedBox(height: 24),
-                _buildAddCustomServerButton(context),
-                const SizedBox(height: 16),
-                _buildServerList(context),
-                const Spacer(),
-                _buildInfoCard(),
-                const SizedBox(height: 16),
-                _buildRefreshButton(context),
-                const SizedBox(height: 24),
-              ],
-            ),
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal:
+                        KalinkaConstants.kScreenContentHorizontalPadding),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    _buildHeader(),
+                    const SizedBox(height: 24),
+                    _buildTitleSection(context),
+                    const SizedBox(height: 24),
+                  ]),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                sliver: _buildServerListSliver(context),
+              ),
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      _buildInfoCard(context),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -329,169 +379,165 @@ class ServiceDiscoveryWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildTitleSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Discover available music streamers on your network",
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey,
-          ),
-        ),
-      ],
-    );
+  Widget _buildTitleSection(BuildContext context) {
+    final provider = context.watch<ServiceDiscoveryDataProvider>();
+    final bool isLoading = provider.isLoading;
+
+    return ListTile(
+        title: Text("Discover your Kalinka Music Streamer",
+            style: Theme.of(context).textTheme.titleMedium),
+        trailing: isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                ),
+              )
+            : IconButton.filled(
+                color: Theme.of(context).colorScheme.onPrimary,
+                icon: Icon(Icons.refresh),
+                onPressed: () => _refreshSearch(context),
+                tooltip: "Refresh search",
+              ));
   }
 
-  Widget _buildServerList(BuildContext context) {
+  Widget _buildServerListSliver(BuildContext context) {
     final provider = context.watch<ServiceDiscoveryDataProvider>();
     final servers = _getServersFromProvider(provider);
     final bool isLoading = provider.isLoading;
 
-    return Column(
-      children: [
-        servers.isEmpty && !isLoading
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32.0),
-                  child: Text("No servers found"),
-                ),
-              )
-            : ListView.builder(
-                shrinkWrap: true,
-                itemCount: servers.length,
-                itemBuilder: (context, index) =>
-                    _buildServerItem(servers[index], context),
-              ),
-        if (isLoading)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16.0),
+    if (isLoading && servers.isEmpty) {
+      return SliverToBoxAdapter(
+        child: const Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 32.0),
             child: CircularProgressIndicator(),
           ),
-      ],
-    );
-  }
-
-  Widget _buildAddCustomServerButton(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6.0),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[700]!, width: 1),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => _showAddCustomServerDialog(context),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.add_circle_outline, color: Colors.grey[400]),
-                const SizedBox(width: 8),
-                Text(
-                  "Add Custom Server",
-                  style: TextStyle(color: Colors.grey[400]),
-                ),
-              ],
-            ),
-          ),
         ),
-      ),
-    );
+      );
+    }
+
+    return servers.isEmpty && !isLoading
+        ? SliverToBoxAdapter(
+            child: Column(
+            children: [
+              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                const Icon(Icons.sentiment_very_dissatisfied, size: 56),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "No servers found.",
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                  icon: const Icon(Icons.refresh),
+                  label: const Text("Retry search"),
+                  onPressed: () {})
+            ],
+          ))
+        : SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => _buildServerItem(servers[index], context),
+              childCount: servers.length,
+            ),
+          );
   }
 
   Widget _buildServerItem(ServerItem server, BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6.0),
-      decoration: BoxDecoration(
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4.0),
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Material(
-        color: Colors.grey[850],
+      clipBehavior: Clip.antiAlias,
+      child: ListTile(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        leading: CircleAvatar(
+          backgroundColor: Colors.white,
+          radius: 20,
+          child: Image.asset(
+            'assets/kalinka_icon.png',
+            height: 24,
+          ),
+        ),
+        title: Text(
+          server.name,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+        ),
+        subtitle: Text(
+          server.ipAddress,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+        ),
+        trailing: Icon(
+          Icons.chevron_right,
+          color: colorScheme.onSurfaceVariant,
+        ),
+        onTap: () => _showServerDetails(server, context),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => _showServerDetails(server, context),
-          highlightColor: Colors.grey[700],
-          hoverColor: Colors.grey[800],
-          mouseCursor: SystemMouseCursors.click,
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.white,
-              radius: 18, // Smaller for list items
-              child: Image.asset(
-                'assets/kalinka_icon.png',
-                height: 24,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Icon(
+              Icons.info_outline,
+              color: colorScheme.onSurfaceVariant,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                  children: [
+                    TextSpan(
+                      text:
+                          "The discovery process may take up to 15 seconds. Make sure your streamer is powered and connected to the same network. If your streamer is still not found, you can ",
+                    ),
+                    WidgetSpan(
+                      child: GestureDetector(
+                        onTap: () => _showAddCustomServerDialog(context),
+                        child: Text(
+                          "add it manually",
+                          style: TextStyle(
+                            color: colorScheme.secondary,
+                            fontWeight: FontWeight.w500,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ),
+                    TextSpan(text: "."),
+                  ],
+                ),
               ),
             ),
-            title: Text(
-              server.name,
-              style: const TextStyle(color: Colors.white),
-            ),
-            subtitle: Text(
-              server.ipAddress,
-              style: TextStyle(color: Colors.grey[400]),
-            ),
-            trailing: const Icon(Icons.chevron_right, color: Colors.white),
-          ),
+          ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildInfoCard() {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[800]!, width: 1),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.info_outline, color: Colors.grey),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Text(
-              "The discovery process may take a few minutes. "
-              "Make sure your streamer is powered and connected to the same network.",
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRefreshButton(BuildContext context) {
-    final provider = context.watch<ServiceDiscoveryDataProvider>();
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        icon: Icon(
-          Icons.refresh,
-          // color: KalinkaColors.buttonTextColor,
-        ),
-        label: Text(
-          "REFRESH SEARCH",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            // color: KalinkaColors.buttonTextColor,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          // backgroundColor: KalinkaColors.primaryButtonColor,
-          padding: const EdgeInsets.symmetric(vertical: 20.0),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        onPressed: provider.isLoading ? null : () => _refreshSearch(context),
       ),
     );
   }
