@@ -84,7 +84,7 @@ class ServiceDiscoveryWidget extends StatelessWidget {
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: colorScheme.primaryContainer,
+                    backgroundColor: Colors.white,
                     radius: 28,
                     child: Image.asset(
                       'assets/kalinka_icon.png',
