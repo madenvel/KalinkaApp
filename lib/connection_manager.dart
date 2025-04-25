@@ -25,8 +25,10 @@ class ConnectionManager extends StatefulWidget {
 class _ConnectionManagerState extends State<ConnectionManager> {
   bool _connected = false;
 
-  int _connectionAttempts = 0;
-  final int _maxConnectionAttempts = 2;
+  int _connectionAttemptsInRound = 0;
+  int _waitTime = 1;
+  final int _maxConnectionAttemptsInRound = 3;
+  int _totalConnectionAttempts = 0;
 
   late String subscriptionId;
 
@@ -35,13 +37,11 @@ class _ConnectionManagerState extends State<ConnectionManager> {
   final AudioPlayerService _audioPlayerService = AudioPlayerService();
   final logger = Logger();
 
+  static const int _totalConnectionAttemptsToShowSpinner = 3;
+
   @override
   void initState() {
     super.initState();
-    // Make sure providers register their listeners before we start listening
-    // So that they receive state replay message
-    context.read<TrackListProvider>();
-    context.read<PlayerStateProvider>();
     subscriptionId = EventListener().registerCallback({
       EventType.NetworkDisconnected: (args) {
         logger.d('Disconnected!!!');
@@ -49,17 +49,18 @@ class _ConnectionManagerState extends State<ConnectionManager> {
           BrowseItemCache().invalidate();
           _connected = false;
         });
-        if (_connectionAttempts >= _maxConnectionAttempts) {
-          logger.i('Max connection attempts reached');
-          return;
+        if (_connectionAttemptsInRound >= _maxConnectionAttemptsInRound) {
+          _waitTime = (_waitTime * 2).clamp(1, 8);
+          _connectionAttemptsInRound = 0;
         }
         final provider = context.read<ConnectionSettingsProvider>();
         if (provider.isSet) {
-          Timer(Duration(seconds: 1), () {
+          Timer(Duration(seconds: _waitTime), () {
             if (!_connected) {
-              logger.i('Attempting to reconnect, $_connectionAttempts');
+              logger.i('Attempting to reconnect, $_connectionAttemptsInRound');
+              _connectionAttemptsInRound++;
               setState(() {
-                _connectionAttempts++;
+                _totalConnectionAttempts++;
               });
 
               final host = provider.host;
@@ -72,7 +73,8 @@ class _ConnectionManagerState extends State<ConnectionManager> {
       EventType.NetworkConnected: (args) {
         setState(() {
           _connected = true;
-          _connectionAttempts = 0;
+          _connectionAttemptsInRound = 0;
+          _totalConnectionAttempts++;
           widget.onConnected?.call();
           final provider = context.read<ConnectionSettingsProvider>();
           final host = provider.host;
@@ -94,7 +96,7 @@ class _ConnectionManagerState extends State<ConnectionManager> {
     }
 
     _connected = false;
-    _connectionAttempts = 0;
+    _connectionAttemptsInRound = 0;
     final provider = context.read<ConnectionSettingsProvider>();
     final host = provider.host;
     final port = provider.port;
@@ -152,7 +154,8 @@ class _ConnectionManagerState extends State<ConnectionManager> {
           ),
         ),
         const SizedBox(height: 16),
-        if (provider.isSet && _connectionAttempts < _maxConnectionAttempts)
+        if (provider.isSet &&
+            _totalConnectionAttempts < _totalConnectionAttemptsToShowSpinner)
           const SizedBox(
               width: 16,
               height: 16,
