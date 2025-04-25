@@ -362,6 +362,7 @@ class _NowPlayingState extends State<NowPlaying> {
       ActionButton(
         icon: Icons.fast_rewind,
         onPressed: () => KalinkaPlayerProxy().previous(),
+        fixedButtonSize: 56,
       ),
       const SizedBox(width: 16),
       IconButton.filled(
@@ -380,6 +381,7 @@ class _NowPlayingState extends State<NowPlaying> {
       ActionButton(
         icon: Icons.fast_forward,
         onPressed: () => KalinkaPlayerProxy().next(),
+        fixedButtonSize: 56,
       ),
     ]);
   }

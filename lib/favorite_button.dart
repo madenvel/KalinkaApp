@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kalinka/constants.dart' show KalinkaConstants;
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_model.dart';
 import 'package:kalinka/data_provider.dart';
@@ -28,6 +29,7 @@ class FavoriteButton extends StatelessWidget {
         .contains(item.id);
 
     final colorScheme = Theme.of(context).colorScheme;
+    final buttonSize = KalinkaConstants.kButtonSize;
 
     return IconButton.filled(
       onPressed: () {
@@ -58,8 +60,8 @@ class FavoriteButton extends StatelessWidget {
       style: IconButton.styleFrom(
         backgroundColor: colorScheme.secondaryContainer.withValues(alpha: 0.5),
         foregroundColor: colorScheme.onSecondaryContainer,
-        fixedSize: const Size(56, 56), // Match Play All height
-        minimumSize: const Size(56, 56),
+        fixedSize: Size(buttonSize, buttonSize), // Match Play All height
+        minimumSize: Size(buttonSize, buttonSize),
         padding: const EdgeInsets.all(8.0),
       ),
       tooltip: '${isFavorite ? 'Remove from' : 'Add to'} favorites',
