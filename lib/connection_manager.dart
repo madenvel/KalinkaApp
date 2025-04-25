@@ -169,12 +169,12 @@ class _ConnectionManagerState extends State<ConnectionManager> {
 
   void _showDiscoveryScreen(
       BuildContext context, ConnectionSettingsProvider provider) {
-    Navigator.push(
-        context,
-        MaterialPageRoute(
+    Navigator.of(context, rootNavigator: true)
+        .push(MaterialPageRoute(
             builder: (context) => ChangeNotifierProvider(
                 create: (context) => ServiceDiscoveryDataProvider(),
-                child: ServiceDiscoveryWidget()))).then((item) {
+                child: ServiceDiscoveryWidget())))
+        .then((item) {
       if (item != null) {
         provider.setDevice(item.name, item.ipAddress, item.port);
       }
