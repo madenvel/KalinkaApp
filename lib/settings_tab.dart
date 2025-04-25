@@ -271,15 +271,16 @@ class _SettingsTabState extends State<SettingsTab> {
                         borderRadius: BorderRadius.circular(8)),
                   ),
                   onPressed: () {
-                    Navigator.push(
-                      context,
+                    Navigator.of(context, rootNavigator: true)
+                        .push(
                       MaterialPageRoute(
                         builder: (context) => ChangeNotifierProvider(
                           create: (context) => ServiceDiscoveryDataProvider(),
                           child: const ServiceDiscoveryWidget(),
                         ),
                       ),
-                    ).then((item) {
+                    )
+                        .then((item) {
                       if (item != null) {
                         connectionSettings.setDevice(
                             item.name, item.ipAddress, item.port);

@@ -95,6 +95,7 @@ class ServiceDiscoveryDataProvider with ChangeNotifier {
     _discoveryTimer?.cancel();
     _discoveryTimer = null;
 
+    logger.i('Stopping discovery for type: $type');
     await _discovery?.stop();
     await _discoverySubscription?.cancel();
     _isLoading = false;
