@@ -423,7 +423,6 @@ class _BrowseItemViewState extends State<BrowseItemView> {
     final isAlbum = widget.browseItem.album != null;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    const double kButtonSize = 56;
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -447,7 +446,8 @@ class _BrowseItemViewState extends State<BrowseItemView> {
               style: FilledButton.styleFrom(
                 backgroundColor: colorScheme.secondary,
                 foregroundColor: colorScheme.surface,
-                fixedSize: const Size(double.infinity, kButtonSize),
+                fixedSize:
+                    const Size(double.infinity, KalinkaConstants.kButtonSize),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16.0,
                   vertical: 8.0,

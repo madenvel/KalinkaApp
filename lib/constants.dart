@@ -15,4 +15,5 @@ class KalinkaConstants {
   static const kFilterChipSpace = 4.0;
 
   static const kSpaceBetweenTiles = 20.0;
+  static const double kButtonSize = 48.0;
 }

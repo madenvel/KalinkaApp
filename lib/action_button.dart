@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:kalinka/constants.dart';
 
-const double kfixedButtonSize = 56.0;
 const double kIconSize = 32.0;
 const EdgeInsets kButtonPadding = EdgeInsets.all(8.0);
 
@@ -17,7 +17,7 @@ class ActionButton extends StatelessWidget {
     this.onPressed,
     this.tooltip,
     this.iconSize = kIconSize,
-    this.fixedButtonSize = kfixedButtonSize,
+    this.fixedButtonSize = KalinkaConstants.kButtonSize,
   });
 
   @override
