@@ -310,13 +310,9 @@ class ServiceDiscoveryWidget extends StatelessWidget {
       // Start discovery with a timeout when the provider is created
       provider.start(timeout: const Duration(seconds: 15));
       return provider;
-    }, builder: (context, provider) {
+    }, builder: (context, _) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            "Connect to Streamer",
-          ),
-        ),
+        appBar: AppBar(),
         body: SafeArea(
           child: CustomScrollView(
             slivers: [
@@ -326,21 +322,36 @@ class ServiceDiscoveryWidget extends StatelessWidget {
                         KalinkaConstants.kScreenContentHorizontalPadding),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    _buildHeader(),
-                    const SizedBox(height: 24),
+                    _buildHeader(context),
+                    const SizedBox(height: 16),
                     _buildTitleSection(context),
-                    const SizedBox(height: 24),
                   ]),
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal:
+                        KalinkaConstants.kScreenContentHorizontalPadding),
                 sliver: _buildServerListSliver(context),
               ),
+              SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal:
+                          KalinkaConstants.kScreenContentHorizontalPadding,
+                      vertical: 24),
+                  sliver: SliverToBoxAdapter(
+                      child: Column(children: [
+                    TextButton(
+                        child: const Text("Add Device Manually"),
+                        onPressed: () => _showAddCustomServerDialog(context)),
+                  ]))),
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal:
+                          KalinkaConstants.kScreenContentHorizontalPadding,
+                      vertical: 32),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -356,95 +367,85 @@ class ServiceDiscoveryWidget extends StatelessWidget {
     });
   }
 
-  Widget _buildHeader() {
-    return Row(
-      children: [
-        CircleAvatar(
-          backgroundColor: Colors.white,
-          radius: 22, // Adjust radius for header icon
-          child: Image.asset(
-            'assets/kalinka_icon.png',
-            height: 30,
-          ),
-        ),
-        const SizedBox(width: 12),
-        const Text(
-          "Kalinka",
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
+  Widget _buildHeader(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Text(
+      "Discover Devices",
+      style: textTheme.headlineLarge,
     );
   }
 
   Widget _buildTitleSection(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     final provider = context.watch<ServiceDiscoveryDataProvider>();
     final bool isLoading = provider.isLoading;
+    final int deviceCount = provider.services.length;
 
-    return ListTile(
-        title: Text("Discover your Kalinka Music Streamer",
-            style: Theme.of(context).textTheme.titleMedium),
-        trailing: isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        isLoading
+            ? SizedBox(
+                height: 36,
+                child: Row(children: [
+                  Text("Scanning for Kalinka devices...",
+                      style: textTheme.bodyLarge),
+                  const SizedBox(width: 24),
+                  const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ))
+                ]),
               )
-            : IconButton.filled(
-                color: Theme.of(context).colorScheme.onPrimary,
-                icon: Icon(Icons.refresh),
-                onPressed: () => _refreshSearch(context),
-                tooltip: "Refresh search",
-              ));
+            : SizedBox(
+                height: 36,
+                child: Row(children: [
+                  Text(
+                    "Scan is complete. Found $deviceCount device${deviceCount != 1 ? 's' : ''}.",
+                    style: textTheme.bodyLarge,
+                  ),
+                  const Spacer(),
+                  ElevatedButton(
+                      onPressed: () => _refreshSearch(context),
+                      child: const Text("Retry"))
+                ]),
+              ),
+        const SizedBox(height: KalinkaConstants.kContentVerticalPadding),
+      ],
+    );
   }
 
   Widget _buildServerListSliver(BuildContext context) {
     final provider = context.watch<ServiceDiscoveryDataProvider>();
     final servers = _getServersFromProvider(provider);
-    final bool isLoading = provider.isLoading;
 
-    if (isLoading && servers.isEmpty) {
-      return SliverToBoxAdapter(
-        child: const Center(
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 32.0),
-            child: CircularProgressIndicator(),
-          ),
+    if (provider.services.isEmpty && provider.isLoading) {
+      return const SliverToBoxAdapter(
+        child: Center(
+          child: Icon(Icons.search, size: 56),
         ),
+      );
+    } else if (provider.services.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Icon(Icons.sentiment_very_dissatisfied, size: 56),
+          const SizedBox(width: 16),
+          Text(
+            "No devices found.",
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+        ]),
       );
     }
 
-    return servers.isEmpty && !isLoading
-        ? SliverToBoxAdapter(
-            child: Column(
-            children: [
-              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                const Icon(Icons.sentiment_very_dissatisfied, size: 56),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    "No servers found.",
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ),
-              ]),
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                  icon: const Icon(Icons.refresh),
-                  label: const Text("Retry search"),
-                  onPressed: () {})
-            ],
-          ))
-        : SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => _buildServerItem(servers[index], context),
-              childCount: servers.length,
-            ),
-          );
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) => _buildServerItem(servers[index], context),
+        childCount: servers.length,
+      ),
+    );
   }
 
   Widget _buildServerItem(ServerItem server, BuildContext context) {
@@ -510,28 +511,11 @@ class ServiceDiscoveryWidget extends StatelessWidget {
             Expanded(
               child: RichText(
                 text: TextSpan(
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
                   children: [
                     TextSpan(
                       text:
-                          "The discovery process may take up to 15 seconds. Make sure your streamer is powered and connected to the same network. If your streamer is still not found, you can ",
+                          "Make sure your server is running and connected to the same network as your device.",
                     ),
-                    WidgetSpan(
-                      child: GestureDetector(
-                        onTap: () => _showAddCustomServerDialog(context),
-                        child: Text(
-                          "add it manually",
-                          style: TextStyle(
-                            color: colorScheme.secondary,
-                            fontWeight: FontWeight.w500,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ),
-                    ),
-                    TextSpan(text: "."),
                   ],
                 ),
               ),
