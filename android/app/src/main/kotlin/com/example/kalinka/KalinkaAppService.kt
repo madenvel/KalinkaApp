@@ -23,12 +23,12 @@ import java.net.URL
 class KalinkaMusicService : Service(), EventCallback {
 
     private val LOGTAG: String = "KalinkaMusicService"
-    private val NOTIFICATION_CHANNEL_ID = "RpiMusicNotificationChannel"
+    private val NOTIFICATION_CHANNEL_ID = "KalinkaMusicNotificationChannel"
     private val NOTIFICATION: Int = 1001
 
     private lateinit var mNM: NotificationManager
     private lateinit var eventListener: EventListener
-    private lateinit var rpiPlayerProxy: RpiPlayerProxy
+    private lateinit var kalinkaPlayerProxy: KalinkaPlayerProxy
 
     private var mediaSession: MediaSession? = null
     private var isRunning = false
@@ -61,7 +61,7 @@ class KalinkaMusicService : Service(), EventCallback {
         val port = intent.getIntExtra("port", 0)
         val baseUrl = "http://$host:$port"
         eventListener = EventListener(baseUrl, this);
-        rpiPlayerProxy = RpiPlayerProxy(baseUrl, onError = {
+        kalinkaPlayerProxy = KalinkaPlayerProxy(baseUrl, onError = {
             this.onDisconnected()
         })
         eventListener.start()
@@ -71,38 +71,38 @@ class KalinkaMusicService : Service(), EventCallback {
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
     private fun setupMediaSession() {
         Log.i(LOGTAG, "setupMediaSession called")
-        mediaSession = MediaSession(this, "RpiMusicMediaSession")
+        mediaSession = MediaSession(this, "KalinkaMusicMediaSession")
         mediaSession!!.setCallback(object : MediaSession.Callback() {
             override fun onPlay() {
                 Log.i(LOGTAG, "onPlay called")
                 if (mediaSession!!.controller.playbackState?.state == PlaybackState.STATE_PAUSED) {
-                    rpiPlayerProxy.pause(false) {}
+                    kalinkaPlayerProxy.pause(false) {}
                     return
                 }
-                rpiPlayerProxy.play {}
+                kalinkaPlayerProxy.play {}
             }
 
             override fun onPause() {
                 Log.i(LOGTAG, "onPause called")
-                rpiPlayerProxy.pause(true) {}
+                kalinkaPlayerProxy.pause(true) {}
             }
 
             override fun onSkipToNext() {
                 Log.i(LOGTAG, "onSkipToNext called")
-                rpiPlayerProxy.skipToNext {}
+                kalinkaPlayerProxy.skipToNext {}
                 updatePlaybackState(PlaybackInfo("SKIP_TO_NEXT", 0))
             }
 
             override fun onSkipToPrevious() {
                 Log.i(LOGTAG, "onSkipToPrevious called")
-                rpiPlayerProxy.skipToPrev {}
+                kalinkaPlayerProxy.skipToPrev {}
                 updatePlaybackState(PlaybackInfo("SKIP_TO_PREV", 0))
             }
 
             override fun onSeekTo(pos: Long) {
                 Log.i(LOGTAG, "onSeekTo called")
                 isSeekInProgress = true
-                rpiPlayerProxy.seekTo(pos) { response ->
+                kalinkaPlayerProxy.seekTo(pos) { response ->
                     if (response.positionMs != null && response.positionMs!! > 0) {
                         updatePlaybackState(PlaybackInfo("SEEK_IN_PROGRESS", pos))
                     }

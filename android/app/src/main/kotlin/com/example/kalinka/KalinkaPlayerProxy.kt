@@ -2,7 +2,6 @@ package com.example.kalinka
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -46,11 +45,11 @@ class SeekResponse(var message: String? = null, var positionMs: Long? = null)
     }
 }
 
-class RpiPlayerProxy(
+class KalinkaPlayerProxy(
     private val baseUrl: String,
     private val onError: () -> Unit
 ) {
-    private val LOGTAG = "RpiPlayerProxy"
+    private val LOGTAG = "KalinkaPlayerProxy"
     private val gson = Gson()
 
     fun play(onSuccess: (Response) -> Unit) {

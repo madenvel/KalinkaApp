@@ -33,7 +33,7 @@ class _ConnectionManagerState extends State<ConnectionManager> {
   late String subscriptionId;
 
   final EventListener _eventListener = EventListener();
-  final KalinkaPlayerProxy _rpiPlayerProxy = KalinkaPlayerProxy();
+  final KalinkaPlayerProxy _kalinkaPlayerProxy = KalinkaPlayerProxy();
   final AudioPlayerService _audioPlayerService = AudioPlayerService();
   final logger = Logger();
 
@@ -102,7 +102,7 @@ class _ConnectionManagerState extends State<ConnectionManager> {
     final port = provider.port;
     if (host.isNotEmpty && port != 0) {
       _eventListener.startListening(host, port);
-      _rpiPlayerProxy.connect(host, port);
+      _kalinkaPlayerProxy.connect(host, port);
     }
     setState(() {});
   }
