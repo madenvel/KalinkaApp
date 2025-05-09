@@ -153,25 +153,29 @@ class ImageWithIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(children: [
       Positioned.fill(
-          child: CachedNetworkImage(
-              fadeInDuration: Duration.zero,
-              fadeOutDuration: Duration.zero,
-              fit: BoxFit.cover,
-              cacheManager: KalinkaMusicCacheManager.instance,
-              imageUrl: imageUrl ?? '',
-              imageBuilder: (context, imageProvider) => Container(
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(4),
-                      image: DecorationImage(
-                          colorFilter: showIndicator
-                              ? ColorFilter.mode(
-                                  Colors.grey, BlendMode.modulate)
-                              : null,
-                          image: imageProvider))),
-              placeholder: (context, url) =>
-                  const Icon(Icons.music_note, size: 48.0),
-              errorWidget: (context, url, error) =>
-                  const Icon(Icons.error, size: 48.0))),
+          child: imageUrl != null
+              ? CachedNetworkImage(
+                  fadeInDuration: Duration.zero,
+                  fadeOutDuration: Duration.zero,
+                  fit: BoxFit.cover,
+                  cacheManager: KalinkaMusicCacheManager.instance,
+                  imageUrl: context
+                      .read<ConnectionSettingsProvider>()
+                      .resolveUrl(imageUrl!),
+                  imageBuilder: (context, imageProvider) => Container(
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(4),
+                          image: DecorationImage(
+                              colorFilter: showIndicator
+                                  ? ColorFilter.mode(
+                                      Colors.grey, BlendMode.modulate)
+                                  : null,
+                              image: imageProvider))),
+                  placeholder: (context, url) =>
+                      const Icon(Icons.music_note, size: 48.0),
+                  errorWidget: (context, url, error) =>
+                      const Icon(Icons.error, size: 48.0))
+              : const Icon(Icons.music_note, size: 48.0)),
       if (showIndicator) const Center(child: SoundwaveWidget())
     ]);
   }

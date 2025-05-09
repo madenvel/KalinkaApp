@@ -500,6 +500,16 @@ class ConnectionSettingsProvider with ChangeNotifier {
   get isSet => _host.isNotEmpty && _port > 0;
   get isLoaded => _isLoaded;
 
+  String resolveUrl(String url) {
+    if (url.startsWith('http')) {
+      return url;
+    }
+    if (url.startsWith('/')) {
+      return 'http://$_host:$_port$url';
+    }
+    return 'http://$_host:$_port/$url';
+  }
+
   ConnectionSettingsProvider() {
     _init();
   }

@@ -2,7 +2,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/custom_cache_manager.dart';
+import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
 import 'package:kalinka/shimmer_widget.dart';
+import 'package:provider/provider.dart';
 
 class ImageCard extends StatelessWidget {
   final String? imageUrl;
@@ -40,7 +42,8 @@ class ImageCard extends StatelessWidget {
     }
 
     return CachedNetworkImage(
-        imageUrl: imageUrl!,
+        imageUrl:
+            context.read<ConnectionSettingsProvider>().resolveUrl(imageUrl!),
         cacheManager: KalinkaMusicCacheManager.instance,
         fit: BoxFit.cover,
         fadeInDuration: Duration.zero,
