@@ -121,7 +121,10 @@ class _NowPlayingState extends State<NowPlaying> {
     final double sampleRate = (audioInfo?.sampleRate ?? 0) / 1000;
     final int bitDepth = audioInfo?.bitsPerSample ?? 0;
     final String decoderType =
-        playerStateProvider.state.mimeType?.split('/')[1].toUpperCase() ?? '';
+        playerStateProvider.state.mimeType?.contains('/') ?? false
+            ? playerStateProvider.state.mimeType?.split('/')[1].toUpperCase() ??
+                'Unknown'
+            : 'Unknown';
 
     return Row(
       children: [
@@ -460,7 +463,8 @@ class _NowPlayingState extends State<NowPlaying> {
         fadeInDuration: Duration.zero,
         fadeOutDuration: Duration.zero,
         cacheManager: KalinkaMusicCacheManager.instance,
-        imageUrl: imageUrl,
+        imageUrl:
+            context.read<ConnectionSettingsProvider>().resolveUrl(imageUrl),
         fit: BoxFit.contain,
         placeholder: (_, __) =>
             ShimmerWidget(width: double.infinity, height: double.infinity),
@@ -472,11 +476,10 @@ class _NowPlayingState extends State<NowPlaying> {
   Widget _buildAlbumPlaceholder() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[300],
         borderRadius:
             BorderRadius.circular(_NowPlayingConstants.albumArtRadius),
       ),
-      child: const Icon(Icons.album, size: 80, color: Colors.grey),
+      child: const Icon(Icons.album, size: 250),
     );
   }
 }

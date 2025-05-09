@@ -122,7 +122,8 @@ class CustomListTile extends StatelessWidget {
               child: Center(
                   child: index != null
                       ? _buildLeadingNumber(context)
-                      : _buildItemImage(browseItem, _getFallbackIcon()))),
+                      : _buildItemImage(
+                          context, browseItem, _getFallbackIcon()))),
           showPlayIndicator && isCurrent
               ? const Center(child: SoundwaveWidget())
               : const SizedBox.shrink()
@@ -140,7 +141,8 @@ class CustomListTile extends StatelessWidget {
     );
   }
 
-  Widget _buildItemImage(BrowseItem item, IconData fallbackIcon) {
+  Widget _buildItemImage(
+      BuildContext context, BrowseItem item, IconData fallbackIcon) {
     String? image;
     if (item.image != null) {
       image = item.image!.small ?? item.image!.thumbnail ?? item.image!.large;
@@ -168,7 +170,9 @@ class CustomListTile extends StatelessWidget {
                         image: imageProvider, fit: BoxFit.cover),
                   ),
                 ),
-                imageUrl: image,
+                imageUrl: context
+                    .read<ConnectionSettingsProvider>()
+                    .resolveUrl(image),
                 placeholder: (context, url) => Container(
                     decoration: BoxDecoration(
                         borderRadius:

@@ -6,7 +6,9 @@ import 'package:kalinka/custom_cache_manager.dart'
     show KalinkaMusicCacheManager;
 import 'package:kalinka/data_model.dart' show BrowseItem, CardSize;
 import 'package:kalinka/browse_item_view.dart';
+import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
 import 'package:kalinka/shimmer_widget.dart';
+import 'package:provider/provider.dart';
 
 class LargeImagePreviewCard extends StatelessWidget {
   final BrowseItem section;
@@ -43,7 +45,9 @@ class LargeImagePreviewCard extends StatelessWidget {
               fadeOutDuration: Duration.zero,
               height: cardSize,
               cacheManager: KalinkaMusicCacheManager.instance,
-              imageUrl: imageUrl,
+              imageUrl: context
+                  .read<ConnectionSettingsProvider>()
+                  .resolveUrl(imageUrl),
               imageBuilder: (context, imageProvider) => Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),

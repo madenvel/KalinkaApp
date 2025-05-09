@@ -10,6 +10,7 @@ import 'package:kalinka/browse_item_data_source.dart'
     show BrowseItemDataSource, DefaultBrowseItemDataSource;
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/custom_cache_manager.dart';
+import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
 import 'package:kalinka/favorite_button.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart' show KalinkaPlayerProxy;
 import 'package:kalinka/polka_dot_painter.dart';
@@ -223,7 +224,9 @@ class _BrowseItemViewState extends State<BrowseItemView> {
           // Foreground Content (Image, Info, Buttons)
           if (albumImage?.isNotEmpty ?? false)
             CachedNetworkImage(
-              imageUrl: albumImage!,
+              imageUrl: context
+                  .read<ConnectionSettingsProvider>()
+                  .resolveUrl(albumImage!),
               fadeInDuration: _kZeroDuration,
               fadeOutDuration: _kZeroDuration,
               cacheManager: KalinkaMusicCacheManager.instance,

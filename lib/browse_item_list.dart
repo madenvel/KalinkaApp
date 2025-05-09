@@ -129,7 +129,8 @@ class _BrowseItemListState extends State<BrowseItemList> {
       return CachedNetworkImage(
           fadeInDuration: Duration.zero,
           fadeOutDuration: Duration.zero,
-          imageUrl: albumImage,
+          imageUrl:
+              context.read<ConnectionSettingsProvider>().resolveUrl(albumImage),
           fit: BoxFit.cover,
           imageBuilder: (context, imageProvider) => _buildTrackListItemTile(
               context,

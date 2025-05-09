@@ -190,7 +190,8 @@ class _PlaybarState extends State<Playbar> {
         provider.state.currentTrack?.album?.image?.thumbnail ??
         provider.state.currentTrack?.album?.image?.large;
     if (imgSource == null || imgSource.isEmpty) {
-      return const SizedBox.shrink();
+      return const SizedBox(
+          width: 48, height: 48, child: Icon(Icons.music_note, size: 48));
     }
     return SizedBox(
         width: 48,
@@ -198,7 +199,8 @@ class _PlaybarState extends State<Playbar> {
         child: CachedNetworkImage(
           fit: BoxFit.contain,
           cacheManager: KalinkaMusicCacheManager.instance,
-          imageUrl: imgSource,
+          imageUrl:
+              context.read<ConnectionSettingsProvider>().resolveUrl(imgSource),
           imageBuilder: (context, imageProvider) => Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(4),

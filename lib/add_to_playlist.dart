@@ -287,7 +287,8 @@ class AddToPlaylistState extends State<AddToPlaylist> {
     if (imageUrl != null) {
       return CachedNetworkImage(
         cacheManager: KalinkaMusicCacheManager.instance,
-        imageUrl: imageUrl,
+        imageUrl:
+            context.read<ConnectionSettingsProvider>().resolveUrl(imageUrl),
         imageBuilder: (context, imageProvider) => Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
