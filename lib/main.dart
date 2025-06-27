@@ -205,10 +205,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ],
                 )
               ]),
-          body: IndexedStack(
-            index: currentPageIndex,
-            children: List.generate(3, (index) => _buildNavigator(index)),
-          ))),
+          body: _buildNavigator(currentPageIndex))),
     );
   }
 }

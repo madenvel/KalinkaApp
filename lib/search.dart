@@ -70,128 +70,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildLandingPage() {
-    // Get search history from the provider
-    // Get recent items from their respective providers
-    final recentTracks = ref.watch(recentTracksProvider);
-    final recentAlbums = ref.watch(recentAlbumsProvider);
-    final recentArtists = ref.watch(recentArtistsProvider);
-    final recentPlaylists = ref.watch(recentPlaylistsProvider);
-
-    // Group all recent items by SearchType
-    final Map<SearchType, List<BrowseItem>> recentItems = {
-      SearchType.track: recentTracks,
-      SearchType.album: recentAlbums,
-      SearchType.artist: recentArtists,
-      SearchType.playlist: recentPlaylists,
-    };
-
-    final searchHistory = ref.watch(searchHistoryProvider);
-
-    if (searchHistory.isEmpty &&
-        recentTracks.isEmpty &&
-        recentAlbums.isEmpty &&
-        recentArtists.isEmpty &&
-        recentPlaylists.isEmpty) {
-      return Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.search, size: 48),
-            Text('Search for albums, artists, tracks, playlists',
-                style: Theme.of(context).textTheme.bodyLarge),
-          ],
-        ),
-      );
-    }
-
-    return ListView(
-      children: [
-        if (searchHistory.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(
-                vertical: KalinkaConstants.kContentVerticalPadding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal:
-                          KalinkaConstants.kScreenContentHorizontalPadding),
-                  child: Text('Recent Searches',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                ),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal:
-                            KalinkaConstants.kScreenContentHorizontalPadding,
-                        vertical: KalinkaConstants.kContentVerticalPadding),
-                    child: Row(
-                      spacing: KalinkaConstants.kFilterChipSpace,
-                      children: List.generate(searchHistory.length, (index) {
-                        final search = searchHistory[index];
-                        return FilterChip(
-                          label: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.history, size: 16),
-                              const SizedBox(width: 8),
-                              Text(search),
-                            ],
-                          ),
-                          onSelected: (_) {
-                            setState(() {
-                              _searchController.text = search;
-                              _selectedFilter = SearchFilter.all;
-                            });
-                          },
-                        );
-                      }),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ..._buildRecentItemsList(recentItems)
-              .expand((item) => [item, const SizedBox(height: 24)])
-              .toList()
-            ..removeLast(),
-        ],
-      ],
+    return _LandingPageContent(
+      onSearchSelected: (search) {
+        setState(() {
+          _searchController.text = search;
+          _selectedFilter = SearchFilter.all;
+        });
+      },
+      onItemSelected: _updateRecentItems,
     );
-  }
-
-  List<Widget> _buildRecentItemsList(
-      Map<SearchType, List<BrowseItem>> recentItems) {
-    List<Widget> recentItemsWidgets = [];
-    for (var searchType in SearchType.values.sublist(1)) {
-      final items = recentItems[searchType] ?? [];
-      if (items.isNotEmpty) {
-        final title = 'Recently Viewed ${searchType.name.capitalize}s';
-        if (searchType == SearchType.track) {
-          recentItemsWidgets.add(_buildRecentTracksList(title, items));
-        } else {
-          // For other types, we can use a different data source
-          recentItemsWidgets.add(_buildHorizontalList(
-            StaticItemsBrowseItemDataSource.create(title, items),
-            onItemSelected: _updateRecentItems,
-          ));
-        }
-      }
-    }
-    return recentItemsWidgets;
-  }
-
-  Widget _buildRecentTracksList(String title, List<BrowseItem> items) {
-    return provider.ChangeNotifierProvider<BrowseItemDataProvider>(
-        create: (context) => BrowseItemDataProvider.fromDataSource(
-            dataSource: StaticItemsBrowseItemDataSource.create(title, items)),
-        builder: (context, _) =>
-            _buildTrackList(context, title, onTap: _updateRecentItems));
   }
 
   Widget _buildSearchResultTrackList(String title) {
@@ -446,5 +333,260 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         ),
       ],
     );
+  }
+}
+
+class _LandingPageContent extends ConsumerWidget {
+  final Function(String) onSearchSelected;
+  final Function(BrowseItem) onItemSelected;
+
+  const _LandingPageContent({
+    required this.onSearchSelected,
+    required this.onItemSelected,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final searchHistory = ref.watch(searchHistoryProvider);
+
+    if (searchHistory.isEmpty && _hasNoRecentItems(ref)) {
+      return Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.search, size: 48),
+            Text('Search for albums, artists, tracks, playlists',
+                style: Theme.of(context).textTheme.bodyLarge),
+          ],
+        ),
+      );
+    }
+
+    return ListView(
+      children: [
+        if (searchHistory.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(
+                vertical: KalinkaConstants.kContentVerticalPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal:
+                          KalinkaConstants.kScreenContentHorizontalPadding),
+                  child: Text('Recent Searches',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal:
+                            KalinkaConstants.kScreenContentHorizontalPadding,
+                        vertical: KalinkaConstants.kContentVerticalPadding),
+                    child: Row(
+                      spacing: KalinkaConstants.kFilterChipSpace,
+                      children: List.generate(searchHistory.length, (index) {
+                        final search = searchHistory[index];
+                        return FilterChip(
+                          label: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.history, size: 16),
+                              const SizedBox(width: 8),
+                              Text(search),
+                            ],
+                          ),
+                          onSelected: (_) => onSearchSelected(search),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        ..._buildRecentItemsSections()
+            .expand((item) => [item, const SizedBox(height: 24)])
+            .toList()
+          ..removeLast(),
+      ],
+    );
+  }
+
+  bool _hasNoRecentItems(WidgetRef ref) {
+    return ref.watch(recentTracksProvider).isEmpty &&
+        ref.watch(recentAlbumsProvider).isEmpty &&
+        ref.watch(recentArtistsProvider).isEmpty &&
+        ref.watch(recentPlaylistsProvider).isEmpty;
+  }
+
+  List<Widget> _buildRecentItemsSections() {
+    List<Widget> sections = [];
+
+    // Each section is its own consumer widget to minimize rebuilds
+    sections.add(_RecentTracksSection(onItemSelected: onItemSelected));
+    sections.add(_RecentAlbumsSection(onItemSelected: onItemSelected));
+    sections.add(_RecentArtistsSection(onItemSelected: onItemSelected));
+    sections.add(_RecentPlaylistsSection(onItemSelected: onItemSelected));
+
+    return sections;
+  }
+}
+
+// Individual recent items sections to prevent unnecessary rebuilds
+class _RecentTracksSection extends ConsumerWidget {
+  final Function(BrowseItem) onItemSelected;
+
+  const _RecentTracksSection({required this.onItemSelected});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recentTracks = ref.watch(recentTracksProvider);
+    if (recentTracks.isEmpty) return const SizedBox.shrink();
+
+    final title = 'Recently Viewed ${SearchType.track.name.capitalize}s';
+    return provider.ChangeNotifierProvider<BrowseItemDataProvider>(
+        create: (context) => BrowseItemDataProvider.fromDataSource(
+            dataSource:
+                StaticItemsBrowseItemDataSource.create(title, recentTracks)),
+        builder: (context, _) =>
+            _TrackListSection(title: title, onTap: onItemSelected));
+  }
+}
+
+class _RecentAlbumsSection extends ConsumerWidget {
+  final Function(BrowseItem) onItemSelected;
+
+  const _RecentAlbumsSection({required this.onItemSelected});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recentAlbums = ref.watch(recentAlbumsProvider);
+    if (recentAlbums.isEmpty) return const SizedBox.shrink();
+
+    final title = 'Recently Viewed ${SearchType.album.name.capitalize}s';
+    return PreviewSectionCard(
+      key: ValueKey('recent_albums_${recentAlbums.length}'),
+      dataSource: StaticItemsBrowseItemDataSource.create(title, recentAlbums),
+      seeAll: false,
+      onItemSelected: onItemSelected,
+    );
+  }
+}
+
+class _RecentArtistsSection extends ConsumerWidget {
+  final Function(BrowseItem) onItemSelected;
+
+  const _RecentArtistsSection({required this.onItemSelected});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recentArtists = ref.watch(recentArtistsProvider);
+    if (recentArtists.isEmpty) return const SizedBox.shrink();
+
+    final title = 'Recently Viewed ${SearchType.artist.name.capitalize}s';
+    return PreviewSectionCard(
+      key: ValueKey('recent_artists_${recentArtists.length}'),
+      dataSource: StaticItemsBrowseItemDataSource.create(title, recentArtists),
+      seeAll: false,
+      onItemSelected: onItemSelected,
+    );
+  }
+}
+
+class _RecentPlaylistsSection extends ConsumerWidget {
+  final Function(BrowseItem) onItemSelected;
+
+  const _RecentPlaylistsSection({required this.onItemSelected});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recentPlaylists = ref.watch(recentPlaylistsProvider);
+    if (recentPlaylists.isEmpty) return const SizedBox.shrink();
+
+    final title = 'Recently Viewed ${SearchType.playlist.name.capitalize}s';
+    return PreviewSectionCard(
+      key: ValueKey('recent_playlists_${recentPlaylists.length}'),
+      dataSource:
+          StaticItemsBrowseItemDataSource.create(title, recentPlaylists),
+      seeAll: false,
+      onItemSelected: onItemSelected,
+    );
+  }
+}
+
+class _TrackListSection extends StatelessWidget {
+  final String title;
+  final Function(BrowseItem) onTap;
+
+  const _TrackListSection({
+    required this.title,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(
+              left: KalinkaConstants.kScreenContentHorizontalPadding,
+              right: KalinkaConstants.kScreenContentHorizontalPadding,
+              bottom: KalinkaConstants.kContentVerticalPadding),
+          child: Row(
+            children: [
+              Text(title,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Spacer(),
+            ],
+          ),
+        ),
+        BrowseItemList(
+            pageSize: 5,
+            size: 5,
+            shrinkWrap: true,
+            provider: context.watch<BrowseItemDataProvider>(),
+            onTap: (context, index, item) {
+              onTap(item);
+              _playTrack(context, item.track!.id, index);
+            },
+            onAction: (context, index, item) {
+              showModalBottomSheet(
+                context: context,
+                showDragHandle: true,
+                isScrollControlled: false,
+                useRootNavigator: true,
+                scrollControlDisabledMaxHeightRatio: 0.7,
+                builder: (_) => BottomMenu(
+                  parentContext: context,
+                  browseItem: item,
+                ),
+              );
+            }),
+      ],
+    );
+  }
+
+  void _playTrack(BuildContext context, String trackId, int index) async {
+    PlayerState state = context.read<PlayerStateProvider>().state;
+
+    bool needToAdd = true;
+    if (state.currentTrack?.id == trackId) {
+      needToAdd = false;
+    }
+
+    if (!needToAdd) {
+      KalinkaPlayerProxy().play(index);
+    } else {
+      await KalinkaPlayerProxy().clear();
+      await KalinkaPlayerProxy().addTracks([trackId]);
+      await KalinkaPlayerProxy().play();
+    }
   }
 }
