@@ -352,17 +352,15 @@ class KalinkaPlayerProxy {
   }
 
   Future<void> saveSettings(Map<String, dynamic> settings) async {
-    settings.forEach((key, value) {
-      final url = _buildUri('/server/config', {
-        'key': key,
-        'value': value.toString(),
-      });
-      client.put(url).then((response) {
-        if (response.statusCode != 200) {
-          throw Exception('Failed to save settings, url=$url');
-        }
-      });
-    });
+    final url = _buildUri('/server/config');
+    final String encodedSettings = jsonEncode(settings);
+    final response = await client.put(url,
+        headers: {"Content-Type": "application/json"}, body: encodedSettings);
+
+    if (response.statusCode != 200) {
+      throw Exception(
+          'Failed to save settings, status: ${response.statusCode}, body: ${response.body}');
+    }
   }
 
   Future<void> restartServer() async {

@@ -23,10 +23,9 @@ class _SettingsTabState extends State<SettingsTab> {
   String _appVersion = '...';
   String _appBuildNumber = '';
 
-  bool _dynamicOptionsLoaded = false;
-  Map<String, dynamic> _dynamicOptions = {};
+  bool _settingsLoaded = false;
+  Map<String, dynamic> _settings = {};
   final Map<String, dynamic> _updatedValues = {};
-  final Set<String> _invalidInputPaths = {};
 
   final EventListener _eventListener = EventListener();
   late String subscriptionId;
@@ -40,11 +39,11 @@ class _SettingsTabState extends State<SettingsTab> {
     _initPackageInfo();
     KalinkaPlayerProxy().getSettings().then((value) {
       setState(() {
-        _dynamicOptions = value;
-        _dynamicOptionsLoaded = true;
+        _settings = value;
+        _settingsLoaded = true;
       });
     }).catchError((e) {
-      logger.w('Error loading dynamic options: $e');
+      logger.w('Error loading settings: $e');
     });
 
     subscriptionId = _eventListener.registerCallback({
@@ -264,8 +263,6 @@ class _SettingsTabState extends State<SettingsTab> {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    // backgroundColor: KalinkaColors.primaryButtonColor,
-                    // foregroundColor: KalinkaColors.buttonTextColor,
                     padding: const EdgeInsets.symmetric(vertical: 16.0),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
@@ -299,20 +296,25 @@ class _SettingsTabState extends State<SettingsTab> {
       ),
     );
 
-    // Dynamic settings sections
-    if (_dynamicOptionsLoaded &&
-        _dynamicOptions.isNotEmpty &&
-        _dynamicOptions['type'] == 'section') {
-      _dynamicOptions['elements'].forEach((key, value) {
-        try {
-          if (value['type'] == 'section') {
-            settingsWidgets.add(_buildDynamicSection(context, value, key));
-          }
-        } catch (e) {
-          logger.e(
-              'Error building dynamic option for key=$key, value=$value: $e');
-        }
-      });
+    // Settings sections based on new schema
+    if (_settingsLoaded && _settings.isNotEmpty) {
+      // Base Configuration section
+      if (_settings.containsKey('base_config')) {
+        settingsWidgets.add(_buildConfigSection(
+            'Base Configuration', _settings['base_config'], 'base_config'));
+      }
+
+      // Input Modules section
+      if (_settings.containsKey('input_modules')) {
+        settingsWidgets.add(_buildModulesSection(
+            'Input Modules', _settings['input_modules'], 'input_modules'));
+      }
+
+      // Devices section
+      if (_settings.containsKey('devices')) {
+        settingsWidgets.add(
+            _buildModulesSection('Devices', _settings['devices'], 'devices'));
+      }
     }
 
     // About section
@@ -350,32 +352,30 @@ class _SettingsTabState extends State<SettingsTab> {
     );
   }
 
-  Widget _buildDynamicSection(
-      BuildContext context, Map<String, dynamic> settings, String path) {
+  Widget _buildConfigSection(
+      String title, Map<String, dynamic> config, String basePath) {
     List<Widget> sectionWidgets = [];
+    sectionWidgets.add(_buildSectionHeader(title));
 
-    // Add section header
-    sectionWidgets
-        .add(_buildSectionHeader(settings['name'] ?? 'Unknown Section'));
-
-    // Build section elements card
     List<Widget> cardItems = [];
 
-    settings['elements'].forEach((key, value) {
+    config.forEach((key, value) {
       try {
         if (value['type'] == 'section') {
-          // Handle nested section
-          sectionWidgets.add(_buildNestedSection(context, value, '$path.$key'));
+          // Handle subsection - navigate to another screen
+          if (cardItems.isNotEmpty) {
+            cardItems.add(const Divider(height: 1));
+          }
+          cardItems.add(_buildNavigableSection(value, '$basePath.$key'));
         } else {
           // Add setting item to the current card
           if (cardItems.isNotEmpty) {
             cardItems.add(const Divider(height: 1));
           }
-          cardItems.add(_buildSettingItem(context, value, '$path.$key'));
+          cardItems.add(_buildSettingItem(value, '$basePath.$key'));
         }
       } catch (e) {
-        logger
-            .e('Error building dynamic option for key=$key, value=$value: $e');
+        logger.e('Error building config option for key=$key, value=$value: $e');
       }
     });
 
@@ -396,47 +396,112 @@ class _SettingsTabState extends State<SettingsTab> {
     );
   }
 
-  Widget _buildNestedSection(
-      BuildContext context, Map<String, dynamic> settings, String path) {
-    return Card(
-      margin: const EdgeInsets.only(top: 8.0, bottom: 16.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _navigateToNestedSettings(context, settings, path),
-        child: ListTile(
-          title: Text(settings['name'] ?? 'Unknown Section'),
-          subtitle: Text(settings['description'] ?? ''),
-          trailing: const Icon(Icons.chevron_right),
-        ),
-      ),
+  Widget _buildModulesSection(
+      String title, Map<String, dynamic> modules, String basePath) {
+    List<Widget> sectionWidgets = [];
+    sectionWidgets.add(_buildSectionHeader(title));
+
+    modules.forEach((moduleKey, moduleConfig) {
+      try {
+        List<Widget> cardItems = [];
+        String modulePath = '$basePath.$moduleKey';
+
+        // Get module name and enabled status
+        String moduleName = moduleConfig['name']?['title'] ?? moduleKey;
+        String enabledPath = '$modulePath.enabled';
+        bool isEnabled = _updatedValues.containsKey(enabledPath)
+            ? _updatedValues[enabledPath]
+            : (moduleConfig['enabled']?['value'] ?? true);
+
+        moduleConfig.forEach((key, value) {
+          String fieldPath = '$modulePath.$key';
+
+          // Skip 'name' and 'enabled' fields as they're handled in the header
+          if (key == 'name' || key == 'enabled') {
+            return;
+          }
+
+          if (value['type'] == 'section') {
+            // Handle subsection - navigate to another screen
+            if (cardItems.isNotEmpty) {
+              cardItems.add(const Divider(height: 1));
+            }
+            cardItems.add(_buildNavigableSection(value, fieldPath, isEnabled));
+          } else {
+            // Add setting item to the current card
+            if (cardItems.isNotEmpty) {
+              cardItems.add(const Divider(height: 1));
+            }
+            cardItems.add(_buildSettingItem(value, fieldPath, isEnabled));
+          }
+        });
+
+        if (cardItems.isNotEmpty || moduleConfig.containsKey('enabled')) {
+          sectionWidgets.add(
+            Card(
+              margin: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Module header with enable/disable switch
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            moduleName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        if (moduleConfig.containsKey('enabled'))
+                          Switch(
+                            value: isEnabled,
+                            onChanged:
+                                moduleConfig['enabled']?['readonly'] == true
+                                    ? null
+                                    : (value) {
+                                        setState(() {
+                                          _updateValue(
+                                              enabledPath,
+                                              moduleConfig['enabled']['value'],
+                                              isEnabled,
+                                              value);
+                                        });
+                                      },
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (cardItems.isNotEmpty) ...cardItems,
+                ],
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        logger.e(
+            'Error building module for key=$moduleKey, value=$moduleConfig: $e');
+      }
+    });
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: sectionWidgets,
     );
   }
 
-  void _navigateToNestedSettings(
-      BuildContext context, Map<String, dynamic> settings, String path) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => _NestedSettingsScreen(
-          title: settings['name'] ?? 'Settings',
-          settings: settings,
-          basePath: path,
-          onUpdateValue: _updateValue,
-          updatedValues: _updatedValues,
-          invalidInputPaths: _invalidInputPaths,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingItem(
-      BuildContext context, Map<String, dynamic> settings, String path) {
-    // Get display value for the setting
-    final String displayValue = _getDisplayValue(settings, path);
-
+  Widget _buildNavigableSection(Map<String, dynamic> settings, String path,
+      [bool isParentEnabled = true]) {
     return InkWell(
-      onTap: () => _showSettingEditor(context, settings, path),
+      onTap: isParentEnabled
+          ? () => _navigateToNestedSettings(context, settings, path)
+          : null,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Row(
@@ -446,8 +511,96 @@ class _SettingsTabState extends State<SettingsTab> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    settings['description'] ?? 'Unknown Setting',
-                    style: const TextStyle(fontSize: 16),
+                    settings['title'] ?? 'Unknown Section',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: isParentEnabled ? null : Colors.grey,
+                    ),
+                  ),
+                  if (settings['description'] != null &&
+                      settings['description'].isNotEmpty)
+                    const SizedBox(height: 4),
+                  if (settings['description'] != null &&
+                      settings['description'].isNotEmpty)
+                    Text(
+                      settings['description'],
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isParentEnabled
+                            ? Colors.grey
+                            : Colors.grey.withValues(alpha: 0.5),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: isParentEnabled ? null : Colors.grey,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _navigateToNestedSettings(
+      BuildContext context, Map<String, dynamic> settings, String path) {
+    // Check if parent module is enabled
+    bool isParentEnabled = true;
+
+    // Extract module path to check enabled status
+    List<String> pathParts = path.split('.');
+    if (pathParts.length > 2 &&
+        (pathParts[1] == 'input_modules' || pathParts[1] == 'devices')) {
+      String enabledPath =
+          '${pathParts[0]}.${pathParts[1]}.${pathParts[2]}.enabled';
+      isParentEnabled = _updatedValues.containsKey(enabledPath)
+          ? _updatedValues[enabledPath]
+          : (_settings[pathParts[1]]?[pathParts[2]]?['enabled']?['value'] ??
+              true);
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => _NestedSettingsScreen(
+          title: settings['title'] ?? 'Settings',
+          settings: settings,
+          basePath: path,
+          onUpdateValue: _updateValue,
+          updatedValues: _updatedValues,
+          isParentEnabled: isParentEnabled,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingItem(Map<String, dynamic> settings, String path,
+      [bool isParentEnabled = true]) {
+    // Get display value for the setting
+    final String displayValue = _getDisplayValue(settings, path);
+    final bool isReadonly = settings['readonly'] == true || !isParentEnabled;
+
+    return InkWell(
+      onTap:
+          isReadonly ? null : () => _showSettingEditor(context, settings, path),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    settings['title'] ??
+                        settings['description'] ??
+                        'Unknown Setting',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: isParentEnabled ? null : Colors.grey,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -455,14 +608,21 @@ class _SettingsTabState extends State<SettingsTab> {
                     style: TextStyle(
                       fontSize: 14,
                       color: _updatedValues.containsKey(path)
-                          ? Theme.of(context).colorScheme.error
-                          : null,
+                          ? (isParentEnabled
+                              ? Theme.of(context).colorScheme.error
+                              : Colors.grey)
+                          : (isParentEnabled
+                              ? Colors.grey
+                              : Colors.grey.withValues(alpha: 0.5)),
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right),
+            Icon(
+              Icons.chevron_right,
+              color: isReadonly ? Colors.grey : null,
+            ),
           ],
         ),
       ),
@@ -475,12 +635,23 @@ class _SettingsTabState extends State<SettingsTab> {
         hasUpdatedValue ? _updatedValues[path] : settings['value'];
 
     switch (settings['type']) {
-      case 'boolean':
+      case 'bool':
         return value == true ? 'Enabled' : 'Disabled';
-      case 'password':
-        return '••••••••';
+      case 'str':
+        if (settings.containsKey('password') && settings['password'] == true) {
+          return '••••••••';
+        }
+        return value?.toString() ?? '';
+      case 'int':
+      case 'float':
+        return value?.toString() ?? '';
       case 'enum':
-        return value.toString();
+        return value?.toString() ?? '';
+      case 'list[str]':
+        if (value is List) {
+          return value.join(', ');
+        }
+        return value?.toString() ?? '';
       default:
         return value?.toString() ?? '';
     }
@@ -494,7 +665,7 @@ class _SettingsTabState extends State<SettingsTab> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(
-            settings['description'] ?? 'Edit Setting',
+            settings['title'] ?? 'Edit Setting',
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -523,17 +694,18 @@ class _SettingsTabState extends State<SettingsTab> {
   Widget _buildEditorWidget(
       BuildContext context, Map<String, dynamic> settings, String path) {
     switch (settings['type']) {
-      case 'integer':
+      case 'int':
         return _buildIntegerField(context, settings, path);
-      case 'string':
-      case 'password':
+      case 'str':
         return _buildStringField(context, settings, path);
-      case 'boolean':
+      case 'bool':
         return _buildBooleanField(context, settings, path);
-      case 'number':
+      case 'float':
         return _buildNumberField(context, settings, path);
       case 'enum':
         return _buildEnumField(context, settings, path);
+      case 'list[str]':
+        return _buildListField(context, settings, path);
       default:
         return const SizedBox.shrink();
     }
@@ -552,7 +724,7 @@ class _SettingsTabState extends State<SettingsTab> {
       child: TextFormField(
         controller: TextEditingController(text: currentValue),
         decoration: InputDecoration(
-          labelText: settings['description'],
+          labelText: settings['title'] ?? settings['description'],
           border: const OutlineInputBorder(),
           suffixIcon: hasUpdatedValue
               ? IconButton(
@@ -598,13 +770,15 @@ class _SettingsTabState extends State<SettingsTab> {
         ? _updatedValues[path].toString()
         : settings['value'].toString();
     final readonly = settings['readonly'];
+    final isPassword =
+        settings.containsKey('password') && settings['password'] == true;
 
     return SizedBox(
       width: double.maxFinite,
       child: TextFormField(
         controller: TextEditingController(text: currentValue),
         decoration: InputDecoration(
-          labelText: settings['description'],
+          labelText: settings['title'] ?? settings['description'],
           border: const OutlineInputBorder(),
           suffixIcon: hasUpdatedValue
               ? IconButton(
@@ -618,11 +792,11 @@ class _SettingsTabState extends State<SettingsTab> {
                 )
               : null,
         ),
-        obscureText: settings['type'] == 'password',
+        obscureText: isPassword,
         onChanged: readonly
             ? null
             : (value) {
-                if (settings['type'] == 'password') {
+                if (isPassword) {
                   var bytes = utf8.encode(value);
                   var digest = md5.convert(bytes);
                   _updateValue(
@@ -648,7 +822,7 @@ class _SettingsTabState extends State<SettingsTab> {
       children: [
         Expanded(
           child: Text(
-            settings['description'],
+            settings['title'] ?? settings['description'] ?? 'Setting',
             style: const TextStyle(fontSize: 16),
           ),
         ),
@@ -688,7 +862,7 @@ class _SettingsTabState extends State<SettingsTab> {
       child: TextFormField(
         controller: TextEditingController(text: currentValue),
         decoration: InputDecoration(
-          labelText: settings['description'],
+          labelText: settings['title'] ?? settings['description'],
           border: const OutlineInputBorder(),
           suffixIcon: hasUpdatedValue
               ? IconButton(
@@ -742,7 +916,7 @@ class _SettingsTabState extends State<SettingsTab> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            settings['description'],
+            settings['title'] ?? settings['description'] ?? 'Select option',
             style: const TextStyle(fontSize: 16),
           ),
           const SizedBox(height: 8),
@@ -785,6 +959,99 @@ class _SettingsTabState extends State<SettingsTab> {
     );
   }
 
+  Widget _buildListField(
+      BuildContext context, Map<String, dynamic> settings, String path) {
+    final bool hasUpdatedValue = _updatedValues.containsKey(path);
+    final List<String> currentValue = hasUpdatedValue
+        ? List<String>.from(_updatedValues[path])
+        : List<String>.from(settings['value']);
+    final readonly = settings['readonly'];
+
+    return SizedBox(
+      width: double.maxFinite,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  settings['title'] ?? settings['description'] ?? 'List',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+              if (hasUpdatedValue)
+                IconButton(
+                  icon: const Icon(Icons.replay),
+                  onPressed: () {
+                    setState(() {
+                      _updatedValues.remove(path);
+                      Navigator.pop(context);
+                    });
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...currentValue.asMap().entries.map((entry) {
+            int index = entry.key;
+            String value = entry.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: TextEditingController(text: value),
+                      decoration: InputDecoration(
+                        labelText: 'Item ${index + 1}',
+                        border: const OutlineInputBorder(),
+                      ),
+                      readOnly: readonly,
+                      onChanged: readonly
+                          ? null
+                          : (newValue) {
+                              List<String> newList = List.from(currentValue);
+                              newList[index] = newValue;
+                              _updateValue(path, settings['value'],
+                                  currentValue, newList);
+                            },
+                    ),
+                  ),
+                  if (!readonly)
+                    IconButton(
+                      icon: const Icon(Icons.remove),
+                      onPressed: () {
+                        List<String> newList = List.from(currentValue);
+                        newList.removeAt(index);
+                        setState(() {
+                          _updateValue(
+                              path, settings['value'], currentValue, newList);
+                        });
+                      },
+                    ),
+                ],
+              ),
+            );
+          }),
+          if (!readonly)
+            ElevatedButton.icon(
+              onPressed: () {
+                List<String> newList = List.from(currentValue);
+                newList.add('');
+                setState(() {
+                  _updateValue(path, settings['value'], currentValue, newList);
+                });
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Add Item'),
+            ),
+        ],
+      ),
+    );
+  }
+
   void _updateValue(String path, dynamic originalValue, dynamic currentValue,
       dynamic newValue) {
     if (newValue.toString() == currentValue.toString()) {
@@ -808,7 +1075,7 @@ class _NestedSettingsScreen extends StatefulWidget {
   final String basePath;
   final Function(String, dynamic, dynamic, dynamic) onUpdateValue;
   final Map<String, dynamic> updatedValues;
-  final Set<String> invalidInputPaths;
+  final bool isParentEnabled;
 
   const _NestedSettingsScreen({
     required this.title,
@@ -816,7 +1083,7 @@ class _NestedSettingsScreen extends StatefulWidget {
     required this.basePath,
     required this.onUpdateValue,
     required this.updatedValues,
-    required this.invalidInputPaths,
+    this.isParentEnabled = true,
   });
 
   @override
@@ -842,14 +1109,20 @@ class _NestedSettingsScreenState extends State<_NestedSettingsScreen> {
     final Map<String, List<Widget>> sectionItems = {};
 
     // Group settings by section or create individual items
-    widget.settings['elements'].forEach((key, value) {
+    widget.settings['fields'].forEach((key, value) {
       final String path = '${widget.basePath}.$key';
 
       if (value['type'] == 'section') {
-        // Handle nested section
-        settingsWidgets
-            .add(_buildSectionHeader(value['name'] ?? 'Unknown Section'));
-        settingsWidgets.add(_buildNestedSection(value, path));
+        // Handle nested section - don't add section header, just add as navigable item
+        if (!sectionItems.containsKey('default')) {
+          sectionItems['default'] = [];
+        }
+
+        if (sectionItems['default']!.isNotEmpty) {
+          sectionItems['default']!.add(const Divider(height: 1));
+        }
+
+        sectionItems['default']!.add(_buildNestedSection(value, path));
       } else {
         // Group by non-section settings
         if (!sectionItems.containsKey('default')) {
@@ -860,7 +1133,8 @@ class _NestedSettingsScreenState extends State<_NestedSettingsScreen> {
           sectionItems['default']!.add(const Divider(height: 1));
         }
 
-        sectionItems['default']!.add(_buildSettingItem(value, path));
+        sectionItems['default']!
+            .add(_buildSettingItem(value, path, widget.isParentEnabled));
       }
     });
 
@@ -880,54 +1154,26 @@ class _NestedSettingsScreenState extends State<_NestedSettingsScreen> {
     return settingsWidgets;
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.secondary,
-        ),
-      ),
-    );
-  }
-
   Widget _buildNestedSection(Map<String, dynamic> settings, String path) {
-    return Card(
-      margin: const EdgeInsets.only(top: 8.0, bottom: 16.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => _NestedSettingsScreen(
-              title: settings['name'] ?? 'Settings',
-              settings: settings,
-              basePath: path,
-              onUpdateValue: widget.onUpdateValue,
-              updatedValues: widget.updatedValues,
-              invalidInputPaths: widget.invalidInputPaths,
-            ),
-          ),
-        ),
-        child: ListTile(
-          title: Text(settings['name'] ?? 'Unknown Section'),
-          subtitle: Text(settings['description'] ?? ''),
-          trailing: const Icon(Icons.chevron_right),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingItem(Map<String, dynamic> settings, String path) {
-    // Get display value
-    final String displayValue = _getDisplayValue(settings, path);
+    final bool isReadonly = !widget.isParentEnabled;
 
     return InkWell(
-      onTap: () => _showSettingEditor(settings, path),
+      borderRadius: BorderRadius.circular(12),
+      onTap: isReadonly
+          ? null
+          : () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => _NestedSettingsScreen(
+                    title: settings['title'] ?? 'Settings',
+                    settings: settings,
+                    basePath: path,
+                    onUpdateValue: widget.onUpdateValue,
+                    updatedValues: widget.updatedValues,
+                    isParentEnabled: widget.isParentEnabled,
+                  ),
+                ),
+              ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Row(
@@ -937,8 +1183,63 @@ class _NestedSettingsScreenState extends State<_NestedSettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    settings['description'] ?? 'Unknown Setting',
-                    style: const TextStyle(fontSize: 16),
+                    settings['title'] ?? 'Unknown Section',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: widget.isParentEnabled ? null : Colors.grey,
+                    ),
+                  ),
+                  if (settings['description'] != null &&
+                      settings['description'].isNotEmpty)
+                    const SizedBox(height: 4),
+                  if (settings['description'] != null &&
+                      settings['description'].isNotEmpty)
+                    Text(
+                      settings['description'],
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: widget.isParentEnabled
+                            ? Colors.grey
+                            : Colors.grey.withValues(alpha: 0.5),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: isReadonly ? Colors.grey : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingItem(Map<String, dynamic> settings, String path,
+      [bool isParentEnabled = true]) {
+    // Get display value
+    final String displayValue = _getDisplayValue(settings, path);
+    final bool isReadonly = settings['readonly'] == true || !isParentEnabled;
+
+    return InkWell(
+      onTap: isReadonly ? null : () => _showSettingEditor(settings, path),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    settings['title'] ??
+                        settings['description'] ??
+                        'Unknown Setting',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: isParentEnabled ? null : Colors.grey,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -946,14 +1247,21 @@ class _NestedSettingsScreenState extends State<_NestedSettingsScreen> {
                     style: TextStyle(
                       fontSize: 14,
                       color: widget.updatedValues.containsKey(path)
-                          ? Theme.of(context).colorScheme.error
-                          : Colors.grey,
+                          ? (isParentEnabled
+                              ? Theme.of(context).colorScheme.error
+                              : Colors.grey)
+                          : (isParentEnabled
+                              ? Colors.grey
+                              : Colors.grey.withValues(alpha: 0.5)),
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right),
+            Icon(
+              Icons.chevron_right,
+              color: isReadonly ? Colors.grey : null,
+            ),
           ],
         ),
       ),
@@ -966,12 +1274,23 @@ class _NestedSettingsScreenState extends State<_NestedSettingsScreen> {
         hasUpdatedValue ? widget.updatedValues[path] : settings['value'];
 
     switch (settings['type']) {
-      case 'boolean':
+      case 'bool':
         return value == true ? 'Enabled' : 'Disabled';
-      case 'password':
-        return '••••••••';
+      case 'str':
+        if (settings.containsKey('password') && settings['password'] == true) {
+          return '••••••••';
+        }
+        return value?.toString() ?? '';
+      case 'int':
+      case 'float':
+        return value?.toString() ?? '';
       case 'enum':
-        return value.toString();
+        return value?.toString() ?? '';
+      case 'list[str]':
+        if (value is List) {
+          return value.join(', ');
+        }
+        return value?.toString() ?? '';
       default:
         return value?.toString() ?? '';
     }
@@ -985,7 +1304,7 @@ class _NestedSettingsScreenState extends State<_NestedSettingsScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) => AlertDialog(
             title: Text(
-              settings['description'] ?? 'Edit Setting',
+              settings['title'] ?? settings['description'] ?? 'Edit Setting',
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -1023,17 +1342,18 @@ class _NestedSettingsScreenState extends State<_NestedSettingsScreen> {
   Widget _buildEditorWidget(
       Map<String, dynamic> settings, String path, StateSetter setDialogState) {
     switch (settings['type']) {
-      case 'integer':
+      case 'int':
         return _buildIntegerField(settings, path, setDialogState);
-      case 'string':
-      case 'password':
+      case 'str':
         return _buildStringField(settings, path, setDialogState);
-      case 'boolean':
+      case 'bool':
         return _buildBooleanField(settings, path, setDialogState);
-      case 'number':
+      case 'float':
         return _buildNumberField(settings, path, setDialogState);
       case 'enum':
         return _buildEnumField(settings, path, setDialogState);
+      case 'list[str]':
+        return _buildListField(settings, path, setDialogState);
       default:
         return const SizedBox.shrink();
     }
@@ -1052,7 +1372,7 @@ class _NestedSettingsScreenState extends State<_NestedSettingsScreen> {
       child: TextFormField(
         controller: TextEditingController(text: currentValue),
         decoration: InputDecoration(
-          labelText: settings['description'],
+          labelText: settings['title'] ?? settings['description'],
           border: const OutlineInputBorder(),
           suffixIcon: hasUpdatedValue
               ? IconButton(
@@ -1111,7 +1431,7 @@ class _NestedSettingsScreenState extends State<_NestedSettingsScreen> {
       child: TextFormField(
         controller: TextEditingController(text: currentValue),
         decoration: InputDecoration(
-          labelText: settings['description'],
+          labelText: settings['title'] ?? settings['description'],
           border: const OutlineInputBorder(),
           suffixIcon: hasUpdatedValue
               ? IconButton(
@@ -1126,12 +1446,14 @@ class _NestedSettingsScreenState extends State<_NestedSettingsScreen> {
                 )
               : null,
         ),
-        obscureText: settings['type'] == 'password',
+        obscureText:
+            settings.containsKey('password') && settings['password'] == true,
         onChanged: readonly
             ? null
             : (value) {
                 setState(() {
-                  if (settings['type'] == 'password') {
+                  if (settings.containsKey('password') &&
+                      settings['password'] == true) {
                     var bytes = utf8.encode(value);
                     var digest = md5.convert(bytes);
                     widget.onUpdateValue(path, settings['value'], currentValue,
@@ -1160,7 +1482,7 @@ class _NestedSettingsScreenState extends State<_NestedSettingsScreen> {
       children: [
         Expanded(
           child: Text(
-            settings['description'],
+            settings['title'] ?? settings['description'] ?? 'Setting',
             style: const TextStyle(fontSize: 16),
           ),
         ),
@@ -1205,7 +1527,7 @@ class _NestedSettingsScreenState extends State<_NestedSettingsScreen> {
       child: TextFormField(
         controller: TextEditingController(text: currentValue),
         decoration: InputDecoration(
-          labelText: settings['description'],
+          labelText: settings['title'] ?? settings['description'],
           border: const OutlineInputBorder(),
           suffixIcon: hasUpdatedValue
               ? IconButton(
@@ -1265,7 +1587,7 @@ class _NestedSettingsScreenState extends State<_NestedSettingsScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            settings['description'],
+            settings['title'] ?? settings['description'] ?? 'Select option',
             style: const TextStyle(fontSize: 16),
           ),
           const SizedBox(height: 8),
@@ -1305,6 +1627,106 @@ class _NestedSettingsScreenState extends State<_NestedSettingsScreen> {
               );
             }).toList(),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildListField(
+      Map<String, dynamic> settings, String path, StateSetter setDialogState) {
+    final bool hasUpdatedValue = widget.updatedValues.containsKey(path);
+    final List<String> currentValue = hasUpdatedValue
+        ? List<String>.from(widget.updatedValues[path])
+        : List<String>.from(settings['value']);
+    final readonly = settings['readonly'];
+
+    return SizedBox(
+      width: double.maxFinite,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  settings['title'] ?? settings['description'] ?? 'List',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+              if (hasUpdatedValue)
+                IconButton(
+                  icon: const Icon(Icons.replay),
+                  onPressed: () {
+                    setState(() {
+                      widget.onUpdateValue(path, settings['value'],
+                          currentValue, settings['value']);
+                      setDialogState(() {});
+                    });
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...currentValue.asMap().entries.map((entry) {
+            int index = entry.key;
+            String value = entry.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: TextEditingController(text: value),
+                      decoration: InputDecoration(
+                        labelText: 'Item ${index + 1}',
+                        border: const OutlineInputBorder(),
+                      ),
+                      readOnly: readonly,
+                      onChanged: readonly
+                          ? null
+                          : (newValue) {
+                              List<String> newList = List.from(currentValue);
+                              newList[index] = newValue;
+                              setState(() {
+                                widget.onUpdateValue(path, settings['value'],
+                                    currentValue, newList);
+                                setDialogState(() {});
+                              });
+                            },
+                    ),
+                  ),
+                  if (!readonly)
+                    IconButton(
+                      icon: const Icon(Icons.remove),
+                      onPressed: () {
+                        List<String> newList = List.from(currentValue);
+                        newList.removeAt(index);
+                        setState(() {
+                          widget.onUpdateValue(
+                              path, settings['value'], currentValue, newList);
+                          setDialogState(() {});
+                        });
+                      },
+                    ),
+                ],
+              ),
+            );
+          }),
+          if (!readonly)
+            ElevatedButton.icon(
+              onPressed: () {
+                List<String> newList = List.from(currentValue);
+                newList.add('');
+                setState(() {
+                  widget.onUpdateValue(
+                      path, settings['value'], currentValue, newList);
+                  setDialogState(() {});
+                });
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Add Item'),
+            ),
         ],
       ),
     );
