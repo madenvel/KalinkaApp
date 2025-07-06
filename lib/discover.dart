@@ -7,6 +7,8 @@ import 'package:kalinka/constants.dart';
 import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
 import 'package:provider/provider.dart';
 import 'package:kalinka/settings_tab.dart';
+import 'package:kalinka/settings_screen2.dart';
+import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
 import 'package:kalinka/genre_filter_chips.dart';
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/browse_item_cache.dart';
@@ -41,10 +43,20 @@ class Discover extends StatelessWidget {
                 IconButton(
                     icon: const Icon(Icons.settings),
                     onPressed: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => SettingsTab()));
+                      final connectionSettings =
+                          context.read<ConnectionSettingsProvider>();
+                      if (connectionSettings.isSet) {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const SettingsScreen()));
+                      } else {
+                        // Fallback to old settings if no connection
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => SettingsTab()));
+                      }
                     })
               ]),
           body: _buildBody(context),
