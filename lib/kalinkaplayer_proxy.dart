@@ -351,6 +351,17 @@ class KalinkaPlayerProxy {
     });
   }
 
+  Future<ModulesAndDevices> listModules() async {
+    final url = _buildUri('/server/modules');
+    return client.get(url).then((response) {
+      if (response.statusCode != 200) {
+        throw Exception('Failed to list modules, url=$url');
+      }
+      return ModulesAndDevices.fromJson(
+          json.decode(utf8.decode(response.bodyBytes)));
+    });
+  }
+
   Future<void> saveSettings(Map<String, dynamic> settings) async {
     final url = _buildUri('/server/config');
     final String encodedSettings = jsonEncode(settings);
