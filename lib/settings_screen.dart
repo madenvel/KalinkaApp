@@ -14,25 +14,20 @@ import 'package:kalinka/service_discovery_widget.dart';
 import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
 import 'package:kalinka/event_listener.dart';
 
-class SettingsScreen extends ConsumerStatefulWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
       ),
-      body: _buildBody(context),
+      body: _buildBody(context, ref),
     );
   }
 
-  Widget _buildBody(BuildContext context) {
+  Widget _buildBody(BuildContext context, WidgetRef ref) {
     final connectionSettings = context.watch<ConnectionSettingsProvider>();
     if (!connectionSettings.isSet) {
       return Center(
@@ -52,7 +47,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _buildConnectionInformation(context),
             const SizedBox(height: KalinkaConstants.kSpaceBetweenSections),
             SettingsChangedBanner(),
-            _buildDynamicSettings(context),
+            _buildDynamicSettings(context, ref),
           ],
         ),
       ),
@@ -96,7 +91,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildDynamicSettings(BuildContext context) {
+  Widget _buildDynamicSettings(BuildContext context, WidgetRef ref) {
     var provider = ref.watch(settingsProvider);
     if (provider.isLoading) {
       return const Center(child: CircularProgressIndicator());
