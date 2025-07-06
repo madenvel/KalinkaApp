@@ -7,12 +7,14 @@ import 'kalinkaplayer_proxy.dart';
 class SettingsState {
   final Map<String, dynamic> originalSettings;
   final Map<String, dynamic> currentSettings;
+  final Map<String, dynamic> changedPaths;
   final bool isLoading;
   final String? error;
 
   const SettingsState({
     required this.originalSettings,
     required this.currentSettings,
+    required this.changedPaths,
     this.isLoading = false,
     this.error,
   });
@@ -20,22 +22,29 @@ class SettingsState {
   SettingsState copyWith({
     Map<String, dynamic>? originalSettings,
     Map<String, dynamic>? currentSettings,
+    Map<String, dynamic>? changedPaths,
     bool? isLoading,
     String? error,
   }) {
-    return SettingsState(
+    final newState = SettingsState(
       originalSettings: originalSettings ?? this.originalSettings,
       currentSettings: currentSettings ?? this.currentSettings,
+      changedPaths: changedPaths ?? this.changedPaths,
       isLoading: isLoading ?? this.isLoading,
       error: error,
     );
+    _findChangedPaths(newState.originalSettings, newState.currentSettings, '',
+        newState.changedPaths);
+    return newState;
   }
 
   /// Get all changed settings as a map of path -> current value
   Map<String, dynamic> getChangedSettings() {
-    final Map<String, dynamic> changed = {};
-    _findChangedPaths(originalSettings, currentSettings, '', changed);
-    return changed;
+    return changedPaths;
+  }
+
+  bool get hasChanges {
+    return changedPaths.isNotEmpty;
   }
 
   /// Get value at specific path from current settings
@@ -51,9 +60,11 @@ class SettingsState {
   /// Check if a specific setting has been changed
   /// Check if a setting has been changed from its original value
   bool isSettingChanged(String path) {
-    final originalValue = _getNestedValue(originalSettings, path);
-    final currentValue = _getNestedValue(currentSettings, path);
-    return originalValue != currentValue;
+    return changedPaths.containsKey(path);
+  }
+
+  bool isPathChanged(String path) {
+    return changedPaths.keys.any((k) => k == path || k.startsWith('$path.'));
   }
 
   /// Get nested value using dot-separated path
@@ -86,13 +97,44 @@ class SettingsState {
       final originalValue = original[key];
       final currentValue = current[key];
 
-      if (currentValue is Map<String, dynamic> &&
-          originalValue is Map<String, dynamic>) {
-        _findChangedPaths(originalValue, currentValue, path, changed);
-      } else if (originalValue != currentValue) {
-        changed[path] = currentValue;
+      if (currentValue.containsKey('fields') &&
+          originalValue.containsKey('fields')) {
+        // If both have 'fields', recurse into them
+        _findChangedPaths(
+          originalValue['fields'],
+          currentValue['fields'],
+          path,
+          changed,
+        );
+      } else if (originalValue.containsKey('value') &&
+          currentValue.containsKey('value') &&
+          !_deepEquals(originalValue['value'], currentValue['value'])) {
+        changed[path] = {
+          'original': originalValue['value'],
+          'current': currentValue['value'],
+        };
       }
     }
+  }
+
+  /// Deep equality check for nested structures
+  bool _deepEquals(dynamic a, dynamic b) {
+    if (a == b) return true;
+    if (a is Map && b is Map) {
+      if (a.length != b.length) return false;
+      for (final key in a.keys) {
+        if (!b.containsKey(key) || !_deepEquals(a[key], b[key])) return false;
+      }
+      return true;
+    }
+    if (a is List && b is List) {
+      if (a.length != b.length) return false;
+      for (int i = 0; i < a.length; i++) {
+        if (!_deepEquals(a[i], b[i])) return false;
+      }
+      return true;
+    }
+    return false;
   }
 }
 
@@ -105,6 +147,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       : super(const SettingsState(
           originalSettings: {},
           currentSettings: {},
+          changedPaths: {},
           isLoading: true,
         )) {
     loadSettings();
@@ -122,6 +165,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       state = SettingsState(
         originalSettings: originalCopy,
         currentSettings: currentCopy,
+        changedPaths: {},
         isLoading: false,
       );
 
@@ -130,7 +174,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       _logger.e('Failed to load settings: $e');
       state = state.copyWith(
         isLoading: false,
-        error: 'Failed to load settings: $e',
+        error: e.toString(),
       );
     }
   }
@@ -149,51 +193,57 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   void setValue(String path, dynamic value) {
     final newCurrentSettings = _deepCopy(state.currentSettings);
     _setNestedValue(newCurrentSettings, path, value);
+    final originalValue = state.getOriginalValue(path)['value'];
+    bool removeValue = originalValue == value;
 
-    state = state.copyWith(currentSettings: newCurrentSettings);
+    final updatedChangedPaths = removeValue
+        ? (_deepCopy(state.changedPaths)..remove(path))
+        : {..._deepCopy(state.changedPaths), path: value};
+
+    state = state.copyWith(
+      currentSettings: newCurrentSettings,
+      changedPaths: updatedChangedPaths,
+    );
     _logger.d('Setting updated: $path = $value');
   }
 
   /// Revert a setting to its original value using path
   void revertSetting(String path) {
-    final originalValue = state.getOriginalValue(path);
-    setValue(path, originalValue);
-    _logger.d('Setting reverted: $path = $originalValue');
+    if (state.changedPaths.containsKey(path)) {
+      final originalValue = state.changedPaths[path]['original'];
+      setValue(path, originalValue);
+      _logger.d('Setting reverted: $path = $originalValue');
+    }
   }
 
   /// Revert all settings to original values
   void revertAllSettings() {
     final originalCopy = _deepCopy(state.originalSettings);
-    state = state.copyWith(currentSettings: originalCopy);
+    state = state.copyWith(currentSettings: originalCopy, changedPaths: {});
     _logger.d('All settings reverted to original values');
   }
 
   /// Save current settings to server
   Future<bool> saveSettings() async {
     try {
-      await _proxy.saveSettings(state.currentSettings);
+      // Prepare a map of path -> current value for changed settings
+      final Map<String, dynamic> changedValues = {
+        for (final path in state.changedPaths.keys)
+          path: state.changedPaths[path]['current']
+      };
+      await _proxy.saveSettings(changedValues);
 
       // Update original settings to match current settings after successful save
       final newOriginal = _deepCopy(state.currentSettings);
-      state = state.copyWith(originalSettings: newOriginal);
+      state = state.copyWith(originalSettings: newOriginal, changedPaths: {});
 
       _logger.i('Settings saved successfully');
       return true;
     } catch (e) {
       _logger.e('Failed to save settings: $e');
-      state = state.copyWith(error: 'Failed to save settings: $e');
+      state = state.copyWith(error: '$e');
       return false;
     }
-  }
-
-  /// Check if any settings have been changed
-  bool hasChanges() {
-    return state.getChangedSettings().isNotEmpty;
-  }
-
-  /// Get all changed settings
-  Map<String, dynamic> getChangedSettings() {
-    return state.getChangedSettings();
   }
 
   /// Restart the server (useful after settings changes)
@@ -275,8 +325,4 @@ final isSettingsLoadingProvider = Provider<bool>((ref) {
 
 final settingsErrorProvider = Provider<String?>((ref) {
   return ref.watch(settingsProvider).error;
-});
-
-final hasSettingsChangesProvider = Provider<bool>((ref) {
-  return ref.watch(settingsProvider).getChangedSettings().isNotEmpty;
 });

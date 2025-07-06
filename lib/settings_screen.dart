@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart'
@@ -11,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/service_discovery_widget.dart';
 import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
+import 'package:kalinka/event_listener.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -49,6 +51,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           children: [
             _buildConnectionInformation(context),
             const SizedBox(height: KalinkaConstants.kSpaceBetweenSections),
+            SettingsChangedBanner(),
             _buildDynamicSettings(context),
           ],
         ),
@@ -63,6 +66,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ListTile(
+          visualDensity: VisualDensity.standard,
           leading: Image.asset('assets/kalinka_icon.png', height: 35),
           title: Text('${connectionSettings.name}'),
           subtitle:
@@ -136,8 +140,17 @@ class DynamicSettingsSubsection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var setting = ref.watch(settingsProvider).getCurrentValue(path);
+    var provider = ref.watch(settingsProvider);
+    var setting = provider.getCurrentValue(path);
+    var isChanged = provider.isPathChanged(path);
+
     return ListTile(
+        titleTextStyle: isChanged
+            ? Theme.of(context).listTileTheme.titleTextStyle?.copyWith(
+                  fontWeight: FontWeight.bold,
+                )
+            : null,
+        visualDensity: VisualDensity.standard,
         title: Text(setting['title'] ?? 'Subsection'),
         trailing: Icon(Icons.chevron_right),
         onTap: () => Navigator.push(
@@ -218,9 +231,14 @@ class DynamicSettingsScreen extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(
               horizontal: KalinkaConstants.kContentHorizontalPadding,
               vertical: KalinkaConstants.kContentVerticalPadding),
-          child: DynamicSettingsSection(
-            path: path,
-            noTitle: true,
+          child: Column(
+            children: [
+              SettingsChangedBanner(),
+              DynamicSettingsSection(
+                path: path,
+                noTitle: true,
+              ),
+            ],
           ),
         ),
       ),
@@ -350,14 +368,35 @@ class DynamicSettingsPrimitiveItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var setting = ref.watch(settingsProvider).getCurrentValue(path);
+    var provider = ref.watch(settingsProvider);
+    var setting = provider.getCurrentValue(path);
+    var isChanged = provider.isSettingChanged(path);
 
     assert(setting != null,
         'Settings for path "$path" not found. Please check your settings configuration.');
 
     return ListTile(
+      titleTextStyle: isChanged
+          ? Theme.of(context).listTileTheme.titleTextStyle?.copyWith(
+                fontWeight: FontWeight.bold,
+              )
+          : null,
+      subtitleTextStyle: isChanged
+          ? Theme.of(context).listTileTheme.subtitleTextStyle?.copyWith(
+                fontWeight: FontWeight.bold,
+              )
+          : null,
+      visualDensity: VisualDensity.standard,
       title: Text(setting['title'] ?? 'Primitive Value'),
       subtitle: Text(_getCurrentValue(setting)),
+      trailing: isChanged
+          ? IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                ref.read(settingsProvider.notifier).revertSetting(path);
+              },
+            )
+          : null,
       onTap: () {
         // Handle tap to edit the setting
         _showEditDialog(context, ref, path);
@@ -393,7 +432,18 @@ class DynamicSettingsPrimitiveItem extends ConsumerWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          content: SettingEditorWidget(path: path, controller: controller),
+          content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  path,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(
+                    height: KalinkaConstants.kContentVerticalPadding),
+                SettingEditorWidget(path: path, controller: controller)
+              ]),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -414,6 +464,181 @@ class DynamicSettingsPrimitiveItem extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class SettingsChangedBanner extends ConsumerWidget {
+  const SettingsChangedBanner({super.key});
+
+  void _showRestartingDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const RestartingServerDialog();
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = ref.watch(settingsProvider);
+    final hasChanges = provider.hasChanges;
+
+    final isError = provider.error != null && provider.error!.isNotEmpty;
+
+    if (!hasChanges) {
+      return const SizedBox.shrink();
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8.0),
+      child: MaterialBanner(
+        leading: isError
+            ? const Icon(Icons.warning, color: Colors.amber)
+            : const Icon(Icons.info),
+        content: isError
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${provider.error}'),
+                  const SizedBox(
+                      height: KalinkaConstants.kContentVerticalPadding),
+                  Text(
+                    'Please check your settings and try again.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              )
+            : const Text('You have unsaved changes.'),
+        backgroundColor: isError
+            ? Theme.of(context).colorScheme.errorContainer
+            : Theme.of(context).colorScheme.primaryContainer,
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await ref
+                  .read(settingsProvider.notifier)
+                  .saveSettings()
+                  .then((success) {
+                if (success && context.mounted) {
+                  return ref.read(settingsProvider.notifier).restartServer();
+                }
+                return Future.value(false);
+              }).then((success) {
+                if (success && context.mounted) _showRestartingDialog(context);
+              });
+            },
+            child: const Text('Save'),
+          ),
+          TextButton(
+            onPressed: () {
+              ref.read(settingsProvider.notifier).revertAllSettings();
+            },
+            child: const Text('Revert'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class RestartingServerDialog extends ConsumerStatefulWidget {
+  const RestartingServerDialog({super.key});
+
+  @override
+  ConsumerState<RestartingServerDialog> createState() =>
+      _RestartingServerDialogState();
+}
+
+class _RestartingServerDialogState
+    extends ConsumerState<RestartingServerDialog> {
+  String? _eventListenerUuid;
+  Timer? _timeoutTimer;
+  int _secondsRemaining = 30;
+
+  @override
+  void initState() {
+    super.initState();
+    _registerEventListener();
+    _startTimeoutTimer();
+  }
+
+  @override
+  void dispose() {
+    _unregisterEventListener();
+    _timeoutTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimeoutTimer() {
+    _timeoutTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _secondsRemaining--;
+      });
+
+      if (_secondsRemaining <= 0) {
+        timer.cancel();
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      }
+    });
+  }
+
+  void _registerEventListener() {
+    _eventListenerUuid = EventListener.instance.registerCallback({
+      EventType.NetworkConnected: (args) {
+        if (mounted) {
+          _timeoutTimer?.cancel();
+          Navigator.of(context).pop();
+        }
+      },
+      EventType.NetworkDisconnected: (args) {
+        print('Network disconnected during server restart.');
+      },
+    });
+  }
+
+  void _unregisterEventListener() {
+    if (_eventListenerUuid != null) {
+      EventListener.instance.unregisterCallback(_eventListenerUuid!);
+      _eventListenerUuid = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      child: AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: KalinkaConstants.kContentVerticalPadding),
+            Text(
+              'Restarting server...',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: KalinkaConstants.kContentVerticalPadding),
+            Text(
+              'Please wait while the server restarts.',
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: KalinkaConstants.kContentVerticalPadding),
+            Text(
+              'Timeout in $_secondsRemaining seconds',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
