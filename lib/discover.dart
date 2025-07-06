@@ -7,7 +7,7 @@ import 'package:kalinka/constants.dart';
 import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
 import 'package:provider/provider.dart';
 import 'package:kalinka/settings_tab.dart';
-import 'package:kalinka/settings_screen2.dart';
+import 'package:kalinka/settings_screen.dart';
 import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
 import 'package:kalinka/genre_filter_chips.dart';
 import 'package:kalinka/custom_cache_manager.dart';
