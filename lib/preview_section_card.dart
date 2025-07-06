@@ -149,7 +149,7 @@ class PreviewSectionCard extends StatelessWidget {
                                   )));
                         }
                       },
-                  child: Text('See more')),
+                  child: Text('See More', style: TextStyle(fontSize: 16))),
           ]),
         ),
         if (item.description != null)
