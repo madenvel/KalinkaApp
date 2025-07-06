@@ -595,9 +595,6 @@ class _RestartingServerDialogState
           Navigator.of(context).pop();
         }
       },
-      EventType.NetworkDisconnected: (args) {
-        print('Network disconnected during server restart.');
-      },
     });
   }
 
