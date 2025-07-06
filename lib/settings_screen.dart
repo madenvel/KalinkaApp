@@ -184,8 +184,6 @@ class DynamicSettingsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     var setting = ref.watch(settingsProvider).getCurrentValue(path);
 
-    var isInputModules = path.split('.').last == 'input_modules';
-
     assert(setting != null,
         'Settings for path "$path" not found. Please check your settings configuration.');
 
