@@ -68,113 +68,106 @@ class ServiceDiscoveryWidget extends StatelessWidget {
   void _showServerDetails(ServerItem server, BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Server tile with improved styling
-              Row(
+        return AlertDialog(
+            content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Server tile with improved styling
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Colors.white,
+                  radius: 28,
+                  child: Image.asset(
+                    'assets/kalinka_icon.png',
+                    height: 36,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        server.name,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      Text(
+                        server.ipAddress,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color:
+                                  colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24.0),
+
+            // // Server details with consistent styling
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
                 children: [
-                  CircleAvatar(
-                    backgroundColor: Colors.white,
-                    radius: 28,
-                    child: Image.asset(
-                      'assets/kalinka_icon.png',
-                      height: 36,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          server.name,
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                        ),
-                        Text(
-                          server.ipAddress,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.onSurface
-                                        .withValues(alpha: 0.7),
-                                  ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildDetailRow(context, "Server Version", server.version),
+                  const SizedBox(height: 12),
+                  _buildDetailRow(context, "API Version", server.apiVersion),
                 ],
               ),
+            ),
 
-              const SizedBox(height: 24.0),
+            const SizedBox(height: 32.0),
 
-              // // Server details with consistent styling
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    _buildDetailRow(context, "Server Version", server.version),
-                    const SizedBox(height: 12),
-                    _buildDetailRow(context, "API Version", server.apiVersion),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 32.0),
-
-              // Row of buttons instead of full-width buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: Text(
-                      "Cancel",
-                      style: TextStyle(
-                        color: colorScheme.primary,
-                      ),
+            // Row of buttons instead of full-width buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: Text(
+                    "Cancel",
+                    style: TextStyle(
+                      color: colorScheme.primary,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  FilledButton.icon(
-                    icon: const Icon(Icons.link, size: 18),
-                    label: const Text(
-                      "Connect",
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                      ),
+                ),
+                const SizedBox(width: 16),
+                FilledButton.icon(
+                  icon: const Icon(Icons.link, size: 18),
+                  label: const Text(
+                    "Connect",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
                     ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: colorScheme.secondary,
-                      foregroundColor: colorScheme.onSecondary,
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.pop(context, server);
-                    },
                   ),
-                ],
-              ),
-            ],
-          ),
-        );
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colorScheme.secondary,
+                    foregroundColor: colorScheme.onSecondary,
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.pop(context, server);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ));
       },
     );
   }
@@ -323,8 +316,14 @@ class ServiceDiscoveryWidget extends StatelessWidget {
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     _buildHeader(context),
-                    const SizedBox(height: 16),
+                    const SizedBox(
+                        height: KalinkaConstants.kContentVerticalPadding),
                     _buildTitleSection(context),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: KalinkaConstants.kSpaceBetweenTiles),
+                      child: _buildInfoCard(context),
+                    ),
                   ]),
                 ),
               ),
@@ -345,21 +344,6 @@ class ServiceDiscoveryWidget extends StatelessWidget {
                         child: const Text("Add Device Manually"),
                         onPressed: () => _showAddCustomServerDialog(context)),
                   ]))),
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal:
-                          KalinkaConstants.kScreenContentHorizontalPadding,
-                      vertical: 32),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      _buildInfoCard(context),
-                    ],
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -371,7 +355,7 @@ class ServiceDiscoveryWidget extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     return Text(
       "Discover Devices",
-      style: textTheme.headlineLarge,
+      style: textTheme.headlineMedium,
     );
   }
 
@@ -412,7 +396,6 @@ class ServiceDiscoveryWidget extends StatelessWidget {
                       child: const Text("Retry"))
                 ]),
               ),
-        const SizedBox(height: KalinkaConstants.kContentVerticalPadding),
       ],
     );
   }
@@ -494,6 +477,7 @@ class ServiceDiscoveryWidget extends StatelessWidget {
 
     return Card(
       margin: EdgeInsets.zero,
+      color: colorScheme.primaryContainer,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
