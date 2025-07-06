@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/data_model.dart' show ModulesAndDevices;
+import 'package:kalinka/event_listener.dart' show EventListener, EventType;
 import 'package:logger/logger.dart';
 import 'kalinkaplayer_proxy.dart';
 
@@ -181,6 +182,8 @@ class SettingsState {
 class SettingsNotifier extends StateNotifier<SettingsState> {
   final KalinkaPlayerProxy _proxy;
   final Logger _logger = Logger();
+  final EventListener _eventListener = EventListener.instance;
+  String eventListenerId = '';
 
   SettingsNotifier(this._proxy)
       : super(const SettingsState(
@@ -191,6 +194,24 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           isLoading: true,
         )) {
     loadSettings();
+
+    eventListenerId = _eventListener.registerCallback({
+      EventType.NetworkConnected: (data) {
+        loadSettings();
+      },
+      EventType.NetworkDisconnected: (data) {
+        state = state.copyWith(
+          error: 'Network disconnected. Unable to load settings.',
+          isLoading: false,
+        );
+      },
+    });
+  }
+
+  @override
+  void dispose() {
+    _eventListener.unregisterCallback(eventListenerId);
+    super.dispose();
   }
 
   /// Load settings from the server
