@@ -134,7 +134,10 @@ class SettingsItemFactory {
 }
 
 class DynamicSettingsSubsection extends ConsumerWidget {
-  const DynamicSettingsSubsection({super.key, required this.path});
+  const DynamicSettingsSubsection({
+    super.key,
+    required this.path,
+  });
 
   final String path;
 
@@ -143,6 +146,7 @@ class DynamicSettingsSubsection extends ConsumerWidget {
     var provider = ref.watch(settingsProvider);
     var setting = provider.getCurrentValue(path);
     var isChanged = provider.isPathChanged(path);
+    String? moduleStatus = provider.getModuleStatus(path);
 
     return ListTile(
         titleTextStyle: isChanged
@@ -152,6 +156,12 @@ class DynamicSettingsSubsection extends ConsumerWidget {
             : null,
         visualDensity: VisualDensity.standard,
         title: Text(setting['title'] ?? 'Subsection'),
+        subtitle: moduleStatus != null
+            ? Text(
+                'Status: $moduleStatus',
+                style: Theme.of(context).textTheme.bodySmall,
+              )
+            : null,
         trailing: Icon(Icons.chevron_right),
         onTap: () => Navigator.push(
             context,
@@ -173,6 +183,8 @@ class DynamicSettingsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     var setting = ref.watch(settingsProvider).getCurrentValue(path);
+
+    var isInputModules = path.split('.').last == 'input_modules';
 
     assert(setting != null,
         'Settings for path "$path" not found. Please check your settings configuration.');
@@ -316,7 +328,12 @@ class SettingEditorWidget extends ConsumerWidget {
         if (setting.containsKey('password') && setting['password'] == true) {
           return TextField(
               decoration: InputDecoration(
-                  labelText: setting['title'] ?? 'Primitive Value'),
+                labelText: setting['title'] ?? 'Primitive Value',
+                hintText: '(value)',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               obscureText: true,
               onChanged: (value) {
                 controller.value = value;
@@ -327,7 +344,12 @@ class SettingEditorWidget extends ConsumerWidget {
             controller:
                 TextEditingController(text: setting['value']?.toString()),
             decoration: InputDecoration(
-                labelText: setting['title'] ?? 'Primitive Value'),
+              labelText: setting['title'] ?? 'Primitive Value',
+              hintText: '(value)',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             keyboardType: _getKeyboardType(setting['type']),
             inputFormatters: _getInputFormatters(setting['type']),
             onChanged: (String value) {
@@ -432,7 +454,9 @@ class DynamicSettingsPrimitiveItem extends ConsumerWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          content: Column(
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -443,7 +467,9 @@ class DynamicSettingsPrimitiveItem extends ConsumerWidget {
                 const SizedBox(
                     height: KalinkaConstants.kContentVerticalPadding),
                 SettingEditorWidget(path: path, controller: controller)
-              ]),
+              ],
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),

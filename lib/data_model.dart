@@ -895,3 +895,103 @@ class SeekStatusMessage extends StatusMessage {
         "message": message,
       };
 }
+
+class ModuleInfo {
+  final String name;
+  final String title;
+  final bool enabled;
+  final String state;
+
+  ModuleInfo({
+    required this.name,
+    required this.title,
+    required this.enabled,
+    required this.state,
+  });
+
+  factory ModuleInfo.fromJson(Map<String, dynamic> json) => ModuleInfo(
+        name: json["name"],
+        title: json["title"],
+        enabled: json["enabled"],
+        state: json["state"],
+      );
+
+  Map<String, dynamic> toJson() => {
+        "name": name,
+        "title": title,
+        "enabled": enabled,
+        "state": state,
+      };
+}
+
+class ModulesAndDevices {
+  final List<ModuleInfo> inputModules;
+  final List<ModuleInfo> devices;
+
+  ModulesAndDevices({
+    required this.inputModules,
+    required this.devices,
+  });
+
+  factory ModulesAndDevices.fromJson(Map<String, dynamic> json) =>
+      ModulesAndDevices(
+        inputModules: json["input_modules"] == null
+            ? []
+            : List<ModuleInfo>.from(
+                json["input_modules"].map((x) => ModuleInfo.fromJson(x))),
+        devices: json["devices"] == null
+            ? []
+            : List<ModuleInfo>.from(
+                json["devices"].map((x) => ModuleInfo.fromJson(x))),
+      );
+
+  Map<String, dynamic> toJson() => {
+        "input_modules":
+            List<dynamic>.from(inputModules.map((x) => x.toJson())),
+        "devices": List<dynamic>.from(devices.map((x) => x.toJson())),
+      };
+
+  ModulesAndDevices copyWith({
+    List<ModuleInfo>? inputModules,
+    List<ModuleInfo>? devices,
+  }) {
+    return ModulesAndDevices(
+      inputModules: inputModules != null
+          ? inputModules
+              .map((m) => ModuleInfo(
+                    name: m.name,
+                    title: m.title,
+                    enabled: m.enabled,
+                    state: m.state,
+                  ))
+              .toList()
+          : this
+              .inputModules
+              .map((m) => ModuleInfo(
+                    name: m.name,
+                    title: m.title,
+                    enabled: m.enabled,
+                    state: m.state,
+                  ))
+              .toList(),
+      devices: devices != null
+          ? devices
+              .map((m) => ModuleInfo(
+                    name: m.name,
+                    title: m.title,
+                    enabled: m.enabled,
+                    state: m.state,
+                  ))
+              .toList()
+          : this
+              .devices
+              .map((m) => ModuleInfo(
+                    name: m.name,
+                    title: m.title,
+                    enabled: m.enabled,
+                    state: m.state,
+                  ))
+              .toList(),
+    );
+  }
+}

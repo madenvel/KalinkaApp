@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kalinka/data_model.dart' show ModulesAndDevices;
 import 'package:logger/logger.dart';
 import 'kalinkaplayer_proxy.dart';
 
@@ -8,6 +9,7 @@ class SettingsState {
   final Map<String, dynamic> originalSettings;
   final Map<String, dynamic> currentSettings;
   final Map<String, dynamic> changedPaths;
+  final ModulesAndDevices? modules;
   final bool isLoading;
   final String? error;
 
@@ -15,6 +17,7 @@ class SettingsState {
     required this.originalSettings,
     required this.currentSettings,
     required this.changedPaths,
+    required this.modules,
     this.isLoading = false,
     this.error,
   });
@@ -23,6 +26,7 @@ class SettingsState {
     Map<String, dynamic>? originalSettings,
     Map<String, dynamic>? currentSettings,
     Map<String, dynamic>? changedPaths,
+    ModulesAndDevices? modules,
     bool? isLoading,
     String? error,
   }) {
@@ -30,6 +34,7 @@ class SettingsState {
       originalSettings: originalSettings ?? this.originalSettings,
       currentSettings: currentSettings ?? this.currentSettings,
       changedPaths: changedPaths ?? this.changedPaths,
+      modules: modules,
       isLoading: isLoading ?? this.isLoading,
       error: error,
     );
@@ -65,6 +70,40 @@ class SettingsState {
 
   bool isPathChanged(String path) {
     return changedPaths.keys.any((k) => k == path || k.startsWith('$path.'));
+  }
+
+  String? getModuleStatus(String path) {
+    var tokens = path.split('.');
+    if (tokens.length != 3) {
+      return null;
+    }
+
+    if (tokens[0] != 'root') {
+      return null;
+    }
+
+    var moduleType = tokens[1];
+    var moduleName = tokens[2];
+
+    if (moduleType != 'input_modules' && moduleType != 'devices') {
+      return null;
+    }
+
+    try {
+      switch (moduleType) {
+        case 'input_modules':
+          return modules?.inputModules
+              .firstWhere((m) => m.name == moduleName)
+              .state;
+
+        case 'devices':
+          return modules?.devices.firstWhere((m) => m.name == moduleName).state;
+        default:
+          return null; // Unknown module type
+      }
+    } on StateError {
+      return null;
+    }
   }
 
   /// Get nested value using dot-separated path
@@ -148,6 +187,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           originalSettings: {},
           currentSettings: {},
           changedPaths: {},
+          modules: null,
           isLoading: true,
         )) {
     loadSettings();
@@ -155,10 +195,15 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
   /// Load settings from the server
   Future<void> loadSettings() async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, modules: null, error: null);
 
     try {
-      final settings = await _proxy.getSettings();
+      var data = await Future.wait([
+        _proxy.getSettings(),
+        _proxy.listModules(),
+      ]); // Ensure both settings and module status are fetched
+      final settings = data[0] as Map<String, dynamic>;
+      final modules = data[1] as ModulesAndDevices;
       final originalCopy = _deepCopy(settings);
       final currentCopy = _deepCopy(settings);
 
@@ -166,6 +211,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         originalSettings: originalCopy,
         currentSettings: currentCopy,
         changedPaths: {},
+        modules: modules,
         isLoading: false,
       );
 
