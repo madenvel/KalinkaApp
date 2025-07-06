@@ -36,7 +36,7 @@ class Discover extends StatelessWidget {
           appBar: AppBar(
               title: const Row(children: [
                 Icon(Icons.explore),
-                SizedBox(width: 8),
+                SizedBox(width: KalinkaConstants.kContentHorizontalPadding),
                 Text('Discover')
               ]),
               actions: <Widget>[
