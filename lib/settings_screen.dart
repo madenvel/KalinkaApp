@@ -229,7 +229,9 @@ class DynamicSettingsScreen extends ConsumerWidget {
 }
 
 class SettingEditorController extends ValueNotifier<dynamic> {
-  SettingEditorController(super.initialValue);
+  SettingEditorController(super.initialValue, {this.isPassword = false});
+
+  final bool isPassword;
 }
 
 class SettingEditorWidget extends ConsumerWidget {
@@ -260,16 +262,46 @@ class SettingEditorWidget extends ConsumerWidget {
             );
           },
         );
+      case 'enum':
+        return ValueListenableBuilder(
+            valueListenable: controller,
+            builder: (context, value, child) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (setting['title'] != null)
+                    Padding(
+                      padding: const EdgeInsets.only(
+                          bottom: KalinkaConstants.kContentVerticalPadding),
+                      child: Text(
+                        setting['title'],
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                  ...setting['values'].map<Widget>((option) {
+                    return RadioListTile<String>(
+                      title: Text(option),
+                      value: option,
+                      groupValue: controller.value,
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          controller.value = newValue;
+                        }
+                      },
+                    );
+                  }).toList(),
+                ],
+              );
+            });
       default:
         if (setting.containsKey('password') && setting['password'] == true) {
           return TextField(
-              controller:
-                  TextEditingController(text: setting['value']?.toString()),
               decoration: InputDecoration(
                   labelText: setting['title'] ?? 'Primitive Value'),
               obscureText: true,
               onChanged: (value) {
-                // controller.value = value;
+                controller.value = value;
               });
         }
 
@@ -348,12 +380,14 @@ class DynamicSettingsPrimitiveItem extends ConsumerWidget {
   Future<void> _showEditDialog(
       BuildContext context, WidgetRef ref, String path) async {
     var setting = ref.read(settingsProvider).getCurrentValue(path);
+    final isPassword =
+        setting.containsKey('password') && setting['password'] == true;
 
     assert(setting != null,
         'Settings for path "$path" not found. Please check your settings configuration.');
 
     SettingEditorController controller =
-        SettingEditorController(setting['value'] ?? '');
+        SettingEditorController(setting['value'] ?? '', isPassword: isPassword);
 
     await showDialog(
       context: context,
@@ -367,10 +401,13 @@ class DynamicSettingsPrimitiveItem extends ConsumerWidget {
             ),
             ElevatedButton(
               onPressed: () {
-                ref
-                    .read(settingsProvider.notifier)
-                    .setValue(path, controller.value);
-                Navigator.of(context).pop(controller.value);
+                var value = isPassword
+                    ? md5
+                        .convert(controller.value.toString().codeUnits)
+                        .toString()
+                    : controller.value;
+                ref.read(settingsProvider.notifier).setValue(path, value);
+                Navigator.of(context).pop(value);
               },
               child: const Text('Save'),
             ),
