@@ -13,6 +13,9 @@ import 'package:kalinka/constants.dart';
 import 'package:kalinka/service_discovery_widget.dart';
 import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
 import 'package:kalinka/event_listener.dart';
+import 'package:logger/logger.dart';
+
+final logger = Logger();
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -45,8 +48,7 @@ class SettingsScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildConnectionInformation(context),
-            const SizedBox(height: KalinkaConstants.kSpaceBetweenSections),
-            SettingsChangedBanner(),
+            const SizedBox(height: KalinkaConstants.kContentVerticalPadding),
             _buildDynamicSettings(context, ref),
           ],
         ),
@@ -57,37 +59,41 @@ class SettingsScreen extends ConsumerWidget {
   Widget _buildConnectionInformation(BuildContext context) {
     final connectionSettings = context.watch<ConnectionSettingsProvider>();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ListTile(
-          visualDensity: VisualDensity.standard,
-          leading: Image.asset('assets/kalinka_icon.png', height: 35),
-          title: Text('${connectionSettings.name}'),
-          subtitle:
-              Text('${connectionSettings.host}:${connectionSettings.port}'),
-          trailing: ElevatedButton(
-            onPressed: () {
-              Navigator.of(context, rootNavigator: true)
-                  .push(
-                MaterialPageRoute(
-                  builder: (context) => ChangeNotifierProvider(
-                    create: (context) => ServiceDiscoveryDataProvider(),
-                    child: ServiceDiscoveryWidget(),
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            visualDensity: VisualDensity.standard,
+            leading: Image.asset('assets/kalinka_icon.png', height: 35),
+            title: Text('${connectionSettings.name}'),
+            subtitle:
+                Text('${connectionSettings.host}:${connectionSettings.port}'),
+            trailing: IconButton(
+              icon: const Icon(Icons.edit),
+              tooltip: 'Change connection settings',
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true)
+                    .push(
+                  MaterialPageRoute(
+                    builder: (context) => ChangeNotifierProvider(
+                      create: (context) => ServiceDiscoveryDataProvider(),
+                      child: ServiceDiscoveryWidget(),
+                    ),
                   ),
-                ),
-              )
-                  .then((item) {
-                if (item != null) {
-                  connectionSettings.setDevice(
-                      item.name, item.ipAddress, item.port);
-                }
-              });
-            },
-            child: Text('Change'),
+                )
+                    .then((item) {
+                  if (item != null) {
+                    connectionSettings.setDevice(
+                        item.name, item.ipAddress, item.port);
+                  }
+                });
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -117,9 +123,10 @@ class SettingsItemFactory {
             : DynamicSettingsSection(
                 path: path,
               );
-      case 'list[str]':
-        return SizedBox.shrink();
       default:
+        if (type is String && type.startsWith('list[')) {
+          return DynamicSettingsListItem(path: path);
+        }
         // Handle other types or return a default widget
         return DynamicSettingsPrimitiveItem(
           path: path,
@@ -195,7 +202,10 @@ class DynamicSettingsSection extends ConsumerWidget {
           ),
           const SizedBox(height: KalinkaConstants.kContentVerticalPadding)
         ],
+        SettingsChangedBanner(),
+        const SizedBox(height: KalinkaConstants.kContentVerticalPadding),
         Card(
+          margin: EdgeInsets.zero,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -238,7 +248,6 @@ class DynamicSettingsScreen extends ConsumerWidget {
               vertical: KalinkaConstants.kContentVerticalPadding),
           child: Column(
             children: [
-              SettingsChangedBanner(),
               DynamicSettingsSection(
                 path: path,
                 noTitle: true,
@@ -376,6 +385,101 @@ class SettingEditorWidget extends ConsumerWidget {
   }
 }
 
+class ListEditorController extends ValueNotifier<List<String>> {
+  ListEditorController(super.initialValue);
+
+  void addItem(String item) {
+    value = [...value, item];
+    logger.i('Value after adding item: $value');
+  }
+
+  void removeItem(int index) {
+    if (index >= 0 && index < value.length) {
+      value = [...value]..removeAt(index);
+      logger.i('Value after removing item at index $index: $value');
+    }
+  }
+
+  void updateItem(int index, String newValue) {
+    // if (index >= 0 && index < value.length) {
+    //   value = [...value]..[index] = newValue;
+    // }
+    value[index] = newValue;
+  }
+}
+
+class ListSettingEditor extends ConsumerWidget {
+  const ListSettingEditor(
+      {super.key,
+      required this.path,
+      required this.controller,
+      this.maxItems = 5});
+
+  final String path;
+  final ListEditorController controller;
+  final int maxItems;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    var setting = ref.read(settingsProvider).getCurrentValue(path);
+
+    assert(setting != null,
+        'Settings for path "$path" not found. Please check your settings configuration.');
+
+    return ValueListenableBuilder<List<String>>(
+      valueListenable: controller,
+      builder: (context, value, child) {
+        return Column(
+          children: [
+            for (var index = 0; index < value.length; index++)
+              _buildListItem(context, index),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildListItem(BuildContext context, int index) {
+    var item = controller.value[index];
+    return Row(
+      children: [
+        IconButton(
+          onPressed: () {
+            controller.removeItem(index);
+          },
+          icon: const Icon(Icons.remove),
+        ),
+        Expanded(
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: 'Item $index',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            controller: TextEditingController(text: item),
+            onChanged: (value) {
+              controller.updateItem(index, value);
+            },
+          ),
+        ),
+        SizedBox(
+          width: 48, // Fixed width for trailing icon/add button
+          child: index == controller.value.length - 1 &&
+                  controller.value.length < maxItems
+              ? IconButton(
+                  icon: const Icon(Icons.add, size: 32),
+                  onPressed: () {
+                    controller.addItem('');
+                  },
+                )
+              : null,
+        ),
+      ],
+    );
+  }
+}
+
 class DynamicSettingsPrimitiveItem extends ConsumerWidget {
   const DynamicSettingsPrimitiveItem({super.key, required this.path});
 
@@ -390,7 +494,7 @@ class DynamicSettingsPrimitiveItem extends ConsumerWidget {
     assert(setting != null,
         'Settings for path "$path" not found. Please check your settings configuration.');
 
-    return ListTile(
+    final tile = ListTile(
       titleTextStyle: isChanged
           ? Theme.of(context).listTileTheme.titleTextStyle?.copyWith(
                 fontWeight: FontWeight.bold,
@@ -414,8 +518,20 @@ class DynamicSettingsPrimitiveItem extends ConsumerWidget {
           : null,
       onTap: () {
         // Handle tap to edit the setting
-        _showEditDialog(context, ref, path);
+        showEditDialog(context, ref, path);
       },
+    );
+    if (!isChanged) return tile;
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary,
+          width: 2.0,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+      ),
+      child: tile,
     );
   }
 
@@ -430,61 +546,139 @@ class DynamicSettingsPrimitiveItem extends ConsumerWidget {
 
     return '';
   }
+}
 
-  Future<void> _showEditDialog(
-      BuildContext context, WidgetRef ref, String path) async {
-    var setting = ref.read(settingsProvider).getCurrentValue(path);
-    final isPassword =
-        setting.containsKey('password') && setting['password'] == true;
+class DynamicSettingsListItem extends ConsumerWidget {
+  const DynamicSettingsListItem({super.key, required this.path});
+
+  final String path;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    var provider = ref.watch(settingsProvider);
+    var setting = provider.getCurrentValue(path);
+    var isChanged = provider.isSettingChanged(path);
 
     assert(setting != null,
         'Settings for path "$path" not found. Please check your settings configuration.');
 
-    SettingEditorController controller =
-        SettingEditorController(setting['value'] ?? '', isPassword: isPassword);
-
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          content: SizedBox(
-            width: double.maxFinite,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  path,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(
-                    height: KalinkaConstants.kContentVerticalPadding),
-                SettingEditorWidget(path: path, controller: controller)
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                var value = isPassword
-                    ? md5
-                        .convert(controller.value.toString().codeUnits)
-                        .toString()
-                    : controller.value;
-                ref.read(settingsProvider.notifier).setValue(path, value);
-                Navigator.of(context).pop(value);
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
+    final tile = ListTile(
+        visualDensity: VisualDensity.standard,
+        titleTextStyle: isChanged
+            ? Theme.of(context)
+                .listTileTheme
+                .titleTextStyle
+                ?.copyWith(fontWeight: FontWeight.bold)
+            : null,
+        subtitleTextStyle: isChanged
+            ? Theme.of(context)
+                .listTileTheme
+                .subtitleTextStyle
+                ?.copyWith(fontWeight: FontWeight.bold)
+            : null,
+        title: Text(setting['title'] ?? 'List of Strings'),
+        subtitle:
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          for (var item in setting['value'] ?? []) Text(item.toString()),
+        ]),
+        trailing: isChanged
+            ? IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: () {
+                  ref.read(settingsProvider.notifier).revertSetting(path);
+                },
+              )
+            : null,
+        onTap: () {
+          showEditDialog(context, ref, path);
+        });
+    if (!isChanged) return tile;
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary,
+          width: 2.0,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+      ),
+      child: tile,
     );
   }
+}
+
+Future<void> showEditDialog(
+    BuildContext context, WidgetRef ref, String path) async {
+  var setting = ref.read(settingsProvider).getCurrentValue(path);
+  final isPassword =
+      setting.containsKey('password') && setting['password'] == true;
+
+  assert(setting != null,
+      'Settings for path "$path" not found. Please check your settings configuration.');
+
+  bool isList = setting['type'].startsWith('list[');
+
+  dynamic controller = isList
+      ? ListEditorController(
+          (setting['value'] as List<dynamic>? ?? [])
+              .map((e) => e.toString())
+              .toList(),
+        )
+      : SettingEditorController(setting['value'] ?? '', isPassword: isPassword);
+
+  Widget editorWidget = isList
+      ? ListSettingEditor(
+          path: path,
+          controller: controller as ListEditorController,
+        )
+      : SettingEditorWidget(path: path, controller: controller);
+
+  await showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                path,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: KalinkaConstants.kContentVerticalPadding),
+              editorWidget
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              var value = isPassword
+                  ? md5
+                      .convert(controller.value.toString().codeUnits)
+                      .toString()
+                  : controller.value;
+              if (isList) {
+                value = (controller as ListEditorController)
+                    .value
+                    .where((e) => e.trim().isNotEmpty)
+                    .toList();
+              }
+              ref.read(settingsProvider.notifier).setValue(path, value);
+              Navigator.of(context).pop(value);
+            },
+            child: const Text('Apply'),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 class SettingsChangedBanner extends ConsumerWidget {
@@ -511,53 +705,77 @@ class SettingsChangedBanner extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8.0),
-      child: MaterialBanner(
-        leading: isError
-            ? const Icon(Icons.warning, color: Colors.amber)
-            : const Icon(Icons.info),
-        content: isError
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('${provider.error}'),
-                  const SizedBox(
-                      height: KalinkaConstants.kContentVerticalPadding),
-                  Text(
-                    'Please check your settings and try again.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              )
-            : const Text('You have unsaved changes.'),
-        backgroundColor: isError
-            ? Theme.of(context).colorScheme.errorContainer
-            : Theme.of(context).colorScheme.primaryContainer,
-        actions: [
-          TextButton(
-            onPressed: () async {
-              await ref
-                  .read(settingsProvider.notifier)
-                  .saveSettings()
-                  .then((success) {
-                if (success && context.mounted) {
-                  return ref.read(settingsProvider.notifier).restartServer();
-                }
-                return Future.value(false);
-              }).then((success) {
-                if (success && context.mounted) _showRestartingDialog(context);
-              });
-            },
-            child: const Text('Save'),
-          ),
-          TextButton(
-            onPressed: () {
-              ref.read(settingsProvider.notifier).revertAllSettings();
-            },
-            child: const Text('Revert'),
-          ),
-        ],
+    return Card(
+      margin: EdgeInsets.zero,
+      color: isError
+          ? Theme.of(context).colorScheme.errorContainer
+          : Theme.of(context).colorScheme.surfaceBright,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                isError
+                    ? const Icon(Icons.warning, color: Colors.amber)
+                    : const Icon(Icons.info),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: isError
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${provider.error}'),
+                            const SizedBox(
+                                height:
+                                    KalinkaConstants.kContentVerticalPadding),
+                            Text(
+                              'Please check your settings and try again.',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ],
+                        )
+                      : const Text('You have unsaved changes.'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    ref.read(settingsProvider.notifier).revertAllSettings();
+                  },
+                  child: const Text('Revert'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () async {
+                    await ref
+                        .read(settingsProvider.notifier)
+                        .saveSettings()
+                        .then((success) {
+                      if (success && context.mounted) {
+                        return ref
+                            .read(settingsProvider.notifier)
+                            .restartServer();
+                      }
+                      return Future.value(false);
+                    }).then((success) {
+                      if (success && context.mounted) {
+                        _showRestartingDialog(context);
+                      }
+                    });
+                  },
+                  child: const Text('Save & Restart'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
