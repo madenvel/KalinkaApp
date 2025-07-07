@@ -529,7 +529,7 @@ class DynamicSettingsPrimitiveItem extends ConsumerWidget {
           width: 2.0,
         ),
         borderRadius: BorderRadius.circular(12),
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
       ),
       child: tile,
     );
