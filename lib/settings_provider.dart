@@ -156,26 +156,26 @@ class SettingsState {
       }
     }
   }
+}
 
-  /// Deep equality check for nested structures
-  bool _deepEquals(dynamic a, dynamic b) {
-    if (a == b) return true;
-    if (a is Map && b is Map) {
-      if (a.length != b.length) return false;
-      for (final key in a.keys) {
-        if (!b.containsKey(key) || !_deepEquals(a[key], b[key])) return false;
-      }
-      return true;
+/// Deep equality check for nested structures
+bool _deepEquals(dynamic a, dynamic b) {
+  if (a == b) return true;
+  if (a is Map && b is Map) {
+    if (a.length != b.length) return false;
+    for (final key in a.keys) {
+      if (!b.containsKey(key) || !_deepEquals(a[key], b[key])) return false;
     }
-    if (a is List && b is List) {
-      if (a.length != b.length) return false;
-      for (int i = 0; i < a.length; i++) {
-        if (!_deepEquals(a[i], b[i])) return false;
-      }
-      return true;
-    }
-    return false;
+    return true;
   }
+  if (a is List && b is List) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (!_deepEquals(a[i], b[i])) return false;
+    }
+    return true;
+  }
+  return false;
 }
 
 /// Riverpod provider for settings management
@@ -261,11 +261,17 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     final newCurrentSettings = _deepCopy(state.currentSettings);
     _setNestedValue(newCurrentSettings, path, value);
     final originalValue = state.getOriginalValue(path)['value'];
-    bool removeValue = originalValue == value;
+    bool removeValue = _deepEquals(originalValue, value);
 
     final updatedChangedPaths = removeValue
         ? (_deepCopy(state.changedPaths)..remove(path))
-        : {..._deepCopy(state.changedPaths), path: value};
+        : {
+            ..._deepCopy(state.changedPaths),
+            path: {
+              'original': originalValue,
+              'current': value,
+            }
+          };
 
     state = state.copyWith(
       currentSettings: newCurrentSettings,
