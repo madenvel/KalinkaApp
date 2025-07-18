@@ -57,7 +57,7 @@ class BottomMenu extends StatelessWidget {
         leading: const Icon(Icons.play_arrow),
         onTap: () {
           KalinkaPlayerProxy().clear().then((_) {
-            return KalinkaPlayerProxy().add(browseItem.url);
+            return KalinkaPlayerProxy().add([browseItem.id]);
           }).then((_) {
             return KalinkaPlayerProxy().play();
           });
@@ -71,7 +71,7 @@ class BottomMenu extends StatelessWidget {
         title: const Text('Add to queue'),
         leading: const Icon(Icons.queue_music),
         onTap: () {
-          KalinkaPlayerProxy().add(browseItem.url).then((_) {
+          KalinkaPlayerProxy().add([browseItem.id]).then((_) {
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                 content: Text('Added item to playueue'),

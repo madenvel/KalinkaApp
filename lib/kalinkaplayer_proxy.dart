@@ -55,9 +55,13 @@ class KalinkaPlayerProxy {
     });
   }
 
-  Future<StatusMessage> add(String item) async {
-    final url = _buildUri('/queue/add$item');
-    return client.post(url).then((response) {
+  Future<StatusMessage> add(List<String> items) async {
+    final url = _buildUri('/queue/add');
+    return client
+        .post(url,
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode(items))
+        .then((response) {
       return statusMessageFromResponse(response);
     });
   }
@@ -65,17 +69,6 @@ class KalinkaPlayerProxy {
   Future<StatusMessage> remove(int index) async {
     final url = _buildUri('/queue/remove', {'index': index.toString()});
     return client.post(url).then((response) {
-      return statusMessageFromResponse(response);
-    });
-  }
-
-  Future<StatusMessage> addTracks(List<String> items) async {
-    final url = _buildUri('/queue/add/tracks');
-    final String encodedItems = jsonEncode(items);
-    return client
-        .post(url,
-            headers: {"Content-Type": "application/json"}, body: encodedItems)
-        .then((response) {
       return statusMessageFromResponse(response);
     });
   }
@@ -144,16 +137,16 @@ class KalinkaPlayerProxy {
     });
   }
 
-  Future<BrowseItemsList> browse(String query,
+  Future<BrowseItemsList> browse(String id,
       {int offset = 0, int limit = 10, List<String>? genreIds}) async {
-    final url = _buildUri('/browse$query', {
+    final url = _buildUri('/browse/$id', {
       'offset': offset.toString(),
       'limit': limit.toString(),
       ...genreIds != null ? {'genre_ids': genreIds} : {}
     });
     return client.get(url).then((response) {
       if (response.statusCode != 200) {
-        throw Exception('Failed to browse $query, url=$url');
+        throw Exception('Failed to browse $id, url=$url');
       }
 
       return BrowseItemsList.fromJson(
@@ -164,7 +157,7 @@ class KalinkaPlayerProxy {
   Future<BrowseItemsList> browseItem(BrowseItem item,
       {int offset = 0, int limit = 10, List<String>? genreIds}) {
     if (item.canBrowse) {
-      return browse(item.url, offset: offset, limit: limit, genreIds: genreIds);
+      return browse(item.id, offset: offset, limit: limit, genreIds: genreIds);
     }
 
     return Future.value(BrowseItemsList(0, 0, 0, []));
@@ -317,24 +310,6 @@ class KalinkaPlayerProxy {
     return client.get(url).then((response) {
       if (response.statusCode != 200) {
         throw Exception('Failed to list user playlists, url=$url');
-      }
-      return BrowseItemsList.fromJson(
-          json.decode(utf8.decode(response.bodyBytes)));
-    });
-  }
-
-  Future<BrowseItemsList> suggest(
-      {required BrowseItem item,
-      required int offset,
-      required int limit}) async {
-    final url = _buildUri('/suggest/${item.browseType}', {
-      'offset': offset.toString(),
-      'limit': limit.toString(),
-      'id': item.id.toString()
-    });
-    return client.get(url).then((response) {
-      if (response.statusCode != 200) {
-        throw Exception('Failed to suggest for ${item.url}, url=$url');
       }
       return BrowseItemsList.fromJson(
           json.decode(utf8.decode(response.bodyBytes)));

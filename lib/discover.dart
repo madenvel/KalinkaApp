@@ -20,8 +20,8 @@ class Discover extends StatelessWidget {
 
   BrowseItemDataProvider _createProvider() {
     return BrowseItemDataProvider.fromDataSource(
-      dataSource: DefaultBrowseItemDataSource(BrowseItem(
-          id: 'root', url: '/catalog', canBrowse: true, canAdd: false)),
+      dataSource: DefaultBrowseItemDataSource(
+          BrowseItem(id: '', url: '/catalog', canBrowse: true, canAdd: false)),
       itemsPerRequest: 10,
     );
   }
