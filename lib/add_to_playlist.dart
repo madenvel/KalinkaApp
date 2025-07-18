@@ -71,7 +71,7 @@ class AddToPlaylistState extends State<AddToPlaylist> {
   Future<void> _fetchTracksFromBrowseItem(BrowseItem item, int elementNo,
       SplayTreeMap<int, List<Track>> trackMap) async {
     var initialResults =
-        await KalinkaPlayerProxy().browse(item.url, offset: 0, limit: 100);
+        await KalinkaPlayerProxy().browseItem(item, offset: 0, limit: 100);
 
     List<Track> tracks = initialResults.items
         .where((e) => e.track != null)

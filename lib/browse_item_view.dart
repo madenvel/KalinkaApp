@@ -525,7 +525,7 @@ class _BrowseItemViewState extends State<BrowseItemView> {
   }
 
   void _addToQueueAction(BuildContext context) {
-    _addToQueue(widget.browseItem.url).then((_) {
+    _addToQueue(widget.browseItem.id).then((_) {
       // Optional: Show confirmation dialog only on success
       if (context.mounted) {
         // Check if the widget is still in the tree
@@ -559,7 +559,7 @@ class _BrowseItemViewState extends State<BrowseItemView> {
   Future<void> _replaceAndPlay(BuildContext context, int index) async {
     // No need to read provider here if only using widget.browseItem.url
     // final provider = context.read<BrowseItemDataProvider>();
-    final url = widget.browseItem.url;
+    final id = widget.browseItem.id;
     // Reading TrackListProvider only if comparison logic is kept
     // List<Track> currentTrackList = context.read<TrackListProvider>().trackList;
 
@@ -570,7 +570,7 @@ class _BrowseItemViewState extends State<BrowseItemView> {
 
     try {
       await KalinkaPlayerProxy().clear();
-      await KalinkaPlayerProxy().add(url);
+      await KalinkaPlayerProxy().add([id]);
       await KalinkaPlayerProxy().play(index);
     } catch (e) {
       // Handle potential errors from the player proxy
@@ -582,9 +582,9 @@ class _BrowseItemViewState extends State<BrowseItemView> {
     }
   }
 
-  Future<void> _addToQueue(String url) async {
+  Future<void> _addToQueue(String id) async {
     // Error handling can be added here or rely on the caller (_addToQueueAction)
-    await KalinkaPlayerProxy().add(url);
+    await KalinkaPlayerProxy().add([id]);
   }
 }
 

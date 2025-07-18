@@ -163,7 +163,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       KalinkaPlayerProxy().play(index);
     } else {
       await KalinkaPlayerProxy().clear();
-      await KalinkaPlayerProxy().addTracks([trackId]);
+      await KalinkaPlayerProxy().add([trackId]);
       await KalinkaPlayerProxy().play();
     }
   }
@@ -585,7 +585,7 @@ class _TrackListSection extends StatelessWidget {
       KalinkaPlayerProxy().play(index);
     } else {
       await KalinkaPlayerProxy().clear();
-      await KalinkaPlayerProxy().addTracks([trackId]);
+      await KalinkaPlayerProxy().add([trackId]);
       await KalinkaPlayerProxy().play();
     }
   }
