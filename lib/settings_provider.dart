@@ -216,7 +216,13 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
   /// Load settings from the server
   Future<void> loadSettings() async {
-    state = state.copyWith(isLoading: true, modules: null, error: null);
+    state = state.copyWith(
+        isLoading: true,
+        modules: null,
+        error: null,
+        originalSettings: {},
+        currentSettings: {},
+        changedPaths: {});
 
     try {
       var data = await Future.wait([
