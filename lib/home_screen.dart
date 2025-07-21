@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
 import 'package:kalinka/browse_item_data_source.dart'
-    show BrowseItemDataSource, DefaultBrowseItemDataSource;
+    show DefaultBrowseItemDataSource;
 import 'package:kalinka/constants.dart';
-import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
+import 'package:kalinka/discover_source.dart';
+import 'package:kalinka/source_module_priview_card.dart' show SourceModule;
 import 'package:provider/provider.dart';
 import 'package:kalinka/settings_screen.dart';
 import 'package:kalinka/genre_filter_chips.dart';
@@ -13,8 +14,8 @@ import 'package:kalinka/browse_item_cache.dart';
 
 import 'data_model.dart';
 
-class Discover extends StatelessWidget {
-  const Discover({super.key});
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
 
   static const double textLabelHeight = 52;
 
@@ -82,16 +83,10 @@ class Discover extends StatelessWidget {
             children: [
               // Add GenreFilterChips at the top
               const GenreFilterChips(),
-              ListView.separated(
-                  // Use NeverScrollableScrollPhysics for inner ListView to prevent scroll conflicts
-                  physics: const NeverScrollableScrollPhysics(),
-                  hitTestBehavior: HitTestBehavior.deferToChild,
-                  shrinkWrap: true,
-                  separatorBuilder: (context, index) => const SizedBox(
-                      height: KalinkaConstants.kSpaceBetweenSections),
-                  itemCount: provider.maybeItemCount,
-                  itemBuilder: (context, index) =>
-                      _buildSection(context, provider.getItem(index).item))
+              _buildSections(context),
+              const SizedBox(
+                height: KalinkaConstants.kContentVerticalPadding * 2,
+              ),
             ],
           ),
         ),
@@ -99,9 +94,41 @@ class Discover extends StatelessWidget {
     });
   }
 
+  Widget _buildSections(BuildContext context) {
+    final provider = context.watch<BrowseItemDataProvider>();
+    return ListView.separated(
+        // Use NeverScrollableScrollPhysics for inner ListView to prevent scroll conflicts
+        physics: const NeverScrollableScrollPhysics(),
+        hitTestBehavior: HitTestBehavior.deferToChild,
+        shrinkWrap: true,
+        separatorBuilder: (context, index) =>
+            const SizedBox(height: KalinkaConstants.kContentVerticalPadding),
+        itemCount: provider.maybeItemCount,
+        itemBuilder: (context, index) =>
+            _buildSection(context, provider.getItem(index).item));
+  }
+
   Widget _buildSection(BuildContext context, BrowseItem? section) {
-    return PreviewSectionCard(
-        dataSource:
-            section != null ? BrowseItemDataSource.browse(section) : null);
+    if (section != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(
+            horizontal: KalinkaConstants.kScreenContentHorizontalPadding,
+            vertical: KalinkaConstants.kContentVerticalPadding),
+        child: SourceModule(
+            source: section,
+            onShowMoreClicked: () {
+              // Handle show more action
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DiscoverSource(
+                    browseItem: section,
+                  ),
+                ),
+              );
+            }),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }

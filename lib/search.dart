@@ -331,6 +331,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   : _buildCategoryResults(_selectedFilter))
               : _buildLandingPage(),
         ),
+        const SizedBox(
+          height: KalinkaConstants.kContentVerticalPadding * 2,
+        ),
       ],
     );
   }

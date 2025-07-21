@@ -150,8 +150,9 @@ class _BrowseItemViewState extends State<BrowseItemView> {
           _buildHeader(context, albumImage),
           ..._buildItemList(context),
           ..._buildExtraSections(context),
-          const SizedBox
-              .shrink(), // Ensures column takes minimum required space
+          const SizedBox(
+            height: KalinkaConstants.kContentVerticalPadding * 2,
+          ),
         ],
       ),
     );
