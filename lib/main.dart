@@ -5,10 +5,11 @@ import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:kalinka/connection_manager.dart';
 import 'package:kalinka/constants.dart';
+import 'package:kalinka/home_screen.dart' show HomeScreen;
 import 'package:kalinka/search.dart' show SearchScreen;
 import 'package:provider/provider.dart';
 import 'data_provider.dart';
-import 'discover.dart';
+import 'home_screen.dart';
 import 'library.dart';
 import 'playbar.dart';
 import 'search.dart';
@@ -132,7 +133,7 @@ class _MyHomePageState extends State<MyHomePage> {
           return MaterialPageRoute(
               settings: settings,
               builder: (_) => [
-                    const Discover(),
+                    const HomeScreen(),
                     const Library(),
                     const SearchScreen()
                   ][index]);

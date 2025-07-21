@@ -61,6 +61,9 @@ class PreviewSectionCard extends StatelessWidget {
       Consumer(
         builder: (context, BrowseItemDataProvider dataProvider, child) {
           final hasNoItems = dataProvider.totalItemCount == 0;
+          if (hasNoItems) {
+            return const SizedBox.shrink();
+          }
           return _buildSectionPreview(
             context,
             section,
@@ -76,6 +79,7 @@ class PreviewSectionCard extends StatelessWidget {
                       )
                     : SectionPreviewGrid(
                         dataProvider: dataProvider,
+                        rowsCount: rowsCount,
                         onTap: (item) => _onTap(context, item))),
             seeAll: !hasImage && !hasNoItems && seeAll,
           );
