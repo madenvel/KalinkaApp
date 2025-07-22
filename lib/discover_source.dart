@@ -33,11 +33,7 @@ class DiscoverSource extends StatelessWidget {
         create: (context) => _createProvider(),
         child: Scaffold(
           appBar: AppBar(
-              title: const Row(children: [
-                Icon(Icons.explore),
-                SizedBox(width: KalinkaConstants.kContentHorizontalPadding),
-                Text('Discover')
-              ]),
+              title: Text('Discover: ${browseItem.name ?? 'Unknown'}'),
               actions: <Widget>[
                 IconButton(
                     icon: const Icon(Icons.settings),
