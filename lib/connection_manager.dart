@@ -74,7 +74,8 @@ class _ConnectionManagerState extends State<ConnectionManager> {
         setState(() {
           _connected = true;
           _connectionAttemptsInRound = 0;
-          _totalConnectionAttempts++;
+          _totalConnectionAttempts =
+              0; // Reset total attempts on successful connection
           widget.onConnected?.call();
           final provider = context.read<ConnectionSettingsProvider>();
           final host = provider.host;
@@ -97,6 +98,8 @@ class _ConnectionManagerState extends State<ConnectionManager> {
 
     _connected = false;
     _connectionAttemptsInRound = 0;
+    _totalConnectionAttempts = 0; // Reset total attempts when settings change
+    _waitTime = 1; // Reset wait time to initial value
     final provider = context.read<ConnectionSettingsProvider>();
     final host = provider.host;
     final port = provider.port;
@@ -155,14 +158,16 @@ class _ConnectionManagerState extends State<ConnectionManager> {
         ),
         const SizedBox(height: 16),
         if (provider.isSet &&
-            _totalConnectionAttempts < _totalConnectionAttemptsToShowSpinner)
+            _totalConnectionAttempts <= _totalConnectionAttemptsToShowSpinner)
           const SizedBox(
               width: 16,
               height: 16,
               child: CircularProgressIndicator(strokeWidth: 2.0))
         else
           ElevatedButton(
-              child: const Text('Connect To New Streamer'),
+              child: Text(provider.isSet
+                  ? 'Connect To New Streamer'
+                  : 'Connect To Streamer'),
               onPressed: () {
                 _showDiscoveryScreen(context, provider);
               })
