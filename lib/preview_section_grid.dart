@@ -39,7 +39,9 @@ class SectionPreviewGrid extends StatelessWidget {
     final crossAxisCount = rowsCount ?? catalog?.previewConfig?.rowsCount ?? 2;
     final cardSizeRatio = catalog?.previewConfig?.aspectRatio ?? 1.0;
     final previewType = catalog?.previewConfig?.type ?? PreviewType.imageText;
-    final imageSize = (cardSize - 2 * contentPadding) * cardSizeRatio;
+    final contentTypeHint =
+        catalog?.previewConfig?.contentType ?? PreviewContentType.album;
+    final imageSize = (cardSize - 2 * contentPadding) / cardSizeRatio;
     final double sectionHeight = (imageSize +
             2 * contentPadding +
             (previewType == PreviewType.textOnly ? 0 : textLabelHeight)) *
@@ -51,7 +53,9 @@ class SectionPreviewGrid extends StatelessWidget {
         sectionHeight: sectionHeight,
         cardSize: cardSize,
         crossAxisCount: crossAxisCount,
-        cardSizeRatio: cardSizeRatio);
+        cardSizeRatio: cardSizeRatio,
+        previewType: previewType,
+        contentTypeHint: contentTypeHint);
   }
 
   Widget _buildGridContent(
@@ -60,7 +64,9 @@ class SectionPreviewGrid extends StatelessWidget {
       required double sectionHeight,
       required double cardSize,
       required int crossAxisCount,
-      required double cardSizeRatio}) {
+      required double cardSizeRatio,
+      required PreviewType previewType,
+      required PreviewContentType contentTypeHint}) {
     return RepaintBoundary(
       child: SizedBox(
           height: sectionHeight,
@@ -80,14 +86,10 @@ class SectionPreviewGrid extends StatelessWidget {
                     final BrowseItem? item = dataProvider.getItem(index).item;
                     return BrowseItemCard(
                       item: item,
-                      onTap: item != null ? onTap : null,
-                      contentPadding: KalinkaConstants.kSpaceBetweenTiles * 0.5,
-                      constraints:
-                          BoxConstraints.tight(Size(cardSize, sectionHeight)),
+                      onTap: onTap,
+                      previewContentTypeHint: contentTypeHint,
+                      previewType: previewType,
                       imageAspectRatio: cardSizeRatio,
-                      previewTypeHint: dataProvider.itemDataSource.item.catalog
-                              ?.previewConfig?.type ??
-                          PreviewType.imageText,
                     );
                   },
                 )
@@ -107,7 +109,8 @@ class SectionPreviewGrid extends StatelessWidget {
     final crossAxisCount = 2;
     final cardSizeRatio = 1.0;
     final previewType = PreviewType.imageText;
-    final imageSize = (cardSize - 2 * contentPadding) * cardSizeRatio;
+    final contentTypeHint = PreviewContentType.album;
+    final imageSize = (cardSize - 2 * contentPadding) / cardSizeRatio;
     final double sectionHeight = (imageSize +
             2 * contentPadding +
             (previewType == PreviewType.textOnly ? 0 : textLabelHeight)) *
@@ -118,7 +121,9 @@ class SectionPreviewGrid extends StatelessWidget {
         sectionHeight: sectionHeight,
         cardSize: cardSize,
         crossAxisCount: crossAxisCount,
-        cardSizeRatio: cardSizeRatio);
+        cardSizeRatio: cardSizeRatio,
+        previewType: previewType,
+        contentTypeHint: contentTypeHint);
   }
 
   int calculateCrossAxisCount(BuildContext context) {

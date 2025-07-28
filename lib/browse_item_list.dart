@@ -6,10 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:kalinka/browse_item_data_provider.dart';
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_provider.dart';
-import 'package:kalinka/shimmer_widget.dart';
 import 'package:kalinka/soundwave.dart';
 import 'package:provider/provider.dart';
 import 'data_model.dart';
+import 'shimmer_effect.dart' show Shimmer;
 
 class BrowseItemList extends StatefulWidget {
   final BrowseItemDataProvider provider;
@@ -127,8 +127,6 @@ class _BrowseItemListState extends State<BrowseItemList> {
       BuildContext context, BrowseItem item, int index, String? albumImage) {
     if (albumImage != null) {
       return CachedNetworkImage(
-          fadeInDuration: Duration.zero,
-          fadeOutDuration: Duration.zero,
           imageUrl:
               context.read<ConnectionSettingsProvider>().resolveUrl(albumImage),
           fit: BoxFit.cover,
@@ -184,35 +182,60 @@ class _BrowseItemListState extends State<BrowseItemList> {
   }
 
   Widget _buildLoadingListItem(BuildContext context) {
-    return ListTile(
-        leading: ShimmerWidget(
-          width: leadingIconSize,
-          height: leadingIconSize,
-          borderRadius: 4.0,
-        ),
-        title: ShimmerWidget(
-          width: double.infinity,
-          height: 16,
-          borderRadius: 4.0,
-        ),
-        subtitle: ShimmerWidget(
-          width: double.infinity,
-          height: 14,
-          borderRadius: 4.0,
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ShimmerWidget(
-              width: 40,
-              height: 16,
-              borderRadius: 4.0,
+    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
+    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
+    final isArtist = widget
+            .provider.itemDataSource.item.catalog?.previewConfig?.contentType ==
+        PreviewContentType.artist;
+
+    PreviewContentType.artist;
+    return Shimmer(
+        baseColor: baseColor,
+        highlightColor: highlightColor,
+        child: ListTile(
+            leading: Container(
+              width: leadingIconSize,
+              height: leadingIconSize,
+              decoration: BoxDecoration(
+                color: highlightColor,
+                borderRadius: isArtist ? null : BorderRadius.circular(4.0),
+                shape: isArtist ? BoxShape.circle : BoxShape.rectangle,
+              ),
             ),
-            const SizedBox(width: 8),
-            const IconButton(icon: Icon(Icons.more_horiz), onPressed: null),
-          ],
-        ),
-        visualDensity: VisualDensity.standard);
+            title: Container(
+              width: double.infinity,
+              height: 16,
+              decoration: BoxDecoration(
+                color: highlightColor,
+                borderRadius: BorderRadius.circular(4.0),
+              ),
+            ),
+            subtitle: !isArtist
+                ? Container(
+                    width: double.infinity,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: highlightColor,
+                      borderRadius: BorderRadius.circular(4.0),
+                    ),
+                  )
+                : null,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: highlightColor,
+                    borderRadius: BorderRadius.circular(4.0),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const IconButton(icon: Icon(Icons.more_horiz), onPressed: null),
+              ],
+            ),
+            visualDensity: VisualDensity.standard));
   }
 
   Widget _withPlaybackAnimationOverlay(
@@ -255,13 +278,13 @@ class _BrowseItemListState extends State<BrowseItemList> {
 
   Widget _createListLeadingIcon(BrowseItem item) {
     final iconData = switch (item.browseType) {
-      'album' => Icons.album,
-      'playlist' => Icons.playlist_play,
-      'track' => Icons.music_note,
-      'artist' => Icons.person,
-      _ => Icons.book,
+      BrowseType.album => Icons.album,
+      BrowseType.playlist => Icons.playlist_play,
+      BrowseType.track => Icons.music_note,
+      BrowseType.artist => Icons.person,
+      _ => Icons.category,
     };
-    return item.browseType == 'artist'
+    return item.browseType == BrowseType.artist
         ? CircleAvatar(
             child: Icon(iconData, size: 34),
           )

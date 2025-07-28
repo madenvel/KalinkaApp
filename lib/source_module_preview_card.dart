@@ -13,7 +13,7 @@ import 'package:kalinka/catalog_browse_item_view.dart'
     show CatalogBrowseItemView;
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/data_model.dart'
-    show BrowseItem, BrowseItemsList, CardSize, PreviewType;
+    show BrowseItem, BrowseItemsList, BrowseType, CardSize, PreviewType;
 import 'package:kalinka/kalinkaplayer_proxy.dart' show KalinkaPlayerProxy;
 import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
 
@@ -155,7 +155,7 @@ class SourceModule extends ConsumerWidget {
   void _onTap(BuildContext context, BrowseItem item) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) {
-        if (item.browseType == 'catalog') {
+        if (item.browseType == BrowseType.catalog) {
           return CatalogBrowseItemView(
               dataSource: BrowseItemDataSource.browse(item),
               onTap: (item) => _onTap(context, item));
@@ -170,7 +170,7 @@ class SourceModule extends ConsumerWidget {
     final rows = <Widget>[];
 
     for (final item in items) {
-      if (item.catalog?.previewConfig == null) continue;
+      // if (item.catalog?.previewConfig == null) continue;
 
       // final preview = item.catalog!.previewConfig!;
 

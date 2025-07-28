@@ -54,10 +54,10 @@ class _BrowseItemViewState extends State<BrowseItemView> {
   final GlobalKey _albumCoverKey =
       GlobalKey(); // Key for measuring image height
 
-  static const Map<String, String> _itemTypeToTextHint = {
-    'artist': 'Albums',
-    'album': 'Tracks',
-    'playlist': 'Tracks',
+  static const Map<BrowseType, String> _itemTypeToTextHint = {
+    BrowseType.artist: 'Albums',
+    BrowseType.album: 'Tracks',
+    BrowseType.playlist: 'Tracks',
   };
 
   @override

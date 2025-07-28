@@ -1,79 +1,208 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:kalinka/data_model.dart' show BrowseItem, PreviewType;
-import 'package:kalinka/list_card.dart';
+import 'package:kalinka/category_card.dart' show CategoryCard;
+import 'package:kalinka/constants.dart';
+import 'package:kalinka/data_model.dart'
+    show
+        BrowseItem,
+        BrowseType,
+        PreviewContentType,
+        PreviewContentTypeExtension,
+        PreviewType;
+import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
+import 'package:kalinka/image_card_tile.dart' show ImageCardTile;
+import 'package:kalinka/image_card_tile_placeholder.dart'
+    show ImageCardTilePlaceholder;
 import 'package:kalinka/text_card_colors.dart' show TextCardColors;
+import 'package:provider/provider.dart' show ReadContext;
+import 'package:kalinka/shimmer_effect.dart' show Shimmer;
 
 class BrowseItemCard extends StatelessWidget {
   final BrowseItem? item;
-  final Function(BrowseItem)? onTap;
-  final double contentPadding;
   final double imageAspectRatio;
-  final PreviewType previewTypeHint;
-  final BoxConstraints constraints;
+  final PreviewContentType? previewContentTypeHint;
+  final PreviewType? previewType;
+  final Function(BrowseItem)? onTap;
 
   const BrowseItemCard({
     super.key,
     this.item,
     this.onTap,
+    this.previewType,
+    this.previewContentTypeHint,
     this.imageAspectRatio = 1.0,
-    this.contentPadding = 8.0,
-    required this.constraints,
-    this.previewTypeHint = PreviewType.imageText,
   });
 
   @override
   Widget build(BuildContext context) {
-    const textVertLeading = SizedBox(height: 2);
-    const textVertTrailing = SizedBox(height: 4);
-
     if (item == null) {
-      return PlaceholderCard(
-        textVertLeading: textVertLeading,
-        textVertTrailing: textVertTrailing,
-        aspectRatio: 1.0 / imageAspectRatio,
-        contentPadding: EdgeInsets.all(contentPadding),
-        roomForText: (previewTypeHint != PreviewType.textOnly),
-        constraints: constraints,
-      );
+      return _buildPlaceholderCard(context);
     }
+
+    final contentType = previewContentTypeHint ??
+        PreviewContentTypeExtension.fromBrowseType(item!.browseType);
+
+    switch (contentType) {
+      case PreviewContentType.catalog:
+        return _buildCategoryCard(context);
+      case PreviewContentType.album:
+      case PreviewContentType.artist:
+      case PreviewContentType.playlist:
+        return _buildImageCard(context);
+      case PreviewContentType.track:
+        return _buildImageCard(context);
+    }
+  }
+
+  Widget _buildPlaceholderCard(BuildContext context) {
+    final contentType = previewContentTypeHint ??
+        PreviewContentTypeExtension.fromBrowseType(
+            item?.browseType ?? BrowseType.album);
+    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
+    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
+    return Shimmer(
+        baseColor: baseColor,
+        highlightColor: highlightColor,
+        child: ImageCardTilePlaceholder(
+          hasTitle: previewType != PreviewType.textOnly,
+          hasSubtitle: previewType != PreviewType.textOnly &&
+              contentType != PreviewContentType.artist,
+          aspectRatio: imageAspectRatio,
+          borderRadius: KalinkaConstants.kDefaultBorderRadius,
+          shape: contentType == PreviewContentType.artist
+              ? BoxShape.circle
+              : BoxShape.rectangle,
+          textAlignment: contentType == PreviewContentType.artist
+              ? Alignment.center
+              : Alignment.centerLeft,
+          color: baseColor,
+        ));
+  }
+
+  Widget _buildImageCard(BuildContext context) {
+    assert(item != null, 'Item must not be null for image card');
 
     final image =
         item!.image?.large ?? item!.image?.small ?? item!.image?.thumbnail;
-    final iconSize = constraints.smallest.shortestSide * 0.8;
-    return item!.catalog == null
-        ? ImageCard(
+
+    if (image == null || image.isEmpty) {
+      return _buildIconCard(context);
+    }
+
+    final connectionSettings = context.read<ConnectionSettingsProvider>();
+    final imageUrl = connectionSettings.resolveUrl(image);
+    final contentType = previewContentTypeHint ??
+        PreviewContentTypeExtension.fromBrowseType(item!.browseType);
+
+    return CachedNetworkImage(
+        imageUrl: imageUrl,
+        imageBuilder: (context, imageProvider) {
+          return ImageCardTile(
             key: ValueKey(item!.id),
-            imageUrl: image,
-            failoverIcon: switch (item!.browseType) {
-              'track' => Icon(Icons.music_note, size: iconSize),
-              'album' => Icon(Icons.album, size: iconSize),
-              'artist' =>
-                CircleAvatar(child: Icon(Icons.person, size: iconSize)),
-              'playlist' => Icon(Icons.playlist_play, size: iconSize),
-              _ => null
-            },
-            title: item!.name,
-            subtitle: item!.subname,
-            textVertLeading: textVertLeading,
-            textVertTrailing: textVertTrailing,
-            aspectRatio: 1.0 / imageAspectRatio,
-            shape: item?.artist != null ? BoxShape.circle : BoxShape.rectangle,
-            contentPadding: EdgeInsets.all(contentPadding),
-            constraints: constraints,
-            textAlignment:
-                item?.artist != null ? Alignment.center : Alignment.centerLeft,
-            onTap: () => onTap?.call(item!))
-        : CategoryCard(
-            key: ValueKey(item!.id),
-            title: item!.name ?? 'Unknown category',
+            imageProvider: imageProvider,
+            title: _buildTitle(context),
+            subtitle: _buildSubtitle(context),
+            aspectRatio: imageAspectRatio,
             onTap: () => onTap?.call(item!),
-            titleStyle: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                overflow: TextOverflow.ellipsis),
-            color: TextCardColors.generateColor(item!.name ?? '',
-                brightness: Theme.of(context).brightness),
-            constraints: constraints,
-            aspectRatio: imageAspectRatio);
+            borderRadius: KalinkaConstants.kDefaultBorderRadius,
+            shape: contentType == PreviewContentType.artist
+                ? BoxShape.circle
+                : BoxShape.rectangle,
+          );
+        },
+        placeholder: (context, url) => _buildPlaceholderCard(context),
+        errorWidget: (context, url, error) => _buildIconCard(context));
+  }
+
+  Widget _buildIconCard(BuildContext context) {
+    assert(item != null, 'Item must not be null for icon card');
+
+    final contentType = previewContentTypeHint ??
+        PreviewContentTypeExtension.fromBrowseType(item!.browseType);
+
+    return ImageCardTile(
+      key: ValueKey(item!.id),
+      icon: _buildImageCardIcon(context),
+      title: _buildTitle(context),
+      subtitle: _buildSubtitle(context),
+      aspectRatio: imageAspectRatio,
+      onTap: () => onTap?.call(item!),
+      shape: contentType == PreviewContentType.artist
+          ? BoxShape.circle
+          : BoxShape.rectangle,
+      borderRadius: KalinkaConstants.kDefaultBorderRadius,
+    );
+  }
+
+  Icon _buildImageCardIcon(BuildContext context) {
+    assert(item != null, 'Item must not be null for image card icon');
+
+    var iconData = Icons.error;
+
+    switch (item!.browseType) {
+      case BrowseType.album:
+        iconData = Icons.album;
+        break;
+      case BrowseType.artist:
+        iconData = Icons.person;
+        break;
+      case BrowseType.playlist:
+        iconData = Icons.playlist_play;
+        break;
+      case BrowseType.track:
+        iconData = Icons.music_note;
+        break;
+      default:
+        iconData = Icons.category; // Default icon for unknown types
+    }
+
+    return Icon(
+      iconData,
+      size: 80,
+      color: Theme.of(context).colorScheme.primary,
+    );
+  }
+
+  Widget _buildCategoryCard(BuildContext context) {
+    assert(item != null, 'Item must not be null for category card');
+
+    final itemName = item!.name ?? 'Unknown category';
+    final brightness = Theme.of(context).brightness;
+
+    return CategoryCard(
+      key: ValueKey(item!.id),
+      text: itemName,
+      colorA: TextCardColors.generateColor(itemName,
+          index: 0, brightness: brightness),
+      colorB: TextCardColors.generateColor(itemName,
+          index: 1, brightness: brightness),
+      onTap: () => onTap?.call(item!),
+      textStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          overflow: TextOverflow.ellipsis),
+      borderRadius: KalinkaConstants.kDefaultBorderRadius,
+      aspectRatio: imageAspectRatio,
+    );
+  }
+
+  Widget? _buildTitle(BuildContext context) {
+    final contentType = previewContentTypeHint ??
+        PreviewContentTypeExtension.fromBrowseType(item?.browseType);
+    return item!.name != null
+        ? SizedBox(
+            width: double.infinity,
+            child: Text(item!.name!,
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: contentType == PreviewContentType.artist
+                    ? TextAlign.center
+                    : TextAlign.start))
+        : null;
+  }
+
+  Widget? _buildSubtitle(BuildContext context) {
+    return item!.subname != null
+        ? Text(item!.subname!, style: Theme.of(context).textTheme.bodySmall)
+        : null;
   }
 }

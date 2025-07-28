@@ -92,15 +92,15 @@ class CustomListTile extends StatelessWidget {
   }
 
   IconData _getFallbackIcon() {
-    final String browseItemType = browseItem.browseType;
+    final BrowseType browseItemType = browseItem.browseType;
     switch (browseItemType) {
-      case 'artist':
+      case BrowseType.artist:
         return Icons.person;
-      case 'album':
+      case BrowseType.album:
         return Icons.album;
-      case 'track':
+      case BrowseType.track:
         return Icons.music_note;
-      case 'playlist':
+      case BrowseType.playlist:
         return Icons.playlist_play;
       default:
         return Icons.help;

@@ -11,6 +11,7 @@ class GenreSelector extends StatefulWidget {
 
 class _GenreSelectorState extends State<GenreSelector> {
   final Set<String> _selectedGenres = {};
+  GenreFilterProvider? _genreFilterProvider;
 
   void setGenreFilters() {
     final provider = context.read<GenreFilterProvider>();
@@ -26,15 +27,23 @@ class _GenreSelectorState extends State<GenreSelector> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _genreFilterProvider = context.read<GenreFilterProvider>();
+  }
+
+  @override
   void initState() {
     super.initState();
-    context.read<GenreFilterProvider>().addListener(setGenreFilters);
-    setGenreFilters();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<GenreFilterProvider>().addListener(setGenreFilters);
+      setGenreFilters();
+    });
   }
 
   @override
   void dispose() {
-    context.read<GenreFilterProvider>().removeListener(setGenreFilters);
+    _genreFilterProvider?.removeListener(setGenreFilters);
     super.dispose();
   }
 

@@ -1,5 +1,7 @@
 enum PlayerStateType { stopped, playing, paused, buffering, error }
 
+enum BrowseType { album, artist, playlist, catalog, track }
+
 extension PlayerStateTypeExtension on PlayerStateType {
   String toValue() {
     switch (this) {
@@ -412,9 +414,61 @@ extension CardSizeExtension on CardSize {
   }
 }
 
+enum PreviewContentType { catalog, album, artist, playlist, track }
+
+extension PreviewContentTypeExtension on PreviewContentType {
+  String toValue() {
+    switch (this) {
+      case PreviewContentType.catalog:
+        return 'catalog';
+      case PreviewContentType.album:
+        return 'album';
+      case PreviewContentType.artist:
+        return 'artist';
+      case PreviewContentType.playlist:
+        return 'playlist';
+      case PreviewContentType.track:
+        return 'track';
+    }
+  }
+
+  static PreviewContentType fromValue(String value) {
+    switch (value) {
+      case 'catalog':
+        return PreviewContentType.catalog;
+      case 'album':
+        return PreviewContentType.album;
+      case 'artist':
+        return PreviewContentType.artist;
+      case 'playlist':
+        return PreviewContentType.playlist;
+      case 'track':
+        return PreviewContentType.track;
+      default:
+        throw Exception('Invalid PreviewContentType value: $value');
+    }
+  }
+
+  static PreviewContentType fromBrowseType(BrowseType type) {
+    switch (type) {
+      case BrowseType.album:
+        return PreviewContentType.album;
+      case BrowseType.artist:
+        return PreviewContentType.artist;
+      case BrowseType.playlist:
+        return PreviewContentType.playlist;
+      case BrowseType.catalog:
+        return PreviewContentType.catalog;
+      case BrowseType.track:
+        return PreviewContentType.track;
+    }
+  }
+}
+
 class Preview {
   final int? itemsCount;
   final PreviewType type;
+  final PreviewContentType? contentType;
   final int? rowsCount;
   final double? aspectRatio;
   final CardSize? cardSize;
@@ -422,6 +476,7 @@ class Preview {
   Preview({
     this.itemsCount,
     required this.type,
+    this.contentType,
     this.rowsCount,
     this.aspectRatio,
     this.cardSize,
@@ -430,6 +485,9 @@ class Preview {
   factory Preview.fromJson(Map<String, dynamic> json) => Preview(
         itemsCount: json["items_count"],
         type: PreviewTypeExtension.fromValue(json["type"]),
+        contentType: json["content_type"] == null
+            ? null
+            : PreviewContentTypeExtension.fromValue(json["content_type"]),
         rowsCount: json["rows_count"],
         aspectRatio: json["aspect_ratio"]?.toDouble(),
         cardSize: json["card_size"] == null
@@ -440,6 +498,7 @@ class Preview {
   Map<String, dynamic> toJson() => {
         "items_count": itemsCount,
         "type": type.toValue(),
+        "content_type": contentType?.toValue(),
         "rows_count": rowsCount,
         "aspect_ratio": aspectRatio,
         "card_size": cardSize?.toValue(),
@@ -616,17 +675,16 @@ class BrowseItem {
 
   get browseType {
     if (album != null) {
-      return 'album';
+      return BrowseType.album;
     } else if (artist != null) {
-      return 'artist';
+      return BrowseType.artist;
     } else if (playlist != null) {
-      return 'playlist';
+      return BrowseType.playlist;
     } else if (catalog != null) {
-      return 'catalog';
+      return BrowseType.catalog;
     } else if (track != null) {
-      return 'track';
+      return BrowseType.track;
     }
-    return null;
   }
 
   get description {
@@ -705,6 +763,21 @@ extension SearchTypeExtension on SearchType {
       case 'artist':
         return SearchType.artist;
       case 'playlist':
+        return SearchType.playlist;
+      default:
+        throw Exception('Invalid SearchType value: $value');
+    }
+  }
+
+  static SearchType fromBrowseType(BrowseType value) {
+    switch (value) {
+      case BrowseType.track:
+        return SearchType.track;
+      case BrowseType.album:
+        return SearchType.album;
+      case BrowseType.artist:
+        return SearchType.artist;
+      case BrowseType.playlist:
         return SearchType.playlist;
       default:
         throw Exception('Invalid SearchType value: $value');

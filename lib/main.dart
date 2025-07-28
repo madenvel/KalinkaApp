@@ -7,6 +7,7 @@ import 'package:kalinka/connection_manager.dart';
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/home_screen.dart' show HomeScreen;
 import 'package:kalinka/search.dart' show SearchScreen;
+import 'package:kalinka/shimmer_effect.dart' show ShimmerProvider;
 import 'package:provider/provider.dart';
 import 'data_provider.dart';
 import 'home_screen.dart';
@@ -45,7 +46,7 @@ class KalinkaMusic extends StatelessWidget {
           ChangeNotifierProvider(create: (context) => GenreFilterProvider()),
           ChangeNotifierProvider(
               create: (context) => ConnectionSettingsProvider()),
-          ChangeNotifierProvider(create: (context) => UserPlaylistProvider())
+          ChangeNotifierProvider(create: (context) => UserPlaylistProvider()),
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
@@ -81,7 +82,7 @@ class KalinkaMusic extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     color: darkTheme.colorScheme.onSurface.darken(30)),
               )),
-          themeMode: ThemeMode.dark, // Follow system theme by default
+          themeMode: ThemeMode.light, // Follow system theme by default
           home: const MyHomePage(),
         ));
   }
@@ -96,7 +97,7 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   int currentPageIndex = 0;
   final PageStorageBucket bucket = PageStorageBucket();
 
@@ -133,9 +134,9 @@ class _MyHomePageState extends State<MyHomePage> {
           return MaterialPageRoute(
               settings: settings,
               builder: (_) => [
-                    const HomeScreen(),
-                    const Library(),
-                    const SearchScreen()
+                    HomeScreen(),
+                    Library(),
+                    SearchScreen(),
                   ][index]);
         });
   }
@@ -164,49 +165,52 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return ConnectionManager(
-      child: _withPopScope(Scaffold(
-          bottomNavigationBar: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Consumer<TrackListProvider>(builder: (context, provider, _) {
-                  if (provider.trackList.isNotEmpty) {
-                    return Playbar(onTap: () {
-                      Navigator.push(
-                          context,
-                          PageRouteBuilder(
-                              opaque: false,
-                              pageBuilder:
-                                  (context, animation, secondaryAnimation) =>
-                                      const SwipableTabs()));
-                    });
-                  } else {
-                    return const SizedBox.shrink();
-                  }
-                }),
-                NavigationBar(
-                  onDestinationSelected: _handleTabChange,
-                  selectedIndex: currentPageIndex,
-                  destinations: const <Widget>[
-                    NavigationDestination(
-                      selectedIcon: Icon(Icons.explore),
-                      icon: Icon(Icons.explore_outlined),
-                      label: 'Discover',
-                    ),
-                    NavigationDestination(
-                      selectedIcon: Icon(Icons.library_music),
-                      icon: Icon(Icons.library_music_outlined),
-                      label: 'My Library',
-                    ),
-                    NavigationDestination(
-                        icon: Icon(Icons.search),
-                        selectedIcon: Icon(Icons.search_outlined),
-                        label: 'Search'),
-                  ],
-                )
-              ]),
-          body: _buildNavigator(currentPageIndex))),
+    return ChangeNotifierProvider(
+      create: (context) => ShimmerProvider(this),
+      child: ConnectionManager(
+        child: _withPopScope(Scaffold(
+            bottomNavigationBar: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Consumer<TrackListProvider>(builder: (context, provider, _) {
+                    if (provider.trackList.isNotEmpty) {
+                      return Playbar(onTap: () {
+                        Navigator.push(
+                            context,
+                            PageRouteBuilder(
+                                opaque: false,
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) =>
+                                        const SwipableTabs()));
+                      });
+                    } else {
+                      return const SizedBox.shrink();
+                    }
+                  }),
+                  NavigationBar(
+                    onDestinationSelected: _handleTabChange,
+                    selectedIndex: currentPageIndex,
+                    destinations: const <Widget>[
+                      NavigationDestination(
+                        selectedIcon: Icon(Icons.explore),
+                        icon: Icon(Icons.explore_outlined),
+                        label: 'Discover',
+                      ),
+                      NavigationDestination(
+                        selectedIcon: Icon(Icons.library_music),
+                        icon: Icon(Icons.library_music_outlined),
+                        label: 'My Library',
+                      ),
+                      NavigationDestination(
+                          icon: Icon(Icons.search),
+                          selectedIcon: Icon(Icons.search_outlined),
+                          label: 'Search'),
+                    ],
+                  )
+                ]),
+            body: _buildNavigator(currentPageIndex))),
+      ),
     );
   }
 }
