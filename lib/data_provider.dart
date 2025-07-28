@@ -333,8 +333,7 @@ class UserFavoritesIdsProvider with ChangeNotifier {
   }
 
   Future<void> add(BrowseItem item) async {
-    SearchType searchType =
-        SearchTypeExtension.fromStringValue(item.browseType);
+    SearchType searchType = SearchTypeExtension.fromBrowseType(item.browseType);
     _favorites[searchType]!.ids.add(item.id);
     _favorites[searchType]!.items.insert(0, item);
     Future<void> future = KalinkaPlayerProxy().addFavorite(searchType, item.id);
@@ -350,8 +349,7 @@ class UserFavoritesIdsProvider with ChangeNotifier {
   }
 
   Future<void> remove(BrowseItem item) async {
-    SearchType searchType =
-        SearchTypeExtension.fromStringValue(item.browseType);
+    SearchType searchType = SearchTypeExtension.fromBrowseType(item.browseType);
     _favorites[searchType]!.ids.remove(item.id);
     _favorites[searchType]!
         .items

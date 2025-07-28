@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart' show TapGestureRecognizer;
 import 'package:flutter/material.dart';
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
@@ -96,6 +97,40 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildSections(BuildContext context) {
     final provider = context.watch<BrowseItemDataProvider>();
+    if (provider.maybeItemCount == 0) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.all(KalinkaConstants.kContentVerticalPadding),
+          child: RichText(
+            text: TextSpan(
+              style: DefaultTextStyle.of(context).style,
+              children: [
+                const TextSpan(
+                    text:
+                        'No input sources available. Please enable modules in the '),
+                TextSpan(
+                  text: 'settings',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    decoration: TextDecoration.underline,
+                  ),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SettingsScreen(),
+                        ),
+                      );
+                    },
+                ),
+                const TextSpan(text: '.'),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     return ListView.separated(
         // Use NeverScrollableScrollPhysics for inner ListView to prevent scroll conflicts
         physics: const NeverScrollableScrollPhysics(),

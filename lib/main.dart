@@ -82,7 +82,7 @@ class KalinkaMusic extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     color: darkTheme.colorScheme.onSurface.darken(30)),
               )),
-          themeMode: ThemeMode.light, // Follow system theme by default
+          themeMode: ThemeMode.system, // Follow system theme by default
           home: const MyHomePage(),
         ));
   }
