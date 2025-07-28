@@ -14,7 +14,7 @@ class CatalogBrowseItemView extends StatelessWidget {
   final Function(BrowseItem)? onTap;
 
   CatalogBrowseItemView({super.key, required this.dataSource, this.onTap})
-      : assert(dataSource.item.browseType == 'catalog',
+      : assert(dataSource.item.browseType == BrowseType.catalog,
             'parentItem.browseType must be "catalog"');
 
   @override
@@ -58,11 +58,11 @@ class CatalogBrowseItemView extends StatelessWidget {
         parentItem.catalog?.previewConfig?.aspectRatio ?? 1.0;
     const contentPadding = KalinkaConstants.kSpaceBetweenTiles / 2;
     final double cardHeight = hasImage
-        ? ((imageWidth - contentPadding * 2) * imageAspectRatio +
+        ? ((imageWidth - contentPadding * 2) / imageAspectRatio +
             contentPadding +
             52 +
             6)
-        : (imageWidth - contentPadding * 2) * imageAspectRatio +
+        : (imageWidth - contentPadding * 2) / imageAspectRatio +
             contentPadding * 2;
 
     return CustomScrollView(
@@ -70,7 +70,6 @@ class CatalogBrowseItemView extends StatelessWidget {
         SliverToBoxAdapter(
           child: GenreFilterChips(),
         ),
-
         // Add the grid content
         SliverPadding(
           padding: const EdgeInsets.symmetric(
@@ -81,16 +80,17 @@ class CatalogBrowseItemView extends StatelessWidget {
                 mainAxisExtent: cardHeight, crossAxisCount: crossAxisCount),
             delegate: SliverChildBuilderDelegate(
               (BuildContext context, int index) {
-                final itemData = provider.getItem(index);
+                final item = provider.getItem(index).item;
 
                 return BrowseItemCard(
-                  item: itemData.item,
+                  item: item,
                   onTap: onTap,
-                  contentPadding: contentPadding,
                   imageAspectRatio: imageAspectRatio,
-                  previewTypeHint: previewType,
-                  constraints:
-                      BoxConstraints.tight(Size(imageWidth, cardHeight)),
+                  previewContentTypeHint: item != null
+                      ? PreviewContentTypeExtension.fromBrowseType(
+                          item.browseType)
+                      : parentItem.catalog?.previewConfig?.contentType,
+                  previewType: previewType,
                 );
               },
               childCount: provider.maybeItemCount,

@@ -132,7 +132,7 @@ class BottomMenu extends StatelessWidget {
         leading: const Icon(Icons.heart_broken),
         onTap: () {
           favoritesProvider.remove(browseItem);
-          if (browseItem.browseType == 'playlist') {
+          if (browseItem.browseType == BrowseType.playlist) {
             UserPlaylistProvider playlistProvider =
                 context.read<UserPlaylistProvider>();
             playlistProvider.removePlaylist(browseItem.playlist!);

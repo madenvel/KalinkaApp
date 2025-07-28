@@ -368,8 +368,7 @@ class UserFavoritesIdsProvider with ChangeNotifier {
   }
 
   bool isFavorite(BrowseItem item) {
-    SearchType searchType =
-        SearchTypeExtension.fromStringValue(item.browseType);
+    SearchType searchType = SearchTypeExtension.fromBrowseType(item.browseType);
     return _favorites[searchType]!.ids.contains(item.id);
   }
 

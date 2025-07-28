@@ -50,7 +50,7 @@ class AddToPlaylistState extends State<AddToPlaylist> {
 
     // Collect all tracks to add
     for (BrowseItem item in widget.items.items) {
-      if (item.browseType == 'track') {
+      if (item.browseType == BrowseType.track) {
         trackMap[elementNo] = [item.track!];
       } else if (item.canBrowse) {
         futures.add(_fetchTracksFromBrowseItem(item, elementNo, trackMap));

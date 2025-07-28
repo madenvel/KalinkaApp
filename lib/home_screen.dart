@@ -5,7 +5,7 @@ import 'package:kalinka/browse_item_data_source.dart'
     show DefaultBrowseItemDataSource;
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/discover_source.dart';
-import 'package:kalinka/source_module_priview_card.dart' show SourceModule;
+import 'package:kalinka/source_module_preview_card.dart' show SourceModule;
 import 'package:provider/provider.dart';
 import 'package:kalinka/settings_screen.dart';
 import 'package:kalinka/genre_filter_chips.dart';

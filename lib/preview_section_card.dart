@@ -5,13 +5,12 @@ import 'package:kalinka/browse_item_data_source.dart' show BrowseItemDataSource;
 import 'package:kalinka/catalog_browse_item_view.dart'
     show CatalogBrowseItemView;
 import 'package:kalinka/constants.dart';
-import 'package:kalinka/data_model.dart' show BrowseItem;
+import 'package:kalinka/data_model.dart' show BrowseItem, BrowseType;
 import 'package:kalinka/data_provider.dart' show GenreFilterProvider;
 import 'package:kalinka/large_image_preview_card.dart'
     show LargeImagePreviewCard;
 import 'package:kalinka/preview_section_grid.dart' show SectionPreviewGrid;
 import 'package:kalinka/browse_item_view.dart';
-import 'package:kalinka/shimmer_widget.dart';
 import 'package:provider/provider.dart'
     show ChangeNotifierProxyProvider, Consumer;
 
@@ -34,7 +33,7 @@ class PreviewSectionCard extends StatelessWidget {
     onItemSelected?.call(item);
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) {
-        if (item.browseType == 'catalog') {
+        if (item.browseType == BrowseType.catalog) {
           return CatalogBrowseItemView(
               dataSource: BrowseItemDataSource.browse(item),
               onTap: (item) => _onTap(context, item));
@@ -177,11 +176,12 @@ class PreviewSectionCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(
               horizontal: KalinkaConstants.kScreenContentHorizontalPadding),
           child: Row(children: [
-            ShimmerWidget(width: 100, height: 20),
+            Container(width: 100, height: 20, color: Colors.black),
             const Spacer(),
-            ShimmerWidget(
+            Container(
               width: 40,
               height: 20,
+              color: Colors.black,
             )
           ]),
         ),

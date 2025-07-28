@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' show EdgeInsets;
+import 'package:flutter/widgets.dart' show BorderRadius, Radius;
 
 class KalinkaConstants {
   static const kScreenContentHorizontalPadding = 16.0;
@@ -16,4 +17,5 @@ class KalinkaConstants {
 
   static const kSpaceBetweenTiles = 20.0;
   static const double kButtonSize = 48.0;
+  static const kDefaultBorderRadius = BorderRadius.all(Radius.circular(12.0));
 }
