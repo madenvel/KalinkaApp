@@ -247,15 +247,19 @@ class _BrowseItemListState extends State<BrowseItemList> {
                   SourceAttribution(),
                   const SizedBox(width: 8),
                 ],
-                Container(
-                  width: 60,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: highlightColor,
-                    borderRadius: BorderRadius.circular(4.0),
+                if (!isArtist)
+                  Container(
+                    width: 60,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: highlightColor,
+                      borderRadius: BorderRadius.circular(4.0),
+                    ),
                   ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: const Icon(Icons.more_horiz),
                 ),
-                const IconButton(icon: Icon(Icons.more_horiz), onPressed: null),
               ],
             ),
             visualDensity: VisualDensity.standard));
