@@ -20,6 +20,7 @@ class PreviewSectionCard extends StatelessWidget {
   final bool seeAll;
   final VoidCallback? onSeeAll;
   final Function(BrowseItem)? onItemSelected;
+  final bool showSourceAttribution;
 
   const PreviewSectionCard(
       {super.key,
@@ -27,7 +28,8 @@ class PreviewSectionCard extends StatelessWidget {
       this.rowsCount,
       this.seeAll = true,
       this.onSeeAll,
-      this.onItemSelected});
+      this.onItemSelected,
+      this.showSourceAttribution = false});
 
   void _onTap(BuildContext context, BrowseItem item) {
     onItemSelected?.call(item);
@@ -79,7 +81,9 @@ class PreviewSectionCard extends StatelessWidget {
                     : SectionPreviewGrid(
                         dataProvider: dataProvider,
                         rowsCount: rowsCount,
-                        onTap: (item) => _onTap(context, item))),
+                        onTap: (item) => _onTap(context, item),
+                        showSourceAttribution: showSourceAttribution,
+                      )),
             seeAll: !hasImage && !hasNoItems && seeAll,
           );
         },

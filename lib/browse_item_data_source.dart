@@ -1,5 +1,12 @@
 import 'package:kalinka/data_model.dart'
-    show BrowseItem, BrowseItemsList, Catalog, Preview, PreviewType, SearchType;
+    show
+        BrowseItem,
+        BrowseItemsList,
+        Catalog,
+        Preview,
+        PreviewContentTypeExtension,
+        PreviewType,
+        SearchType;
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 
 abstract class BrowseItemDataSource {
@@ -240,7 +247,11 @@ class UserFavoriteBrowseItemDataSource extends BrowseItemDataSource {
       catalog: Catalog(
         id: 'favorites_${searchType.name}',
         previewConfig: Preview(
-            type: PreviewType.imageText, aspectRatio: 1.0, rowsCount: 1),
+            type: PreviewType.imageText,
+            aspectRatio: 1.0,
+            rowsCount: 1,
+            contentType:
+                PreviewContentTypeExtension.fromSearchType(searchType)),
         title: title,
         canGenreFilter: false,
       ),

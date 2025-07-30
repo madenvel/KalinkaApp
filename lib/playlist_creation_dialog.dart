@@ -54,17 +54,24 @@ class PlaylistCreationDialog {
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
           child: const Text('Cancel'),
         ),
-        ElevatedButton(
-          onPressed: () {
-            _handleCreateNewPlaylist(
-              context,
-              nameController.text,
-              descriptionController.text,
-              onCreateCallback,
+        ListenableBuilder(
+          listenable: nameController,
+          builder: (context, child) {
+            return ElevatedButton(
+              onPressed: nameController.text.isNotEmpty
+                  ? () {
+                      _handleCreateNewPlaylist(
+                        context,
+                        nameController.text,
+                        descriptionController.text,
+                        onCreateCallback,
+                      );
+                      Navigator.of(context, rootNavigator: true).pop();
+                    }
+                  : null,
+              child: const Text('Create'),
             );
-            Navigator.of(context, rootNavigator: true).pop();
           },
-          child: const Text('Create'),
         ),
       ],
     );

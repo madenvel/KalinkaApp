@@ -66,6 +66,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       seeAll: onSeeMore != null,
       onSeeAll: onSeeMore,
       onItemSelected: onItemSelected,
+      showSourceAttribution: true,
     );
   }
 
@@ -146,7 +147,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   browseItem: item, // Use specific item or the main one
                 ),
               );
-            }),
+            },
+            showSourceAttribution: true),
       ],
     );
   }
@@ -234,6 +236,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           },
           pageSize: 0,
           shrinkWrap: false,
+          showSourceAttribution: true,
         );
       },
     );
@@ -478,6 +481,7 @@ class _RecentAlbumsSection extends ConsumerWidget {
       dataSource: StaticItemsBrowseItemDataSource.create(title, recentAlbums),
       seeAll: false,
       onItemSelected: onItemSelected,
+      showSourceAttribution: true,
     );
   }
 }
@@ -498,6 +502,7 @@ class _RecentArtistsSection extends ConsumerWidget {
       dataSource: StaticItemsBrowseItemDataSource.create(title, recentArtists),
       seeAll: false,
       onItemSelected: onItemSelected,
+      showSourceAttribution: true,
     );
   }
 }
@@ -519,6 +524,7 @@ class _RecentPlaylistsSection extends ConsumerWidget {
           StaticItemsBrowseItemDataSource.create(title, recentPlaylists),
       seeAll: false,
       onItemSelected: onItemSelected,
+      showSourceAttribution: true,
     );
   }
 }
@@ -571,7 +577,8 @@ class _TrackListSection extends StatelessWidget {
                   browseItem: item,
                 ),
               );
-            }),
+            },
+            showSourceAttribution: true),
       ],
     );
   }

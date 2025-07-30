@@ -16,6 +16,7 @@ import 'package:kalinka/data_model.dart'
     show BrowseItem, BrowseItemsList, BrowseType, CardSize, PreviewType;
 import 'package:kalinka/kalinkaplayer_proxy.dart' show KalinkaPlayerProxy;
 import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
+import 'package:kalinka/source_attribution.dart';
 
 class SourceCollapseStateNotifier extends StateNotifier<Map<String, bool>> {
   SourceCollapseStateNotifier() : super({});
@@ -85,18 +86,7 @@ class SourceModule extends ConsumerWidget {
 
   Widget _buildTitleBar(BuildContext context, WidgetRef ref, bool isCollapsed) {
     return ListTile(
-      leading: source.catalog?.image?.small != null
-          ? CircleAvatar(
-              backgroundImage: NetworkImage(source.catalog!.image!.small!),
-            )
-          : CircleAvatar(
-              backgroundColor: Theme.of(context).primaryColor,
-              child: Text(
-                source.name?.substring(0, 1).toUpperCase() ?? '?',
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ),
+      leading: SourceAttribution(id: source.id, size: 36.0),
       title: Text(
         source.name ?? 'Unknown Source',
         style: const TextStyle(fontWeight: FontWeight.bold),
