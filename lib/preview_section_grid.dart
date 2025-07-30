@@ -12,6 +12,7 @@ class SectionPreviewGrid extends StatelessWidget {
   final double textLabelHeight;
   final BrowseItemTapCallback? onTap;
   final int? rowsCount;
+  final bool showSourceAttribution;
 
   const SectionPreviewGrid({
     super.key,
@@ -19,6 +20,7 @@ class SectionPreviewGrid extends StatelessWidget {
     this.textLabelHeight = 52.0,
     this.rowsCount,
     this.onTap,
+    this.showSourceAttribution = false,
   });
 
   @override
@@ -90,6 +92,7 @@ class SectionPreviewGrid extends StatelessWidget {
                       previewContentTypeHint: contentTypeHint,
                       previewType: previewType,
                       imageAspectRatio: cardSizeRatio,
+                      showSourceAttribution: showSourceAttribution,
                     );
                   },
                 )

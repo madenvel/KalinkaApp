@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kalinka/data_model.dart' show Genre;
+import 'package:kalinka/shimmer_effect.dart' show Shimmer;
 import 'package:kalinka/shimmer_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_provider.dart';
@@ -18,13 +19,20 @@ class GenreFilterChips extends StatelessWidget {
           future: provider.isLoaded,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(
-                    vertical: KalinkaConstants.kContentVerticalPadding,
-                    horizontal:
-                        KalinkaConstants.kScreenContentHorizontalPadding),
-                child: const ShimmerWidget(width: double.infinity, height: 40),
-              );
+              final baseColor =
+                  Theme.of(context).colorScheme.surfaceContainerHigh;
+              final highlightColor =
+                  Theme.of(context).colorScheme.surfaceBright;
+              return Shimmer(
+                  baseColor: baseColor,
+                  highlightColor: highlightColor,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: KalinkaConstants.kContentVerticalPadding,
+                        horizontal:
+                            KalinkaConstants.kScreenContentHorizontalPadding),
+                    child: Container(width: double.infinity, height: 40),
+                  ));
             }
 
             return Align(

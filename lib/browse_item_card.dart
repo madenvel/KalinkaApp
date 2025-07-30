@@ -13,6 +13,7 @@ import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
 import 'package:kalinka/image_card_tile.dart' show ImageCardTile;
 import 'package:kalinka/image_card_tile_placeholder.dart'
     show ImageCardTilePlaceholder;
+import 'package:kalinka/source_attribution.dart' show SourceAttribution;
 import 'package:kalinka/text_card_colors.dart' show TextCardColors;
 import 'package:provider/provider.dart' show ReadContext;
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
@@ -24,14 +25,17 @@ class BrowseItemCard extends StatelessWidget {
   final PreviewType? previewType;
   final Function(BrowseItem)? onTap;
 
-  const BrowseItemCard({
-    super.key,
-    this.item,
-    this.onTap,
-    this.previewType,
-    this.previewContentTypeHint,
-    this.imageAspectRatio = 1.0,
-  });
+  /// Whether to show attribution text below the image.
+  final bool showSourceAttribution;
+
+  const BrowseItemCard(
+      {super.key,
+      this.item,
+      this.onTap,
+      this.previewType,
+      this.previewContentTypeHint,
+      this.imageAspectRatio = 1.0,
+      this.showSourceAttribution = true});
 
   @override
   Widget build(BuildContext context) {
@@ -108,6 +112,8 @@ class BrowseItemCard extends StatelessWidget {
             shape: contentType == PreviewContentType.artist
                 ? BoxShape.circle
                 : BoxShape.rectangle,
+            attribution:
+                showSourceAttribution ? SourceAttribution(id: item!.id) : null,
           );
         },
         placeholder: (context, url) => _buildPlaceholderCard(context),
@@ -131,6 +137,8 @@ class BrowseItemCard extends StatelessWidget {
           ? BoxShape.circle
           : BoxShape.rectangle,
       borderRadius: KalinkaConstants.kDefaultBorderRadius,
+      attribution:
+          showSourceAttribution ? SourceAttribution(id: item!.id) : null,
     );
   }
 

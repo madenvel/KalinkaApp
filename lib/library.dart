@@ -246,6 +246,7 @@ class _LibraryState extends State<Library> {
         });
       },
       pageSize: 0,
+      showSourceAttribution: true,
     );
   }
 

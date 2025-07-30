@@ -463,6 +463,21 @@ extension PreviewContentTypeExtension on PreviewContentType {
         return PreviewContentType.track;
     }
   }
+
+  static PreviewContentType fromSearchType(SearchType type) {
+    switch (type) {
+      case SearchType.album:
+        return PreviewContentType.album;
+      case SearchType.artist:
+        return PreviewContentType.artist;
+      case SearchType.playlist:
+        return PreviewContentType.playlist;
+      case SearchType.track:
+        return PreviewContentType.track;
+      default:
+        return PreviewContentType.catalog; // Default for invalid search type
+    }
+  }
 }
 
 class Preview {
@@ -575,6 +590,78 @@ class TrackList {
         json["total"],
         List<Track>.from(json["items"].map((x) => Track.fromJson(x))),
       );
+}
+
+enum EntityType { catalog, album, artist, playlist, track, label, genre, user }
+
+extension EntityTypeExtension on EntityType {
+  String toValue() {
+    switch (this) {
+      case EntityType.catalog:
+        return 'catalog';
+      case EntityType.album:
+        return 'album';
+      case EntityType.artist:
+        return 'artist';
+      case EntityType.playlist:
+        return 'playlist';
+      case EntityType.track:
+        return 'track';
+      case EntityType.label:
+        return 'label';
+      case EntityType.genre:
+        return 'genre';
+      case EntityType.user:
+        return 'user';
+    }
+  }
+
+  static EntityType fromValue(String value) {
+    switch (value) {
+      case 'catalog':
+        return EntityType.catalog;
+      case 'album':
+        return EntityType.album;
+      case 'artist':
+        return EntityType.artist;
+      case 'playlist':
+        return EntityType.playlist;
+      case 'track':
+        return EntityType.track;
+      case 'label':
+        return EntityType.label;
+      case 'genre':
+        return EntityType.genre;
+      case 'user':
+        return EntityType.user;
+      default:
+        throw Exception('Invalid EntityType value: $value');
+    }
+  }
+}
+
+class EntityId {
+  final String id;
+  final EntityType type;
+  final String source;
+
+  EntityId({
+    required this.id,
+    required this.type,
+    required this.source,
+  });
+
+  factory EntityId.fromString(String fullId) {
+    final parts = fullId.split(':');
+    if (parts.length != 4 || parts[0] != 'kalinka') {
+      throw Exception('Invalid full_id format: $fullId');
+    }
+    return EntityId(
+      id: parts[3],
+      type: EntityTypeExtension.fromValue(parts[2]),
+      source: parts[1],
+    );
+  }
 }
 
 class BrowseItem {
@@ -969,11 +1056,43 @@ class SeekStatusMessage extends StatusMessage {
       };
 }
 
+enum ModuleState {
+  ready,
+  disabled,
+  error,
+}
+
+class ModuleStateExtension {
+  static String toValue(ModuleState state) {
+    switch (state) {
+      case ModuleState.ready:
+        return 'ready';
+      case ModuleState.disabled:
+        return 'disabled';
+      case ModuleState.error:
+        return 'error';
+    }
+  }
+
+  static ModuleState fromValue(String value) {
+    switch (value) {
+      case 'ready':
+        return ModuleState.ready;
+      case 'disabled':
+        return ModuleState.disabled;
+      case 'error':
+        return ModuleState.error;
+      default:
+        throw Exception('Invalid ModuleState value: $value');
+    }
+  }
+}
+
 class ModuleInfo {
   final String name;
   final String title;
   final bool enabled;
-  final String state;
+  final ModuleState state;
 
   ModuleInfo({
     required this.name,
@@ -986,14 +1105,14 @@ class ModuleInfo {
         name: json["name"],
         title: json["title"],
         enabled: json["enabled"],
-        state: json["state"],
+        state: ModuleStateExtension.fromValue(json["state"]),
       );
 
   Map<String, dynamic> toJson() => {
         "name": name,
         "title": title,
         "enabled": enabled,
-        "state": state,
+        "state": ModuleStateExtension.toValue(state),
       };
 }
 

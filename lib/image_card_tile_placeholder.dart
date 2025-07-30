@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kalinka/constants.dart';
+import 'package:kalinka/source_attribution.dart';
 
 class ImageCardTilePlaceholder extends StatelessWidget {
   const ImageCardTilePlaceholder({
@@ -14,6 +15,7 @@ class ImageCardTilePlaceholder extends StatelessWidget {
         horizontal: KalinkaConstants.kSpaceBetweenTiles / 2,
         vertical: KalinkaConstants.kSpaceBetweenTiles / 2),
     this.color = Colors.black,
+    this.showSourceAttribution = false,
   }) : assert(hasSubtitle == false || hasTitle == true,
             'If subtitle is shown, title must also be shown');
 
@@ -25,6 +27,7 @@ class ImageCardTilePlaceholder extends StatelessWidget {
   final EdgeInsets padding;
   final Alignment textAlignment;
   final Color color;
+  final bool showSourceAttribution;
 
   @override
   Widget build(BuildContext context) {
@@ -82,38 +85,45 @@ class ImageCardTilePlaceholder extends StatelessWidget {
             spacing * 3) /
         2;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.max,
-      children: [
-        const SizedBox(height: spacing),
-        // Title placeholder - longer rounded rectangle
-        Align(
-            alignment: textAlignment,
-            child: Container(
-              height: placeholderHeight, // Match typical title text height
-              width: placeholderWidth * 0.8,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(8),
-              ),
-            )),
-        if (hasSubtitle) ...[
+    return Row(children: [
+      Expanded(
+          child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.max,
+        children: [
           const SizedBox(height: spacing),
-          // Subtitle placeholder - match subtitle text height
+          // Title placeholder - longer rounded rectangle
           Align(
               alignment: textAlignment,
               child: Container(
-                height: placeholderHeight,
-                width: placeholderWidth * 0.6,
+                height: placeholderHeight, // Match typical title text height
+                width: placeholderWidth * 0.8,
                 decoration: BoxDecoration(
                   color: color,
-                  borderRadius: BorderRadius.circular(7),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               )),
+          if (hasSubtitle) ...[
+            const SizedBox(height: spacing),
+            // Subtitle placeholder - match subtitle text height
+            Align(
+                alignment: textAlignment,
+                child: Container(
+                  height: placeholderHeight,
+                  width: placeholderWidth * 0.6,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                )),
+          ],
         ],
+      )),
+      if (showSourceAttribution) ...[
+        const SizedBox(width: 2),
+        SourceAttribution()
       ],
-    );
+    ]);
   }
 }

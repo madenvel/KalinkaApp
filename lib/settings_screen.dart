@@ -5,9 +5,11 @@ import 'package:flutter/services.dart'
     show FilteringTextInputFormatter, TextInputFormatter;
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
+import 'package:kalinka/data_model.dart' show ModuleState;
 import 'package:kalinka/service_discovery.dart'
     show ServiceDiscoveryDataProvider;
 import 'package:kalinka/settings_provider.dart';
+import 'package:kalinka/modules_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/service_discovery_widget.dart';
@@ -146,9 +148,10 @@ class DynamicSettingsSubsection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     var provider = ref.watch(settingsProvider);
+    var modulesState = ref.watch(modulesProvider);
     var setting = provider.getCurrentValue(path);
     var isChanged = provider.isPathChanged(path);
-    String? moduleStatus = provider.getModuleStatus(path);
+    ModuleState? moduleStatus = modulesState.getModuleStatus(path);
 
     return ListTile(
         titleTextStyle: isChanged
@@ -160,7 +163,7 @@ class DynamicSettingsSubsection extends ConsumerWidget {
         title: Text(setting['title'] ?? 'Subsection'),
         subtitle: moduleStatus != null
             ? Text(
-                'Status: $moduleStatus',
+                'Status: ${moduleStatus.name}',
                 style: Theme.of(context).textTheme.bodySmall,
               )
             : null,

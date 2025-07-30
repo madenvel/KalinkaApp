@@ -7,6 +7,7 @@ import 'package:kalinka/custom_cache_manager.dart'
 import 'package:kalinka/data_model.dart' show BrowseItem, CardSize;
 import 'package:kalinka/browse_item_view.dart';
 import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
+import 'package:kalinka/shimmer_effect.dart' show Shimmer;
 import 'package:kalinka/shimmer_widget.dart';
 import 'package:provider/provider.dart';
 
@@ -57,14 +58,28 @@ class LargeImagePreviewCard extends StatelessWidget {
                   ),
                 ),
               ),
-              placeholder: (context, url) => ShimmerWidget(
-                width: double.infinity,
-                height: cardSize,
-                borderRadius: 12.0,
-              ),
+              placeholder: (context, url) =>
+                  _buildPlaceholder(context, cardSize),
             ),
           )),
     );
+  }
+
+  Widget _buildPlaceholder(BuildContext context, double cardSize) {
+    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
+    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
+
+    return Shimmer(
+        baseColor: baseColor,
+        highlightColor: highlightColor,
+        child: Container(
+          width: double.infinity,
+          height: cardSize,
+          decoration: BoxDecoration(
+            color: baseColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ));
   }
 
   double calculateCardSize(BuildContext context, CardSize cardSizeSelection) {

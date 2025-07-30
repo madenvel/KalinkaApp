@@ -16,6 +16,7 @@ import 'package:kalinka/kalinkaplayer_proxy.dart' show KalinkaPlayerProxy;
 import 'package:kalinka/polka_dot_painter.dart';
 import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
 import 'package:kalinka/browse_item_list.dart';
+import 'package:kalinka/shimmer_effect.dart' show Shimmer;
 import 'package:kalinka/shimmer_widget.dart';
 import 'package:provider/provider.dart';
 import 'data_model.dart';
@@ -301,44 +302,68 @@ class _BrowseItemViewState extends State<BrowseItemView> {
     final topPadding = MediaQuery.paddingOf(context).top + kToolbarHeight;
     final isArtist = widget.browseItem.artist != null;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        top: topPadding,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ShimmerWidget(
-            width: _kImageSize,
-            height: _kImageSize,
-            borderRadius: isArtist ? _kCircleAvatarRadius : _kBorderRadius,
-            shape: isArtist ? BoxShape.circle : BoxShape.rectangle,
+    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
+    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
+    return Shimmer(
+        baseColor: baseColor,
+        highlightColor: highlightColor,
+        child: Padding(
+          padding: EdgeInsets.only(
+            top: topPadding,
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: _kDefaultPadding,
-                vertical: _kVerticalPaddingMedium + 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                ShimmerWidget(height: _kFontSizeTitle * 1.3, width: 180),
-                const SizedBox(height: 8.0),
-                ShimmerWidget(height: _kFontSizeSubtitle * 1.3, width: 140),
-                const SizedBox(height: 16.0),
-                ShimmerWidget(height: _kFontSizeBody * 1.3, width: 100),
-              ],
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: _kImageSize,
+                height: _kImageSize,
+                decoration: BoxDecoration(
+                  color: baseColor,
+                  shape: isArtist ? BoxShape.circle : BoxShape.rectangle,
+                  borderRadius: isArtist
+                      ? BorderRadius.circular(_kCircleAvatarRadius)
+                      : BorderRadius.circular(_kBorderRadius),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: _kDefaultPadding,
+                    vertical: _kVerticalPaddingMedium + 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                        height: _kFontSizeTitle * 1.3,
+                        width: 180,
+                        color: baseColor),
+                    const SizedBox(height: 8.0),
+                    Container(
+                        height: _kFontSizeSubtitle * 1.3,
+                        width: 140,
+                        color: baseColor),
+                    const SizedBox(height: 16.0),
+                    Container(
+                        height: _kFontSizeBody * 1.3,
+                        width: 100,
+                        color: baseColor),
+                  ],
+                ),
+              ),
+              Card.filled(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Container(
+                      height: _kIconSizeMedium + 20,
+                      width: 240,
+                      decoration: BoxDecoration(
+                        color: baseColor,
+                        borderRadius: BorderRadius.circular(10),
+                      )),
+                ),
+              ),
+            ],
           ),
-          Card.filled(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: ShimmerWidget(
-                  height: _kIconSizeMedium + 20, width: 240, borderRadius: 10),
-            ),
-          ),
-        ],
-      ),
-    );
+        ));
   }
 
   Widget _buildImageCover(BuildContext context, ImageProvider imageProvider) {

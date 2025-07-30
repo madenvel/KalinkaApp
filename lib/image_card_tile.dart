@@ -15,6 +15,7 @@ class ImageCardTile extends StatelessWidget {
     this.padding = const EdgeInsets.symmetric(
         horizontal: KalinkaConstants.kSpaceBetweenTiles / 2,
         vertical: KalinkaConstants.kSpaceBetweenTiles / 2),
+    this.attribution,
   })  : assert(subtitle == null || title != null,
             'If subtitle is provided, title must also be provided'),
         assert(imageProvider != null || icon != null,
@@ -29,6 +30,7 @@ class ImageCardTile extends StatelessWidget {
   final VoidCallback? onTap;
   final double aspectRatio;
   final EdgeInsets padding;
+  final Widget? attribution;
 
   @override
   Widget build(BuildContext context) {
@@ -102,6 +104,17 @@ class ImageCardTile extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    if (attribution != null) {
+      return Row(children: [
+        Expanded(child: _buildTextColumn()),
+        const SizedBox(width: 2),
+        attribution!,
+      ]);
+    }
+    return _buildTextColumn();
+  }
+
+  Widget _buildTextColumn() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

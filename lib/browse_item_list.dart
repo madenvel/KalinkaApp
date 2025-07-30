@@ -7,6 +7,7 @@ import 'package:kalinka/browse_item_data_provider.dart';
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/soundwave.dart';
+import 'package:kalinka/source_attribution.dart' show SourceAttribution;
 import 'package:provider/provider.dart';
 import 'data_model.dart';
 import 'shimmer_effect.dart' show Shimmer;
@@ -20,6 +21,7 @@ class BrowseItemList extends StatefulWidget {
   final bool shrinkWrap;
   final int pageSize;
   final int? size;
+  final bool showSourceAttribution;
 
   const BrowseItemList({
     super.key,
@@ -31,6 +33,7 @@ class BrowseItemList extends StatefulWidget {
     this.shrinkWrap = true,
     this.actionButtonIcon = const Icon(Icons.more_horiz),
     this.actionButtonTooltip = "More options",
+    this.showSourceAttribution = false,
   });
 
   @override
@@ -155,18 +158,35 @@ class _BrowseItemListState extends State<BrowseItemList> {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
+          if (widget.showSourceAttribution) ...[
+            const SizedBox(width: 8),
+            SourceAttribution(id: item.id),
+            const SizedBox(width: 8),
+          ],
           if (item.track != null && item.duration != null)
-            Text(formatTime(item.duration!),
+            SizedBox(
+              width: 60,
+              child: Text(
+                formatTime(item.duration!),
                 style: Theme.of(context)
                     .listTileTheme
                     .subtitleTextStyle
-                    ?.copyWith(fontSize: 12))
+                    ?.copyWith(fontSize: 12),
+                textAlign: TextAlign.right,
+              ),
+            )
           else if (item.playlist != null || item.album != null)
-            Text('${item.trackCount} track${item.trackCount != 1 ? "s" : ""}',
+            SizedBox(
+              width: 60,
+              child: Text(
+                '${item.trackCount} track${item.trackCount != 1 ? "s" : ""}',
                 style: Theme.of(context)
                     .listTileTheme
                     .subtitleTextStyle
-                    ?.copyWith(fontSize: 12)),
+                    ?.copyWith(fontSize: 12),
+                textAlign: TextAlign.right,
+              ),
+            ),
           IconButton(
             icon: widget.actionButtonIcon,
             onPressed: () => widget.onAction(context, index, item),
@@ -188,7 +208,6 @@ class _BrowseItemListState extends State<BrowseItemList> {
             .provider.itemDataSource.item.catalog?.previewConfig?.contentType ==
         PreviewContentType.artist;
 
-    PreviewContentType.artist;
     return Shimmer(
         baseColor: baseColor,
         highlightColor: highlightColor,
@@ -223,15 +242,19 @@ class _BrowseItemListState extends State<BrowseItemList> {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (widget.showSourceAttribution) ...[
+                  const SizedBox(width: 8),
+                  SourceAttribution(),
+                  const SizedBox(width: 8),
+                ],
                 Container(
-                  width: 40,
+                  width: 60,
                   height: 16,
                   decoration: BoxDecoration(
                     color: highlightColor,
                     borderRadius: BorderRadius.circular(4.0),
                   ),
                 ),
-                const SizedBox(width: 8),
                 const IconButton(icon: Icon(Icons.more_horiz), onPressed: null),
               ],
             ),

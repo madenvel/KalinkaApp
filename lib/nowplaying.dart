@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:kalinka/action_button.dart' show ActionButton;
+import 'package:kalinka/shimmer_effect.dart' show Shimmer;
 import 'package:kalinka/shimmer_widget.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
@@ -466,8 +467,7 @@ class _NowPlayingState extends State<NowPlaying> {
         imageUrl:
             context.read<ConnectionSettingsProvider>().resolveUrl(imageUrl),
         fit: BoxFit.contain,
-        placeholder: (_, __) =>
-            ShimmerWidget(width: double.infinity, height: double.infinity),
+        placeholder: (_, __) => _buildAlbumPlaceholder(),
         errorWidget: (_, __, ___) => _buildAlbumPlaceholder(),
       ),
     );
@@ -480,6 +480,23 @@ class _NowPlayingState extends State<NowPlaying> {
             BorderRadius.circular(_NowPlayingConstants.albumArtRadius),
       ),
       child: const Icon(Icons.album, size: 250),
+    );
+  }
+
+  Widget _buildAlbumShimmeringPlaceholder() {
+    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
+    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
+
+    return Shimmer(
+      baseColor: baseColor,
+      highlightColor: highlightColor,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius:
+              BorderRadius.circular(_NowPlayingConstants.albumArtRadius),
+        ),
+        child: const Icon(Icons.album, size: 250),
+      ),
     );
   }
 }
