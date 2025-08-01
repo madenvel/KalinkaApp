@@ -150,14 +150,13 @@ class BottomMenu extends StatelessWidget {
     final albumId = browseItem.album?.id ?? browseItem.track?.album?.id;
     final artistId =
         browseItem.album?.artist?.id ?? browseItem.track?.performer?.id;
-    if (albumId != null) {
+    final browseType = browseItem.browseType;
+    if (albumId != null && browseType != BrowseType.album) {
       widgets.add(ListTile(
         title: const Text('More from this Album'),
         leading: const Icon(Icons.album),
         onTap: () {
-          KalinkaPlayerProxy()
-              .getMetadata('/album/$albumId')
-              .then((BrowseItem item) {
+          KalinkaPlayerProxy().getMetadata(albumId).then((BrowseItem item) {
             if (context.mounted) {
               Navigator.pop(context);
               Navigator.push(
@@ -170,14 +169,12 @@ class BottomMenu extends StatelessWidget {
       ));
     }
 
-    if (artistId != null) {
+    if (artistId != null && browseType != BrowseType.artist) {
       widgets.add(ListTile(
         title: const Text('More from this Artist'),
         leading: const Icon(Icons.person),
         onTap: () {
-          KalinkaPlayerProxy()
-              .getMetadata('/artist/$artistId')
-              .then((BrowseItem item) {
+          KalinkaPlayerProxy().getMetadata(artistId).then((BrowseItem item) {
             if (context.mounted) {
               Navigator.pop(context);
               Navigator.push(
