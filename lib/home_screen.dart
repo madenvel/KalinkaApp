@@ -147,8 +147,7 @@ class HomeScreen extends StatelessWidget {
     if (section != null) {
       return Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: KalinkaConstants.kScreenContentHorizontalPadding,
-            vertical: KalinkaConstants.kContentVerticalPadding),
+            horizontal: KalinkaConstants.kScreenContentHorizontalPadding),
         child: SourceModule(
             source: section,
             onShowMoreClicked: () {

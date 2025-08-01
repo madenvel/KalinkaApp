@@ -8,7 +8,6 @@ import 'package:kalinka/data_model.dart' show BrowseItem, CardSize;
 import 'package:kalinka/browse_item_view.dart';
 import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
-import 'package:kalinka/shimmer_widget.dart';
 import 'package:provider/provider.dart';
 
 class LargeImagePreviewCard extends StatelessWidget {

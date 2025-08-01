@@ -3,6 +3,7 @@ import 'package:kalinka/add_to_playlist.dart';
 import 'package:kalinka/event_listener.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:kalinka/polka_dot_painter.dart' show PolkaDotPainter;
+import 'package:kalinka/shimmer_effect.dart' show ShimmerProvider;
 import 'package:provider/provider.dart';
 import 'package:kalinka/bottom_menu.dart';
 import 'package:kalinka/data_model.dart';
@@ -19,7 +20,7 @@ class SwipableTabs extends StatefulWidget {
 }
 
 class _SwipableTabsState extends State<SwipableTabs>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final TabController controller;
   int _index = 0;
   List<Widget> widgets = const [NowPlaying(), PlayQueue()];
@@ -60,105 +61,104 @@ class _SwipableTabsState extends State<SwipableTabs>
 
   @override
   Widget build(BuildContext context) {
-    return Stack(children: [
-      Container(color: Theme.of(context).scaffoldBackgroundColor),
-      _buildBackgroundImage(context),
-      Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
+    return ChangeNotifierProvider(
+      create: (context) => ShimmerProvider(this),
+      child: Stack(children: [
+        Container(color: Theme.of(context).scaffoldBackgroundColor),
+        _buildBackgroundImage(context),
+        Scaffold(
           backgroundColor: Colors.transparent,
-          title: Column(children: [
-            Text(_index == 0 ? 'Now Playing' : 'Play Queue',
-                style: const TextStyle(fontSize: 16)),
-            TabPageSelector(
-              controller: controller,
-              indicatorSize: 8,
-            ),
-          ]),
-          centerTitle: true,
-          actions: [
-            [
-              IconButton(
-                  icon: const Icon(Icons.more_vert),
-                  onPressed: () {
-                    if (controller.index == 0) {
-                      PlayerStateProvider provider =
-                          context.read<PlayerStateProvider>();
-                      Track? track = provider.state.currentTrack;
-                      BrowseItem? item = track != null
-                          ? BrowseItem(
-                              id: track.id,
-                              name: track.title,
-                              subname: track.performer?.name,
-                              url: '/track/${track.id}',
-                              canAdd: true,
-                              canBrowse: false,
-                              track: track)
-                          : null;
-                      if (item != null) {
-                        final prentContext = context;
-                        showModalBottomSheet(
-                            context: context,
-                            showDragHandle: true,
-                            isScrollControlled: false,
-                            useRootNavigator: true,
-                            scrollControlDisabledMaxHeightRatio: 0.7,
-                            builder: (context) {
-                              return BottomMenu(
-                                parentContext: prentContext,
-                                browseItem: item,
-                                showPlay: false,
-                                showAddToQueue: false,
-                              );
-                            });
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            title: Column(children: [
+              Text(_index == 0 ? 'Now Playing' : 'Play Queue',
+                  style: const TextStyle(fontSize: 16)),
+              TabPageSelector(
+                controller: controller,
+                indicatorSize: 8,
+              ),
+            ]),
+            centerTitle: true,
+            actions: [
+              [
+                IconButton(
+                    icon: const Icon(Icons.more_vert),
+                    onPressed: () {
+                      if (controller.index == 0) {
+                        PlayerStateProvider provider =
+                            context.read<PlayerStateProvider>();
+                        Track? track = provider.state.currentTrack;
+                        BrowseItem? item = track != null
+                            ? BrowseItem(
+                                id: track.id,
+                                name: track.title,
+                                subname: track.performer?.name,
+                                url: '/track/${track.id}',
+                                canAdd: true,
+                                canBrowse: false,
+                                track: track)
+                            : null;
+                        if (item != null) {
+                          final parentContext = context;
+                          showModalBottomSheet(
+                              context: context,
+                              showDragHandle: true,
+                              isScrollControlled: false,
+                              useRootNavigator: true,
+                              scrollControlDisabledMaxHeightRatio: 0.7,
+                              builder: (context) {
+                                return BottomMenu(
+                                  parentContext: parentContext,
+                                  browseItem: item,
+                                  showPlay: false,
+                                  showAddToQueue: false,
+                                );
+                              });
+                        }
                       }
-                    }
-                  })
-            ],
-            [
-              IconButton(
-                  icon: const Icon(Icons.more_vert),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: const Text('Actions'),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ListTile(
-                                leading: const Icon(Icons.playlist_add),
-                                title: const Text('Add to playlist'),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  _buildAddToPlaylist(context);
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.clear_all),
-                                title: const Text('Clear Queue'),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  KalinkaPlayerProxy().clear();
-                                },
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  })
-            ]
-          ][_index],
-        ),
-        body: Stack(
-          children: [
-            TabBarView(controller: controller, children: widgets),
-          ],
-        ),
-      )
-    ]);
+                    })
+              ],
+              [
+                IconButton(
+                    icon: const Icon(Icons.more_vert),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text('Actions'),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ListTile(
+                                  leading: const Icon(Icons.playlist_add),
+                                  title: const Text('Add to playlist'),
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    _buildAddToPlaylist(context);
+                                  },
+                                ),
+                                ListTile(
+                                  leading: const Icon(Icons.clear_all),
+                                  title: const Text('Clear Queue'),
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    KalinkaPlayerProxy().clear();
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    })
+              ]
+            ][_index],
+          ),
+          body: TabBarView(controller: controller, children: widgets),
+        )
+      ]),
+    );
   }
 
   Widget _buildBackgroundImage(BuildContext context) {

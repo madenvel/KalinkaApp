@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod
     show
         AsyncValueX,
         ConsumerWidget,
@@ -7,25 +7,85 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
         StateNotifier,
         StateNotifierProvider,
         WidgetRef;
+import 'package:kalinka/browse_item_data_provider.dart';
 import 'package:kalinka/browse_item_data_source.dart' show BrowseItemDataSource;
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
 import 'package:kalinka/catalog_browse_item_view.dart'
     show CatalogBrowseItemView;
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/data_model.dart'
-    show BrowseItem, BrowseItemsList, BrowseType, CardSize, PreviewType;
+    show BrowseItem, BrowseItemsList, BrowseType, PreviewType;
+import 'package:kalinka/data_provider.dart' show GenreFilterProvider;
+import 'package:kalinka/hero_tile.dart' show HeroTile;
 import 'package:kalinka/kalinkaplayer_proxy.dart' show KalinkaPlayerProxy;
 import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
 import 'package:kalinka/source_attribution.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart'
+    show SharedPreferencesWithCache, SharedPreferencesWithCacheOptions;
 
-class SourceCollapseStateNotifier extends StateNotifier<Map<String, bool>> {
-  SourceCollapseStateNotifier() : super({});
+class SourceCollapseStateNotifier
+    extends riverpod.StateNotifier<Map<String, bool>> {
+  SharedPreferencesWithCache? prefs;
+  bool _isInitialized = false;
 
-  void toggleCollapse(String sourceId) {
+  SourceCollapseStateNotifier() : super({}) {
+    _initializeState();
+  }
+
+  static const String kCollapsedKey = 'Kalinka.input_source.collapsed';
+
+  Future<void> _initializeState() async {
+    if (_isInitialized) return;
+
+    try {
+      prefs = await SharedPreferencesWithCache.create(
+          cacheOptions: SharedPreferencesWithCacheOptions(allowList: {
+        kCollapsedKey,
+      }));
+
+      final collapsedStateString = prefs?.getString(kCollapsedKey);
+      if (collapsedStateString != null && collapsedStateString.isNotEmpty) {
+        // Parse the stored JSON-like string back to Map<String, bool>
+        final Map<String, String> queryParams =
+            Uri.splitQueryString(collapsedStateString);
+        final Map<String, bool> collapsedStateMap = queryParams
+            .map((key, value) => MapEntry(key, value.toLowerCase() == 'true'));
+        state = Map<String, bool>.from(collapsedStateMap);
+      }
+
+      _isInitialized = true;
+    } catch (e) {
+      // If there's an error reading from shared prefs, just use empty state
+      _isInitialized = true;
+    }
+  }
+
+  Future<void> _saveState() async {
+    if (!_isInitialized || prefs == null) return;
+
+    try {
+      // Convert Map<String, bool> to a query string format for storage
+      final String stateString = state.entries
+          .map((entry) => '${Uri.encodeComponent(entry.key)}=${entry.value}')
+          .join('&');
+      await prefs!.setString(kCollapsedKey, stateString);
+    } catch (e) {
+      // Handle save errors gracefully
+    }
+  }
+
+  Future<void> toggleCollapse(String sourceId) async {
+    // Ensure initialization is complete before toggling
+    await _initializeState();
+
     state = {
       ...state,
       sourceId: !(state[sourceId] ?? false),
     };
+
+    // Save state after updating
+    await _saveState();
   }
 
   bool isCollapsed(String sourceId) {
@@ -35,26 +95,26 @@ class SourceCollapseStateNotifier extends StateNotifier<Map<String, bool>> {
 
 // Provider for individual source catalog data with seamless paging and caching
 final sourceCatalogProvider =
-    FutureProvider.family<BrowseItemsList, String>((ref, sourceId) async {
+    riverpod.FutureProvider.family<BrowseItemsList, String>(
+        (ref, sourceId) async {
   final proxy = KalinkaPlayerProxy();
   return proxy.browse(sourceId, limit: 3);
 });
 
 // Provider for managing collapsed states of source modules
-final sourceCollapseStateProvider =
-    StateNotifierProvider<SourceCollapseStateNotifier, Map<String, bool>>(
-        (ref) {
+final sourceCollapseStateProvider = riverpod.StateNotifierProvider<
+    SourceCollapseStateNotifier, Map<String, bool>>((ref) {
   return SourceCollapseStateNotifier();
 });
 
-class SourceModule extends ConsumerWidget {
+class SourceModule extends riverpod.ConsumerWidget {
   final BrowseItem source;
   final VoidCallback? onShowMoreClicked;
 
   const SourceModule({super.key, required this.source, this.onShowMoreClicked});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context, riverpod.WidgetRef ref) {
     final collapseState = ref.watch(sourceCollapseStateProvider);
     final isCollapsed = collapseState[source.id] ?? false;
     final sourceCatalog = ref.watch(sourceCatalogProvider(source.id));
@@ -84,7 +144,8 @@ class SourceModule extends ConsumerWidget {
     );
   }
 
-  Widget _buildTitleBar(BuildContext context, WidgetRef ref, bool isCollapsed) {
+  Widget _buildTitleBar(
+      BuildContext context, riverpod.WidgetRef ref, bool isCollapsed) {
     return ListTile(
       leading: SourceAttribution(id: source.id, size: 36.0),
       title: Text(
@@ -96,8 +157,8 @@ class SourceModule extends ConsumerWidget {
           : null,
       trailing: IconButton(
         icon: Icon(isCollapsed ? Icons.expand_more : Icons.expand_less),
-        onPressed: () {
-          ref
+        onPressed: () async {
+          await ref
               .read(sourceCollapseStateProvider.notifier)
               .toggleCollapse(source.id);
         },
@@ -117,11 +178,36 @@ class SourceModule extends ConsumerWidget {
     final heroItem = _findHeroItem(catalog.items);
 
     // Build preview rows (max 3)
-    final previewRows = _buildPreviewRows(context, catalog.items);
+    final previewRows = _buildPreviewRows(
+        context, catalog.items.where((item) => item != heroItem).toList());
 
     return Column(
       children: [
-        if (heroItem != null) HeroTile(item: heroItem),
+        if (heroItem != null)
+          ChangeNotifierProxyProvider<GenreFilterProvider,
+              BrowseItemDataProvider>(
+            create: (_) => BrowseItemDataProvider.fromDataSource(
+              dataSource: BrowseItemDataSource.browse(heroItem),
+              itemCountLimit: 5,
+            ),
+            update: (_, genreFilterProvider, dataProvider) {
+              final filterList = genreFilterProvider.filter.toList();
+              if (dataProvider == null) {
+                return BrowseItemDataProvider.fromDataSource(
+                    dataSource: BrowseItemDataSource.browse(heroItem))
+                  ..maybeUpdateGenreFilter(filterList);
+              }
+              dataProvider.maybeUpdateGenreFilter(filterList);
+              return dataProvider;
+            },
+            child: Padding(
+              padding: const EdgeInsets.only(
+                  bottom: KalinkaConstants.kSpaceBetweenSections),
+              child: HeroTile(
+                onTap: (BrowseItem item) => _onTap(context, item),
+              ),
+            ),
+          ),
         ...previewRows,
         if (catalog.total > 3) _buildShowMoreButton(context),
         const SizedBox(height: 16),
@@ -133,13 +219,11 @@ class SourceModule extends ConsumerWidget {
     // First try to find an item with preview_config type=image and card_size=large
     for (final item in items) {
       final preview = item.catalog?.previewConfig;
-      if (preview?.type == PreviewType.imageText &&
-          preview?.cardSize == CardSize.large) {
+      if (preview?.type == PreviewType.carousel) {
         return item;
       }
     }
-    // Fallback to first item with catalog
-    return items.where((item) => item.catalog != null).firstOrNull;
+    return null;
   }
 
   void _onTap(BuildContext context, BrowseItem item) {
@@ -160,27 +244,27 @@ class SourceModule extends ConsumerWidget {
     final rows = <Widget>[];
 
     for (final item in items) {
-      // if (item.catalog?.previewConfig == null) continue;
-
-      // final preview = item.catalog!.previewConfig!;
-
-      rows.add(PreviewSectionCard(
-        dataSource: BrowseItemDataSource.browse(item),
-        rowsCount: 1,
-        onSeeAll: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CatalogBrowseItemView(
-                  dataSource: BrowseItemDataSource.browse(item),
-                  onTap: (item) {
-                    if (item.canBrowse) {
-                      _onTap(context, item);
-                    }
-                  }),
-            ),
-          );
-        },
+      rows.add(Padding(
+        padding: const EdgeInsets.only(
+            bottom: KalinkaConstants.kSpaceBetweenSections),
+        child: PreviewSectionCard(
+          dataSource: BrowseItemDataSource.browse(item),
+          rowsCount: 1,
+          onSeeAll: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CatalogBrowseItemView(
+                    dataSource: BrowseItemDataSource.browse(item),
+                    onTap: (item) {
+                      if (item.canBrowse) {
+                        _onTap(context, item);
+                      }
+                    }),
+              ),
+            );
+          },
+        ),
       ));
     }
 
@@ -198,121 +282,6 @@ class SourceModule extends ConsumerWidget {
           onPressed: onShowMoreClicked,
           icon: const Icon(Icons.arrow_forward),
           label: Text('Show more from ${source.name}'),
-        ),
-      ),
-    );
-  }
-}
-
-class HeroTile extends StatelessWidget {
-  final BrowseItem item;
-
-  const HeroTile({super.key, required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: GestureDetector(
-        onTap: () {
-          // TODO: Handle hero tile tap
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Tapped ${item.name}')),
-          );
-        },
-        child: Container(
-          height: 200,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.grey[200],
-          ),
-          child: Stack(
-            children: [
-              // Background image
-              if (item.image?.large != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    item.image!.large!,
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        _buildFallbackImage(),
-                  ),
-                )
-              else
-                _buildFallbackImage(),
-
-              // Gradient overlay
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.7),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Title overlay
-              Positioned(
-                bottom: 16,
-                left: 16,
-                right: 16,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.name ?? 'Unknown',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (item.catalog?.description != null)
-                      Text(
-                        item.catalog!.description!,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFallbackImage() {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        gradient: LinearGradient(
-          colors: [Colors.blue[300]!, Colors.blue[600]!],
-        ),
-      ),
-      child: Center(
-        child: Text(
-          item.name?.substring(0, 2).toUpperCase() ?? '??',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-          ),
         ),
       ),
     );

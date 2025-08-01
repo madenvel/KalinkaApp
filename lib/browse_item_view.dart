@@ -2,8 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart'
     show CachedNetworkImage;
 import 'package:flutter/material.dart';
 import 'package:kalinka/action_button.dart' show ActionButton;
-import 'package:kalinka/add_to_playlist.dart';
 import 'package:kalinka/bottom_menu.dart' show BottomMenu;
+import 'package:kalinka/browse_item_actions.dart' show BrowseItemActions;
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
 import 'package:kalinka/browse_item_data_source.dart'
@@ -12,12 +12,10 @@ import 'package:kalinka/constants.dart';
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
 import 'package:kalinka/favorite_button.dart';
-import 'package:kalinka/kalinkaplayer_proxy.dart' show KalinkaPlayerProxy;
 import 'package:kalinka/polka_dot_painter.dart';
 import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
 import 'package:kalinka/browse_item_list.dart';
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
-import 'package:kalinka/shimmer_widget.dart';
 import 'package:provider/provider.dart';
 import 'data_model.dart';
 
@@ -199,7 +197,7 @@ class _BrowseItemViewState extends State<BrowseItemView> {
         ),
       );
     } else if (item.canAdd) {
-      _replaceAndPlay(context, index);
+      BrowseItemActions.addToPlaylistAction(context, item);
     }
   }
 
@@ -471,15 +469,18 @@ class _BrowseItemViewState extends State<BrowseItemView> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              onPressed: () => _replaceAndPlay(context, 0),
+              onPressed: () => BrowseItemActions.replaceAndPlay(
+                  context, widget.browseItem, 0),
               style: FilledButton.styleFrom(
                 backgroundColor: colorScheme.secondary,
                 foregroundColor: colorScheme.surface,
                 fixedSize:
                     const Size(double.infinity, KalinkaConstants.kButtonSize),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8.0,
+                padding: const EdgeInsets.only(
+                  left: 16.0,
+                  right: 24.0,
+                  top: 8.0,
+                  bottom: 8.0,
                 ),
               ),
             ),
@@ -487,13 +488,15 @@ class _BrowseItemViewState extends State<BrowseItemView> {
           if (!isArtist)
             ActionButton(
                 icon: Icons.queue_music,
-                onPressed: () => _addToQueueAction(context),
+                onPressed: () => BrowseItemActions.addToQueueAction(
+                    context, widget.browseItem),
                 tooltip: 'Add to queue'),
           if (!isArtist) const SizedBox(width: 12),
           if (!isArtist)
             ActionButton(
                 icon: Icons.playlist_add,
-                onPressed: () => _addToPlaylistAction(context),
+                onPressed: () => BrowseItemActions.addToPlaylistAction(
+                    context, widget.browseItem),
                 tooltip: 'Add to playlist'),
           if (isTrack || isPlaylist || isAlbum) const Spacer(),
           if (isArtist || isTrack || isPlaylist || isAlbum)
@@ -537,80 +540,6 @@ class _BrowseItemViewState extends State<BrowseItemView> {
             item ?? widget.browseItem, // Use specific item or the main one
       ),
     );
-  }
-
-  void _addToPlaylistAction(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (context) => AddToPlaylist(
-          items: BrowseItemsList(0, 1, 1, [widget.browseItem]),
-        ),
-      ),
-    );
-  }
-
-  void _addToQueueAction(BuildContext context) {
-    _addToQueue(widget.browseItem.id).then((_) {
-      // Optional: Show confirmation dialog only on success
-      if (context.mounted) {
-        // Check if the widget is still in the tree
-        showDialog(
-          context: context,
-          builder: (BuildContext dialogContext) {
-            return AlertDialog(
-              title: const Text('Added to Queue'),
-              content: Text(
-                  '${widget.browseItem.name ?? "Items"} added successfully.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('OK'),
-                ),
-              ],
-            );
-          },
-        );
-      }
-    }).catchError((error) {
-      // Optional: Show error message
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to add to queue: $error')),
-        );
-      }
-    });
-  }
-
-  Future<void> _replaceAndPlay(BuildContext context, int index) async {
-    // No need to read provider here if only using widget.browseItem.url
-    // final provider = context.read<BrowseItemDataProvider>();
-    final id = widget.browseItem.id;
-    // Reading TrackListProvider only if comparison logic is kept
-    // List<Track> currentTrackList = context.read<TrackListProvider>().trackList;
-
-    // Simplified: Assume we always want to replace and play this item/list
-    // The comparison logic was complex and potentially slow.
-    // If precise comparison is needed, it might require a different approach
-    // or optimization within the KalinkaPlayerProxy or data source.
-
-    try {
-      await KalinkaPlayerProxy().clear();
-      await KalinkaPlayerProxy().add([id]);
-      await KalinkaPlayerProxy().play(index);
-    } catch (e) {
-      // Handle potential errors from the player proxy
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error playing item: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _addToQueue(String id) async {
-    // Error handling can be added here or rely on the caller (_addToQueueAction)
-    await KalinkaPlayerProxy().add([id]);
   }
 }
 

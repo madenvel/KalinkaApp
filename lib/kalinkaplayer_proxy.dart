@@ -163,11 +163,11 @@ class KalinkaPlayerProxy {
     return Future.value(BrowseItemsList(0, 0, 0, []));
   }
 
-  Future<BrowseItem> getMetadata(String query) async {
-    final url = _buildUri('/get$query');
+  Future<BrowseItem> getMetadata(String id) async {
+    final url = _buildUri('/get/$id');
     return client.get(url).then((response) {
       if (response.statusCode != 200) {
-        throw Exception('Failed to get metadata for $query, url=$url');
+        throw Exception('Failed to get metadata for $id, url=$url');
       }
 
       return BrowseItem.fromJson(jsonDecode(utf8.decode(response.bodyBytes)));

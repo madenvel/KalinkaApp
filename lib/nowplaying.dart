@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:kalinka/action_button.dart' show ActionButton;
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
-import 'package:kalinka/shimmer_widget.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/favorite_button.dart';
@@ -372,7 +371,7 @@ class _NowPlayingState extends State<NowPlaying> {
       IconButton.filled(
         icon: Icon(playIcon,
             size: _NowPlayingConstants.playIconSize,
-            color: Theme.of(context).colorScheme.surface),
+            color: colorScheme.surface),
         onPressed: () => _handlePlayPause(state),
         style: IconButton.styleFrom(
           backgroundColor: colorScheme.secondary,
@@ -467,7 +466,7 @@ class _NowPlayingState extends State<NowPlaying> {
         imageUrl:
             context.read<ConnectionSettingsProvider>().resolveUrl(imageUrl),
         fit: BoxFit.contain,
-        placeholder: (_, __) => _buildAlbumPlaceholder(),
+        placeholder: (_, __) => _buildAlbumShimmeringPlaceholder(),
         errorWidget: (_, __, ___) => _buildAlbumPlaceholder(),
       ),
     );
