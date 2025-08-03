@@ -31,7 +31,6 @@ const double _kFontSizeSubtitle = 17.0;
 const double _kFontSizeBody = 14.0;
 const double _kAppBarTitleScrollOffsetBuffer = 100.0; // Buffer after image
 const double _kBorderRadius = 12.0;
-const Duration _kZeroDuration = Duration.zero;
 
 class BrowseItemView extends StatefulWidget {
   final BrowseItem browseItem;
@@ -205,8 +204,6 @@ class _BrowseItemViewState extends State<BrowseItemView> {
                 imageUrl: context
                     .read<ConnectionSettingsProvider>()
                     .resolveUrl(albumImage!),
-                fadeInDuration: _kZeroDuration,
-                fadeOutDuration: _kZeroDuration,
                 cacheManager: KalinkaMusicCacheManager.instance,
                 placeholder: (_, __) => _buildHeaderPlaceholder(context),
                 errorWidget: (_, __, ___) => _buildHeaderView(context, null),
@@ -344,21 +341,27 @@ class _BrowseItemViewState extends State<BrowseItemView> {
 
   Widget _buildImageCover(BuildContext context, ImageProvider imageProvider) {
     final isArtist = widget.browseItem.artist != null;
-    return ClipRRect(
-      borderRadius: isArtist
-          ? BorderRadius.circular(
-              _kCircleAvatarRadius) // Use constant for circle
-          : BorderRadius.circular(_kBorderRadius),
-      child: Container(
-        key: _albumCoverKey, // Assign key here
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width -
-              (KalinkaConstants.kScreenContentHorizontalPadding * 2),
-          maxHeight: _kImageSize,
-        ),
-        child:
-            Image(image: imageProvider, fit: BoxFit.cover), // Use BoxFit.cover
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.sizeOf(context).width -
+            (KalinkaConstants.kScreenContentHorizontalPadding * 2),
+        maxHeight: _kImageSize,
       ),
+      child: isArtist
+          ? CircleAvatar(
+              key: _albumCoverKey,
+              radius: _kCircleAvatarRadius,
+              backgroundImage: imageProvider,
+              backgroundColor: Colors.transparent,
+            )
+          : ClipRRect(
+              key: _albumCoverKey,
+              borderRadius: BorderRadius.circular(_kBorderRadius),
+              child: Image(
+                image: imageProvider,
+                fit: BoxFit.cover,
+              ),
+            ),
     );
   }
 
