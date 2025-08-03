@@ -100,6 +100,11 @@ class DiscoverSource extends StatelessWidget {
   }
 
   Widget _buildSection(BuildContext context, BrowseItem? section) {
+    // Do not show carousel on the input discovery screen
+    if (section?.catalog?.previewConfig?.type == PreviewType.carousel) {
+      return SizedBox.shrink();
+    }
+
     return PreviewSectionCard(
         dataSource:
             section != null ? BrowseItemDataSource.browse(section) : null);

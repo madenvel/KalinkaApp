@@ -93,7 +93,6 @@ class _SwipableTabsState extends State<SwipableTabs>
                                 id: track.id,
                                 name: track.title,
                                 subname: track.performer?.name,
-                                url: '/track/${track.id}',
                                 canAdd: true,
                                 canBrowse: false,
                                 track: track)
@@ -188,7 +187,6 @@ class _SwipableTabsState extends State<SwipableTabs>
                               id: track.id,
                               name: track.title,
                               subname: track.performer?.name,
-                              url: '/track/${track.id}',
                               canAdd: true,
                               canBrowse: false,
                               track: track,

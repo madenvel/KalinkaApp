@@ -81,7 +81,7 @@ class AddToPlaylistState extends State<AddToPlaylist> {
     int offset = 100;
     while (offset < initialResults.total) {
       var chunk = await KalinkaPlayerProxy()
-          .browse(item.url, offset: offset, limit: 100);
+          .browse(item.id, offset: offset, limit: 100);
 
       tracks.addAll(
           chunk.items.where((e) => e.track != null).map((e) => e.track!));

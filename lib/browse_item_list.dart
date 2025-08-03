@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart'
     show CachedNetworkImage;
 import 'package:flutter/material.dart';
 import 'package:kalinka/browse_item_data_provider.dart';
+import 'package:kalinka/constants.dart' show KalinkaConstants;
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/soundwave.dart';
@@ -16,24 +17,30 @@ class BrowseItemList extends StatefulWidget {
   final BrowseItemDataProvider provider;
   final Function(BuildContext, int, BrowseItem) onTap;
   final Function(BuildContext, int, BrowseItem) onAction;
+  final EdgeInsets padding;
   final Icon actionButtonIcon;
   final String actionButtonTooltip;
   final bool shrinkWrap;
   final int pageSize;
   final int? size;
   final bool showSourceAttribution;
+  final bool showHeader;
+  final bool showImage;
 
   const BrowseItemList({
     super.key,
     required this.provider,
     required this.onTap,
     required this.onAction,
+    this.padding = const EdgeInsets.all(0),
+    this.showHeader = false,
     this.pageSize = 15,
     this.size,
     this.shrinkWrap = true,
     this.actionButtonIcon = const Icon(Icons.more_horiz),
     this.actionButtonTooltip = "More options",
     this.showSourceAttribution = false,
+    this.showImage = true,
   });
 
   @override
@@ -43,6 +50,7 @@ class BrowseItemList extends StatefulWidget {
 class _BrowseItemListState extends State<BrowseItemList> {
   int _visibleTrackCount = 5;
   static const double leadingIconSize = 40.0;
+  static const double _kFontSizeSectionHeader = 18.0;
 
   void _showMoreTracks() {
     setState(() {
@@ -52,6 +60,30 @@ class _BrowseItemListState extends State<BrowseItemList> {
 
   @override
   Widget build(BuildContext context) {
+    final hasNoItems = widget.provider.totalItemCount == 0;
+    if (hasNoItems) {
+      return const SizedBox.shrink();
+    }
+
+    if (widget.showHeader) {
+      return Padding(
+          padding: widget.padding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionHeader(context),
+              buildList(context),
+            ],
+          ));
+    }
+
+    return Padding(
+      padding: widget.padding,
+      child: buildList(context),
+    );
+  }
+
+  Widget buildList(BuildContext context) {
     final provider = widget.provider;
 
     // Create the ListView that will be used in both layouts
@@ -97,6 +129,24 @@ class _BrowseItemListState extends State<BrowseItemList> {
     );
   }
 
+  Widget _buildSectionHeader(BuildContext context) {
+    final browseItem = widget.provider.itemDataSource.item;
+
+    return Padding(
+      padding: const EdgeInsets.only(
+          bottom: KalinkaConstants.kContentVerticalPadding,
+          left: KalinkaConstants.kScreenContentHorizontalPadding,
+          right: KalinkaConstants.kScreenContentHorizontalPadding),
+      child: Text(
+        browseItem.name ?? 'Unknown Section',
+        style: const TextStyle(
+          fontSize: _kFontSizeSectionHeader,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
   int _getItemCount(BrowseItemDataProvider provider) {
     final size = widget.size != null
         ? min(widget.size!, provider.maybeItemCount)
@@ -116,7 +166,7 @@ class _BrowseItemListState extends State<BrowseItemList> {
   }
 
   Widget _buildTrackListItem(BuildContext context, BrowseItem item, int index) {
-    if (widget.provider.itemDataSource.item.album != null) {
+    if (!widget.showImage) {
       return _buildTrackListItemTile(
           context, item, index, _createListLeadingText(context, index));
     } else {

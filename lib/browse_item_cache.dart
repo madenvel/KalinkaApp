@@ -89,15 +89,15 @@ class BrowseItemCache {
 
   factory BrowseItemCache() => _instance;
 
-  // URL to browse items list
+  // ID to browse items list
   final Map<String, BrowseItemCacheEntry> _browseItemsCache = {};
 
-  BrowseItemCacheEntry getEntry(String url) {
-    final entry = _browseItemsCache[url];
+  BrowseItemCacheEntry getEntry(String id) {
+    final entry = _browseItemsCache[id];
     if (entry?.isExpired ?? true) {
-      _browseItemsCache.remove(url);
+      _browseItemsCache.remove(id);
       final newEntry = BrowseItemCacheEntry();
-      _browseItemsCache[url] = newEntry;
+      _browseItemsCache[id] = newEntry;
       return newEntry;
     }
     return entry!;

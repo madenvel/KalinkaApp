@@ -23,7 +23,7 @@ class HomeScreen extends StatelessWidget {
   BrowseItemDataProvider _createProvider() {
     return BrowseItemDataProvider.fromDataSource(
       dataSource: DefaultBrowseItemDataSource(
-          BrowseItem(id: '', url: '/catalog', canBrowse: true, canAdd: false)),
+          BrowseItem(id: '', canBrowse: true, canAdd: false)),
       itemsPerRequest: 10,
     );
   }
