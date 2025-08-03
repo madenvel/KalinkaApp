@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:kalinka/category_card.dart' show CategoryCard;
 import 'package:kalinka/constants.dart';
+import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_model.dart'
     show
         BrowseItem,
@@ -116,6 +117,7 @@ class BrowseItemCard extends StatelessWidget {
                 showSourceAttribution ? SourceAttribution(id: item!.id) : null,
           );
         },
+        cacheManager: KalinkaMusicCacheManager.instance,
         placeholder: (context, url) => _buildPlaceholderCard(context),
         errorWidget: (context, url, error) => _buildIconCard(context));
   }
