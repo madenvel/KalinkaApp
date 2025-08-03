@@ -16,6 +16,7 @@ import 'package:provider/provider.dart'
 
 class PreviewSectionCard extends StatelessWidget {
   final BrowseItemDataSource? dataSource;
+  final EdgeInsets padding;
   final int? rowsCount;
   final bool seeAll;
   final VoidCallback? onSeeAll;
@@ -26,6 +27,7 @@ class PreviewSectionCard extends StatelessWidget {
       {super.key,
       this.dataSource,
       this.rowsCount,
+      this.padding = const EdgeInsets.all(0),
       this.seeAll = true,
       this.onSeeAll,
       this.onItemSelected,
@@ -54,7 +56,10 @@ class PreviewSectionCard extends StatelessWidget {
         section?.image?.thumbnail;
     final hasImage = image != null && image.isNotEmpty;
     if (section == null) {
-      return _buildSectionPlaceholder(context, const SectionPreviewGrid());
+      return Padding(
+        padding: padding,
+        child: _buildSectionPlaceholder(context, const SectionPreviewGrid()),
+      );
     }
 
     return _buildWithBrowseDataProvider(
@@ -65,26 +70,30 @@ class PreviewSectionCard extends StatelessWidget {
           if (hasNoItems) {
             return const SizedBox.shrink();
           }
-          return _buildSectionPreview(
-            context,
-            section,
-            hasImage
-                ? LargeImagePreviewCard(section: section)
-                : (hasNoItems
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: KalinkaConstants
-                                .kScreenContentHorizontalPadding,
-                            vertical: KalinkaConstants.kContentVerticalPadding),
-                        child: const Text('No items found'),
-                      )
-                    : SectionPreviewGrid(
-                        dataProvider: dataProvider,
-                        rowsCount: rowsCount,
-                        onTap: (item) => _onTap(context, item),
-                        showSourceAttribution: showSourceAttribution,
-                      )),
-            seeAll: !hasImage && !hasNoItems && seeAll,
+          return Padding(
+            padding: padding,
+            child: _buildSectionPreview(
+              context,
+              section,
+              hasImage
+                  ? LargeImagePreviewCard(section: section)
+                  : (hasNoItems
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: KalinkaConstants
+                                  .kScreenContentHorizontalPadding,
+                              vertical:
+                                  KalinkaConstants.kContentVerticalPadding),
+                          child: const Text('No items found'),
+                        )
+                      : SectionPreviewGrid(
+                          dataProvider: dataProvider,
+                          rowsCount: rowsCount,
+                          onTap: (item) => _onTap(context, item),
+                          showSourceAttribution: showSourceAttribution,
+                        )),
+              seeAll: !hasImage && !hasNoItems && seeAll,
+            ),
           );
         },
       ),

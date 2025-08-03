@@ -358,7 +358,7 @@ class Playlist {
       };
 }
 
-enum PreviewType { imageText, textOnly, carousel, none }
+enum PreviewType { imageText, textOnly, carousel, tile, none }
 
 extension PreviewTypeExtension on PreviewType {
   String toValue() {
@@ -369,6 +369,8 @@ extension PreviewTypeExtension on PreviewType {
         return 'text';
       case PreviewType.carousel:
         return 'carousel';
+      case PreviewType.tile:
+        return 'tile';
       case PreviewType.none:
         return 'none';
     }
@@ -382,6 +384,8 @@ extension PreviewTypeExtension on PreviewType {
         return PreviewType.textOnly;
       case 'carousel':
         return PreviewType.carousel;
+      case 'tile':
+        return PreviewType.tile;
       case 'none':
         return PreviewType.none;
       default:
@@ -668,7 +672,6 @@ class BrowseItem {
   final String id;
   final String? name;
   final String? subname;
-  final String url;
   final bool canBrowse;
   final bool canAdd;
 
@@ -677,13 +680,12 @@ class BrowseItem {
   final Artist? artist;
   final Playlist? playlist;
   final Catalog? catalog;
-  final List<BrowseItem>? extraSections;
+  final List<BrowseItem>? sections;
 
   BrowseItem(
       {required this.id,
       this.name,
       this.subname,
-      required this.url,
       required this.canBrowse,
       required this.canAdd,
       this.track,
@@ -691,13 +693,12 @@ class BrowseItem {
       this.artist,
       this.playlist,
       this.catalog,
-      this.extraSections});
+      this.sections});
 
   BrowseItem copyWith({
     String? id,
     String? name,
     String? subname,
-    String? url,
     bool? canBrowse,
     bool? canAdd,
     Track? track,
@@ -705,13 +706,12 @@ class BrowseItem {
     Artist? artist,
     Playlist? playlist,
     Catalog? catalog,
-    List<BrowseItem>? extraSections,
+    List<BrowseItem>? sections,
   }) {
     return BrowseItem(
       id: id ?? this.id,
       name: name ?? this.name,
       subname: subname ?? this.subname,
-      url: url ?? this.url,
       canBrowse: canBrowse ?? this.canBrowse,
       canAdd: canAdd ?? this.canAdd,
       track: track ?? this.track,
@@ -719,7 +719,7 @@ class BrowseItem {
       artist: artist ?? this.artist,
       playlist: playlist ?? this.playlist,
       catalog: catalog ?? this.catalog,
-      extraSections: extraSections ?? this.extraSections,
+      sections: sections ?? this.sections,
     );
   }
 
@@ -788,7 +788,6 @@ class BrowseItem {
         id: json["id"],
         name: json["name"],
         subname: json["subname"],
-        url: json["url"],
         canBrowse: json["can_browse"],
         canAdd: json["can_add"],
         track: json["track"] == null ? null : Track.fromJson(json["track"]),
@@ -799,17 +798,16 @@ class BrowseItem {
             : Playlist.fromJson(json["playlist"]),
         catalog:
             json["catalog"] == null ? null : Catalog.fromJson(json["catalog"]),
-        extraSections: json["extra_sections"] == null
+        sections: json["sections"] == null
             ? null
             : List<BrowseItem>.from(
-                json["extra_sections"].map((x) => BrowseItem.fromJson(x))),
+                json["sections"].map((x) => BrowseItem.fromJson(x))),
       );
 
   Map<String, dynamic> toJson() => {
         "id": id,
         "name": name,
         "subname": subname,
-        "url": url,
         "can_browse": canBrowse,
         "can_add": canAdd,
         "track": track?.toJson(),
@@ -817,9 +815,9 @@ class BrowseItem {
         "artist": artist?.toJson(),
         "playlist": playlist?.toJson(),
         "catalog": catalog?.toJson(),
-        "extra_sections": extraSections == null
+        "sections": sections == null
             ? null
-            : List<dynamic>.from(extraSections!.map((x) => x.toJson())),
+            : List<dynamic>.from(sections!.map((x) => x.toJson())),
       };
 }
 

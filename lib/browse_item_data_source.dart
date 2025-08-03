@@ -54,7 +54,6 @@ class StaticItemsBrowseItemDataSource extends BrowseItemDataSource {
       name: title,
       subname: '',
       id: 'static_${title.toLowerCase().replaceAll(' ', '_')}',
-      url: '/static/${title.toLowerCase().replaceAll(' ', '_')}',
       canBrowse: true,
       canAdd: false,
       catalog: Catalog(
@@ -116,7 +115,6 @@ class EmptyBrowseItemDataSource extends BrowseItemDataSource {
         name: '',
         subname: '',
         id: '',
-        url: '',
         canBrowse: false,
         canAdd: false,
         catalog: null,
@@ -167,7 +165,6 @@ class SearchBrowseItemDataSource extends BrowseItemDataSource {
           '${searchType.name[0].toUpperCase()}${searchType.name.substring(1)}',
       subname: 'Results for $query',
       id: 'search_${searchType.name}_$query',
-      url: '/search/${searchType.name}/$query',
       canBrowse: true,
       canAdd: false,
       catalog: Catalog(
@@ -241,7 +238,6 @@ class UserFavoriteBrowseItemDataSource extends BrowseItemDataSource {
       name: title,
       subname: '',
       id: 'favorites_${searchType.name}_$filter',
-      url: '/favorites/list/${searchType.name}?filter=$filter',
       canBrowse: true,
       canAdd: false,
       catalog: Catalog(

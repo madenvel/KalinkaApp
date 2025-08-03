@@ -642,7 +642,6 @@ class UserPlaylistProvider with ChangeNotifier {
               id: playlist.id,
               name: playlist.name,
               subname: playlist.owner?.name,
-              url: "playlist/${playlist.id}",
               canBrowse: true,
               canAdd: true,
               playlist: playlist));

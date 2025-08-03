@@ -6,8 +6,7 @@ import 'package:kalinka/bottom_menu.dart' show BottomMenu;
 import 'package:kalinka/browse_item_actions.dart' show BrowseItemActions;
 import 'package:kalinka/browse_item_data_provider.dart'
     show BrowseItemDataProvider;
-import 'package:kalinka/browse_item_data_source.dart'
-    show BrowseItemDataSource, DefaultBrowseItemDataSource;
+import 'package:kalinka/browse_item_data_source.dart' show BrowseItemDataSource;
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
@@ -30,7 +29,6 @@ const double _kIconSizeMedium = 40.0;
 const double _kFontSizeTitle = 20.0;
 const double _kFontSizeSubtitle = 17.0;
 const double _kFontSizeBody = 14.0;
-const double _kFontSizeSectionHeader = 18.0;
 const double _kAppBarTitleScrollOffsetBuffer = 100.0; // Buffer after image
 const double _kBorderRadius = 12.0;
 const Duration _kZeroDuration = Duration.zero;
@@ -52,12 +50,6 @@ class _BrowseItemViewState extends State<BrowseItemView> {
   bool _showAppBarTitle = false;
   final GlobalKey _albumCoverKey =
       GlobalKey(); // Key for measuring image height
-
-  static const Map<BrowseType, String> _itemTypeToTextHint = {
-    BrowseType.artist: 'Albums',
-    BrowseType.album: 'Tracks',
-    BrowseType.playlist: 'Tracks',
-  };
 
   @override
   void initState() {
@@ -102,16 +94,11 @@ class _BrowseItemViewState extends State<BrowseItemView> {
     final name = browseItem.name ?? '';
     final parentContext = context; // Keep parent context for modal bottom sheet
 
-    return ChangeNotifierProvider<BrowseItemDataProvider>(
-      create: (_) => BrowseItemDataProvider.fromDataSource(
-        dataSource: DefaultBrowseItemDataSource(browseItem),
-      ),
-      builder: (context, _) => Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: _buildAppBar(context, name, parentContext),
-        extendBodyBehindAppBar: true,
-        body: _buildBody(context),
-      ),
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: _buildAppBar(context, name, parentContext),
+      extendBodyBehindAppBar: true,
+      body: _buildBody(context),
     );
   }
 
@@ -141,51 +128,39 @@ class _BrowseItemViewState extends State<BrowseItemView> {
         browseItem.image?.small ??
         browseItem.image?.thumbnail;
 
-    return SingleChildScrollView(
-      controller: _scrollController,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(context, albumImage),
-          ..._buildItemList(context),
-          ..._buildExtraSections(context),
-          const SizedBox(
-            height: KalinkaConstants.kContentVerticalPadding * 2,
+    final sections = widget.browseItem.sections;
+    if (sections == null || sections.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Text(
+            'No content available',
+            style: Theme.of(context).textTheme.bodyLarge,
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(BuildContext context) {
-    final browseItem = widget.browseItem;
-    return Padding(
-      padding: const EdgeInsets.only(
-          bottom: KalinkaConstants.kContentVerticalPadding,
-          left: KalinkaConstants.kScreenContentHorizontalPadding,
-          right: KalinkaConstants.kScreenContentHorizontalPadding),
-      child: Text(
-        _itemTypeToTextHint[browseItem.browseType] ?? 'Items',
-        style: const TextStyle(
-          fontSize: _kFontSizeSectionHeader,
-          fontWeight: FontWeight.bold,
         ),
+      );
+    }
+
+    return MediaQuery.removePadding(
+      context: context,
+      removeTop: true,
+      child: ListView.builder(
+        padding: EdgeInsets.zero,
+        itemCount: sections.length + 2,
+        controller: _scrollController,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return _buildHeader(context, albumImage);
+          } else if (index < sections.length + 1) {
+            return _buildSection(context, sections[index - 1]);
+          }
+
+          return const SizedBox(
+            height: KalinkaConstants.kContentVerticalPadding,
+          ); // Padding at the end
+        },
       ),
     );
-  }
-
-  List<Widget> _buildItemList(BuildContext context) {
-    final parentContext = context; // Needed for modal sheet context
-    return [
-      const SizedBox(height: _kVerticalPaddingLarge),
-      _buildSectionHeader(context),
-      BrowseItemList(
-        provider: context.watch<BrowseItemDataProvider>(),
-        onTap: _onListItemTapAction,
-        onAction: (_, __, BrowseItem item) =>
-            _showItemMenu(context, parentContext, item: item),
-      )
-    ];
   }
 
   void _onListItemTapAction(BuildContext context, int index, BrowseItem item) {
@@ -197,47 +172,51 @@ class _BrowseItemViewState extends State<BrowseItemView> {
         ),
       );
     } else if (item.canAdd) {
-      BrowseItemActions.addToPlaylistAction(context, item);
+      BrowseItemActions.replaceAndPlay(context, item, 0);
     }
   }
 
   // --- Header Building Logic ---
 
   Widget _buildHeader(BuildContext context, String? albumImage) {
-    return SizedBox(
-      width: double.infinity,
-      child: Stack(
-        alignment: Alignment.topCenter, // Center content within the stack
-        children: [
-          // Background Polka Dots
-          Positioned.fill(
-            child: CustomPaint(
-              size: Size.infinite,
-              painter: PolkaDotPainter(
-                dotSize: 15,
-                spacing: 2.0,
-                dotColor: Theme.of(context).colorScheme.primary,
-                sizeReductionFactor: 0.0,
+    return Padding(
+      padding:
+          const EdgeInsets.only(bottom: KalinkaConstants.kSpaceBetweenSections),
+      child: SizedBox(
+        width: double.infinity,
+        child: Stack(
+          alignment: Alignment.topCenter, // Center content within the stack
+          children: [
+            // Background Polka Dots
+            Positioned.fill(
+              child: CustomPaint(
+                size: Size.infinite,
+                painter: PolkaDotPainter(
+                  dotSize: 15,
+                  spacing: 2.0,
+                  dotColor: Theme.of(context).colorScheme.primary,
+                  sizeReductionFactor: 0.0,
+                ),
               ),
             ),
-          ),
-          // Foreground Content (Image, Info, Buttons)
-          if (albumImage?.isNotEmpty ?? false)
-            CachedNetworkImage(
-              imageUrl: context
-                  .read<ConnectionSettingsProvider>()
-                  .resolveUrl(albumImage!),
-              fadeInDuration: _kZeroDuration,
-              fadeOutDuration: _kZeroDuration,
-              cacheManager: KalinkaMusicCacheManager.instance,
-              placeholder: (_, __) => _buildHeaderPlaceholder(context),
-              errorWidget: (_, __, ___) => _buildHeaderView(context, null),
-              imageBuilder: (_, imageProvider) =>
-                  _buildHeaderView(context, imageProvider),
-            )
-          else
-            _buildHeaderView(context, null),
-        ],
+            // Foreground Content (Image, Info, Buttons)
+            if (albumImage?.isNotEmpty ?? false)
+              CachedNetworkImage(
+                imageUrl: context
+                    .read<ConnectionSettingsProvider>()
+                    .resolveUrl(albumImage!),
+                fadeInDuration: _kZeroDuration,
+                fadeOutDuration: _kZeroDuration,
+                cacheManager: KalinkaMusicCacheManager.instance,
+                placeholder: (_, __) => _buildHeaderPlaceholder(context),
+                errorWidget: (_, __, ___) => _buildHeaderView(context, null),
+                imageBuilder: (_, imageProvider) =>
+                    _buildHeaderView(context, imageProvider),
+              )
+            else
+              _buildHeaderView(context, null),
+          ],
+        ),
       ),
     );
   }
@@ -318,9 +297,8 @@ class _BrowseItemViewState extends State<BrowseItemView> {
                 decoration: BoxDecoration(
                   color: baseColor,
                   shape: isArtist ? BoxShape.circle : BoxShape.rectangle,
-                  borderRadius: isArtist
-                      ? BorderRadius.circular(_kCircleAvatarRadius)
-                      : BorderRadius.circular(_kBorderRadius),
+                  borderRadius:
+                      !isArtist ? BorderRadius.circular(_kBorderRadius) : null,
                 ),
               ),
               Padding(
@@ -508,19 +486,40 @@ class _BrowseItemViewState extends State<BrowseItemView> {
     );
   }
 
-  // --- Extra Sections ---
+  // --- Sections ---
 
-  List<Widget> _buildExtraSections(BuildContext context) {
-    return widget.browseItem.extraSections
-            ?.map((section) => Padding(
+  Widget _buildSection(BuildContext context, BrowseItem section) {
+    if (section.browseType != BrowseType.catalog) {
+      return SizedBox.shrink(); // Skip non-catalog sections
+    }
+
+    switch (section.catalog?.previewConfig?.type) {
+      case PreviewType.imageText:
+      case PreviewType.textOnly:
+        return PreviewSectionCard(
+          padding: const EdgeInsets.only(
+              bottom: KalinkaConstants.kSpaceBetweenSections),
+          dataSource: BrowseItemDataSource.browse(section),
+        );
+      case PreviewType.tile:
+        final parentContext = context;
+        return ChangeNotifierProvider<BrowseItemDataProvider>(
+            create: (_) => BrowseItemDataProvider.fromDataSource(
+                  dataSource: BrowseItemDataSource.browse(section),
+                ),
+            builder: (context, _) => BrowseItemList(
                   padding: const EdgeInsets.only(
-                      top: KalinkaConstants.kSpaceBetweenSections),
-                  child: PreviewSectionCard(
-                    dataSource: BrowseItemDataSource.browse(section),
-                  ),
-                ))
-            .toList() ??
-        []; // Return empty list if null
+                      bottom: KalinkaConstants.kSpaceBetweenSections),
+                  showHeader: true,
+                  showImage: widget.browseItem.browseType != BrowseType.album,
+                  provider: context.watch<BrowseItemDataProvider>(),
+                  onTap: _onListItemTapAction,
+                  onAction: (_, __, BrowseItem item) =>
+                      _showItemMenu(context, parentContext, item: item),
+                ));
+      default:
+        return SizedBox.shrink(); // Skip unsupported types
+    }
   }
 
   // --- Actions ---
