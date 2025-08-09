@@ -187,10 +187,17 @@ class DynamicSettingsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var setting = ref.watch(settingsProvider).getCurrentValue(path);
+    final setting = ref.watch(settingsProvider).getCurrentValue(path);
 
-    assert(setting != null,
-        'Settings for path "$path" not found. Please check your settings configuration.');
+    if (setting == null) {
+      return Padding(
+        padding: EdgeInsets.symmetric(
+            horizontal: KalinkaConstants.kContentHorizontalPadding,
+            vertical: KalinkaConstants.kContentVerticalPadding),
+        child: Text(
+            'Settings for path "$path" not found. Please check your settings configuration.'),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

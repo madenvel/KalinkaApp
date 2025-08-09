@@ -1,149 +1,156 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show ConsumerWidget, WidgetRef;
 import 'package:kalinka/data_model.dart' show Genre;
+import 'package:kalinka/genre_filter_provider.dart' show genreFilterProvider;
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
-import 'package:provider/provider.dart';
-import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/genre_selector.dart';
 import 'package:kalinka/constants.dart';
 
-class GenreFilterChips extends StatelessWidget {
+class GenreFilterChips extends ConsumerWidget {
   const GenreFilterChips({super.key});
 
   static const int maxGenresToShow = 2;
 
   @override
-  Widget build(BuildContext context) {
-    return Consumer<GenreFilterProvider>(builder: (context, provider, _) {
-      return FutureBuilder(
-          future: provider.isLoaded,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              final baseColor =
-                  Theme.of(context).colorScheme.surfaceContainerHigh;
-              final highlightColor =
-                  Theme.of(context).colorScheme.surfaceBright;
-              return Shimmer(
-                  baseColor: baseColor,
-                  highlightColor: highlightColor,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: KalinkaConstants.kContentVerticalPadding,
-                        horizontal:
-                            KalinkaConstants.kScreenContentHorizontalPadding),
-                    child: Container(
-                      width: double.infinity,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: baseColor,
-                        borderRadius: BorderRadius.circular(4.0),
-                      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(genreFilterProvider);
+    if (state.hasValue) {
+      return _buildChips(context, ref);
+    } else {
+      return _buildPlaceholderChips(context);
+    }
+  }
+
+  Widget _buildPlaceholderChips(BuildContext context) {
+    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
+    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
+    return Shimmer(
+        baseColor: baseColor,
+        highlightColor: highlightColor,
+        child: Padding(
+            padding: const EdgeInsets.symmetric(
+                vertical: KalinkaConstants.kContentVerticalPadding,
+                horizontal: KalinkaConstants.kScreenContentHorizontalPadding),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              spacing: KalinkaConstants.kFilterChipSpace,
+              children: [
+                ...List.generate(
+                  2,
+                  (index) => Container(
+                    width: 70,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: baseColor,
+                      borderRadius: BorderRadius.circular(4.0),
                     ),
-                  ));
-            }
-
-            return Align(
-              alignment: Alignment.centerLeft,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: KalinkaConstants.kContentVerticalPadding,
-                      horizontal:
-                          KalinkaConstants.kScreenContentHorizontalPadding),
-                  child: Row(
-                    spacing: KalinkaConstants.kFilterChipSpace,
-                    children: [
-                      // Filter button chip
-                      ActionChip(
-                        avatar: const Icon(Icons.filter_list),
-                        label: const Text('Genres'),
-                        onPressed: provider.genres.isNotEmpty
-                            ? () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          const GenreSelector()),
-                                );
-                              }
-                            : null,
-                      ),
-
-                      // All genres chip
-                      ActionChip(
-                        avatar: const Icon(Icons.all_inclusive),
-                        label: const Text('All'),
-                        backgroundColor: provider.filter.isEmpty
-                            ? Theme.of(context).colorScheme.primaryContainer
-                            : null,
-                        onPressed: () {
-                          if (provider.filter.isNotEmpty) {
-                            provider.filter.clear();
-                            provider.commitFilterChange();
-                          }
-                        },
-                      ),
-
-                      // Selected genre chips
-                      ...provider.filter
-                          .take(maxGenresToShow -
-                              (provider.filter.length > maxGenresToShow
-                                  ? 1
-                                  : 0))
-                          .map((genreId) {
-                        final genre = provider.genres.firstWhere(
-                          (g) => g.id == genreId,
-                          orElse: () => Genre(id: genreId, name: genreId),
-                        );
-
-                        return Chip(
-                          label: Text(genre.name),
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primaryContainer,
-                          onDeleted: () {
-                            provider.filter.remove(genreId);
-                            provider.commitFilterChange();
-                          },
-                          deleteIcon: const Icon(Icons.close, size: 18),
-                        );
-                      }),
-
-                      // "Genre +N" chip if there are more than maxGenresToShow genres selected
-                      if (provider.filter.length > maxGenresToShow)
-                        ActionChip(
-                          label: Text(() {
-                            final genreId = provider.filter
-                                .take(maxGenresToShow + 1)
-                                .elementAt(maxGenresToShow);
-                            final genre = provider.genres.firstWhere(
-                              (g) => g.id == genreId,
-                              orElse: () => Genre(id: genreId, name: genreId),
-                            );
-                            return '${genre.name}  +${provider.filter.length - maxGenresToShow}';
-                          }(),
-                              style: Theme.of(context)
-                                  .chipTheme
-                                  .labelStyle
-                                  ?.copyWith(fontWeight: FontWeight.bold)),
-                          backgroundColor:
-                              Theme.of(context).colorScheme.secondaryContainer,
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const GenreSelector()),
-                            );
-                          },
-                        ),
-
-                      // Add padding at the end for better UX
-                      const SizedBox(width: 8),
-                    ],
                   ),
                 ),
+              ],
+            )));
+  }
+
+  Widget _buildChips(BuildContext context, WidgetRef ref) {
+    final selectedGenres = ref.watch(genreFilterProvider).value!.selectedGenres;
+    final genres = ref.watch(genreFilterProvider).value!.genres;
+    final notifier = ref.read(genreFilterProvider.notifier);
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              vertical: KalinkaConstants.kContentVerticalPadding,
+              horizontal: KalinkaConstants.kScreenContentHorizontalPadding),
+          child: Row(
+            spacing: KalinkaConstants.kFilterChipSpace,
+            children: [
+              // Filter button chip
+              ActionChip(
+                avatar: const Icon(Icons.filter_list),
+                label: const Text('Genres'),
+                onPressed: genres.isNotEmpty
+                    ? () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const GenreSelector()),
+                        );
+                      }
+                    : null,
               ),
-            );
-          });
-    });
+
+              // All genres chip
+              ActionChip(
+                avatar: const Icon(Icons.all_inclusive),
+                label: const Text('All'),
+                backgroundColor: selectedGenres.isEmpty
+                    ? Theme.of(context).colorScheme.primaryContainer
+                    : null,
+                onPressed: () {
+                  if (selectedGenres.isNotEmpty) {
+                    notifier.clearSelectedGenres();
+                  }
+                },
+              ),
+
+              // Selected genre chips
+              ...selectedGenres
+                  .take(maxGenresToShow -
+                      (selectedGenres.length > maxGenresToShow ? 1 : 0))
+                  .map((selectedGenre) {
+                final genre = genres.firstWhere(
+                  (g) => g.id == selectedGenre,
+                  orElse: () => Genre(id: selectedGenre, name: "Unknown"),
+                );
+
+                return Chip(
+                  label: Text(genre.name),
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primaryContainer,
+                  onDeleted: () {
+                    notifier.removeSelectedGenre(genre.id);
+                  },
+                  deleteIcon: const Icon(Icons.close, size: 18),
+                );
+              }),
+
+              // "Genre +N" chip if there are more than maxGenresToShow genres selected
+              if (selectedGenres.length > maxGenresToShow)
+                ActionChip(
+                  label: Text(() {
+                    final genreId = selectedGenres
+                        .take(maxGenresToShow + 1)
+                        .elementAt(maxGenresToShow);
+                    final genre = genres.firstWhere(
+                      (g) => g.id == genreId,
+                      orElse: () => Genre(id: genreId, name: "Unknown"),
+                    );
+                    return '${genre.name}  +${selectedGenres.length - maxGenresToShow}';
+                  }(),
+                      style: Theme.of(context)
+                          .chipTheme
+                          .labelStyle
+                          ?.copyWith(fontWeight: FontWeight.bold)),
+                  backgroundColor:
+                      Theme.of(context).colorScheme.secondaryContainer,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const GenreSelector()),
+                    );
+                  },
+                ),
+
+              // Add padding at the end for better UX
+              const SizedBox(width: 8),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

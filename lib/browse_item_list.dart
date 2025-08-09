@@ -3,8 +3,9 @@ import 'dart:math' show min;
 import 'package:cached_network_image/cached_network_image.dart'
     show CachedNetworkImage;
 import 'package:flutter/material.dart';
-import 'package:kalinka/browse_item_data_provider.dart';
-import 'package:kalinka/constants.dart' show KalinkaConstants;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kalinka/browse_item_data_provider_riverpod.dart'
+    show BrowseItemsSourceDesc, BrowseItemsState, browseItemsProvider;
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/soundwave.dart';
@@ -13,30 +14,30 @@ import 'package:provider/provider.dart';
 import 'data_model.dart';
 import 'shimmer_effect.dart' show Shimmer;
 
-class BrowseItemList extends StatefulWidget {
-  final BrowseItemDataProvider provider;
-  final Function(BuildContext, int, BrowseItem) onTap;
-  final Function(BuildContext, int, BrowseItem) onAction;
+const double leadingIconSize = 40.0;
+
+class BrowseItemList extends ConsumerStatefulWidget {
+  final BrowseItemsSourceDesc sourceDesc;
+  final Function(BuildContext, int, BrowseItem)? onTap;
+  final Function(BuildContext, int, BrowseItem)? onAction;
   final EdgeInsets padding;
   final Icon actionButtonIcon;
   final String actionButtonTooltip;
   final bool shrinkWrap;
   final int pageSize;
-  final int? size;
   final bool showSourceAttribution;
   final bool showHeader;
   final bool showImage;
 
   const BrowseItemList({
     super.key,
-    required this.provider,
-    required this.onTap,
-    required this.onAction,
+    required this.sourceDesc,
+    this.onTap,
+    this.onAction,
     this.padding = const EdgeInsets.all(0),
     this.showHeader = false,
     this.pageSize = 15,
-    this.size,
-    this.shrinkWrap = true,
+    this.shrinkWrap = false,
     this.actionButtonIcon = const Icon(Icons.more_horiz),
     this.actionButtonTooltip = "More options",
     this.showSourceAttribution = false,
@@ -44,37 +45,45 @@ class BrowseItemList extends StatefulWidget {
   });
 
   @override
-  State<BrowseItemList> createState() => _BrowseItemListState();
+  ConsumerState<BrowseItemList> createState() => _BrowseItemListState();
 }
 
-class _BrowseItemListState extends State<BrowseItemList> {
+class _BrowseItemListState extends ConsumerState<BrowseItemList> {
   int _visibleTrackCount = 5;
-  static const double leadingIconSize = 40.0;
-  static const double _kFontSizeSectionHeader = 18.0;
+  int? maxTotalCount;
 
   void _showMoreTracks() {
+    final maxCount =
+        widget.sourceDesc.sourceItem.catalog?.previewConfig?.itemsCount;
     setState(() {
       _visibleTrackCount += widget.pageSize;
+      if (maxCount != null && _visibleTrackCount > maxCount) {
+        _visibleTrackCount = maxCount;
+      }
     });
   }
 
   @override
+  void initState() {
+    super.initState();
+    maxTotalCount =
+        widget.sourceDesc.sourceItem.catalog?.previewConfig?.itemsCount;
+    if (maxTotalCount != null) {
+      _visibleTrackCount = min(_visibleTrackCount, maxTotalCount!);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final hasNoItems = widget.provider.totalItemCount == 0;
-    if (hasNoItems) {
-      return const SizedBox.shrink();
+    final state = ref.watch(browseItemsProvider(widget.sourceDesc)).value;
+    if (state == null) {
+      return const Center(child: CircularProgressIndicator());
     }
 
-    if (widget.showHeader) {
-      return Padding(
-          padding: widget.padding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSectionHeader(context),
-              buildList(context),
-            ],
-          ));
+    final hasNoItems = state.totalCount == 0;
+
+    if (hasNoItems) {
+      return const SizedBox.shrink();
     }
 
     return Padding(
@@ -84,9 +93,14 @@ class _BrowseItemListState extends State<BrowseItemList> {
   }
 
   Widget buildList(BuildContext context) {
-    final provider = widget.provider;
+    final provider = browseItemsProvider(widget.sourceDesc);
+    final state = ref.watch(provider).value;
+    final notifier = ref.read(provider.notifier);
 
-    // Create the ListView that will be used in both layouts
+    if (state == null) {
+      return SizedBox.shrink();
+    }
+
     final listView = ListView.separated(
       shrinkWrap: widget.shrinkWrap,
       physics: widget.shrinkWrap
@@ -94,11 +108,14 @@ class _BrowseItemListState extends State<BrowseItemList> {
           : const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
       separatorBuilder: (context, index) => const Divider(height: 1),
-      itemCount: _getItemCount(provider),
+      itemCount: _getItemCount(state),
       itemBuilder: (context, index) {
-        final itemResult = provider.getItem(index);
-        return itemResult.item != null
-            ? _buildTrackListItem(context, itemResult.item!, index)
+        final item = state.getItem(index);
+        if (item == null) {
+          Future.microtask(() => notifier.ensureIndexLoaded(index));
+        }
+        return item != null
+            ? _buildTrackListItem(context, item, index)
             : _buildLoadingListItem(context);
       },
     );
@@ -113,14 +130,14 @@ class _BrowseItemListState extends State<BrowseItemList> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         listView,
-        if (_shouldShowMoreButton(provider))
+        if (_shouldShowMoreButton(state))
           Padding(
             padding: const EdgeInsets.only(top: 8.0),
             child: Center(
               child: TextButton.icon(
                 icon: const Icon(Icons.expand_more),
                 label: Text(_getShowMoreButtonText(
-                    (widget.size ?? provider.totalItemCount))),
+                    (maxTotalCount ?? state.totalCount))),
                 onPressed: _showMoreTracks,
               ),
             ),
@@ -129,28 +146,10 @@ class _BrowseItemListState extends State<BrowseItemList> {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context) {
-    final browseItem = widget.provider.itemDataSource.item;
-
-    return Padding(
-      padding: const EdgeInsets.only(
-          bottom: KalinkaConstants.kContentVerticalPadding,
-          left: KalinkaConstants.kScreenContentHorizontalPadding,
-          right: KalinkaConstants.kScreenContentHorizontalPadding),
-      child: Text(
-        browseItem.name ?? 'Unknown Section',
-        style: const TextStyle(
-          fontSize: _kFontSizeSectionHeader,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  int _getItemCount(BrowseItemDataProvider provider) {
-    final size = widget.size != null
-        ? min(widget.size!, provider.maybeItemCount)
-        : provider.maybeItemCount;
+  int _getItemCount(BrowseItemsState state) {
+    final size = maxTotalCount != null
+        ? min(maxTotalCount!, state.totalCount)
+        : state.totalCount;
     // If pageSize is 0, use the data provider's maybeItemCount for infinite scrolling
     if (widget.pageSize <= 0) {
       return size;
@@ -159,10 +158,10 @@ class _BrowseItemListState extends State<BrowseItemList> {
     return _visibleTrackCount.clamp(0, size);
   }
 
-  bool _shouldShowMoreButton(BrowseItemDataProvider provider) {
+  bool _shouldShowMoreButton(BrowseItemsState state) {
     // Only show "more" button when using paged mode (pageSize > 0) and there are more items to show
     return widget.pageSize > 0 &&
-        _visibleTrackCount < (widget.size ?? provider.totalItemCount);
+        _visibleTrackCount < (maxTotalCount ?? state.totalCount);
   }
 
   Widget _buildTrackListItem(BuildContext context, BrowseItem item, int index) {
@@ -239,13 +238,13 @@ class _BrowseItemListState extends State<BrowseItemList> {
             ),
           IconButton(
             icon: widget.actionButtonIcon,
-            onPressed: () => widget.onAction(context, index, item),
+            onPressed: () => widget.onAction?.call(context, index, item),
             tooltip: widget.actionButtonTooltip,
           ),
         ],
       ),
       onTap: () {
-        widget.onTap(context, index, item);
+        widget.onTap?.call(context, index, item);
       },
       visualDensity: VisualDensity.standard,
     );
@@ -254,9 +253,9 @@ class _BrowseItemListState extends State<BrowseItemList> {
   Widget _buildLoadingListItem(BuildContext context) {
     final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
     final highlightColor = Theme.of(context).colorScheme.surfaceBright;
-    final isArtist = widget
-            .provider.itemDataSource.item.catalog?.previewConfig?.contentType ==
-        PreviewContentType.artist;
+    final isArtist =
+        widget.sourceDesc.sourceItem.catalog?.previewConfig?.contentType ==
+            PreviewContentType.artist;
 
     return Shimmer(
         baseColor: baseColor,
@@ -392,6 +391,104 @@ class _BrowseItemListState extends State<BrowseItemList> {
     } else {
       return 'Show all $totalTracks tracks';
     }
+  }
+}
+
+class BrowseItemListPlaceholder extends StatelessWidget {
+  final BrowseItem browseItem;
+  final bool showSourceAttribution;
+  final bool shrinkWrap;
+  final EdgeInsets padding;
+  final int itemCount; // Default item count for placeholder
+
+  const BrowseItemListPlaceholder(
+      {super.key,
+      required this.browseItem,
+      this.padding = EdgeInsets.zero,
+      this.showSourceAttribution = false,
+      this.shrinkWrap = false,
+      this.itemCount = 10});
+
+  @override
+  Widget build(BuildContext context) {
+    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
+    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
+    return Shimmer(
+        baseColor: baseColor,
+        highlightColor: highlightColor,
+        child: Padding(
+          padding: padding,
+          child: _buildListPlaceholder(context),
+        ));
+  }
+
+  Widget _buildListPlaceholder(BuildContext context) {
+    return ListView.separated(
+        shrinkWrap: shrinkWrap,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        separatorBuilder: (context, index) => const Divider(height: 1),
+        itemCount: itemCount,
+        itemBuilder: (context, _) => _buildLoadingListItem(context));
+  }
+
+  Widget _buildLoadingListItem(BuildContext context) {
+    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
+    final isArtist = browseItem.catalog?.previewConfig?.contentType ==
+        PreviewContentType.artist;
+
+    return ListTile(
+        leading: Container(
+          width: leadingIconSize,
+          height: leadingIconSize,
+          decoration: BoxDecoration(
+            color: baseColor,
+            borderRadius: isArtist ? null : BorderRadius.circular(4.0),
+            shape: isArtist ? BoxShape.circle : BoxShape.rectangle,
+          ),
+        ),
+        title: Container(
+          width: double.infinity,
+          height: 16,
+          decoration: BoxDecoration(
+            color: baseColor,
+            borderRadius: BorderRadius.circular(4.0),
+          ),
+        ),
+        subtitle: !isArtist
+            ? Container(
+                width: double.infinity,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: baseColor,
+                  borderRadius: BorderRadius.circular(4.0),
+                ),
+              )
+            : null,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showSourceAttribution) ...[
+              const SizedBox(width: 8),
+              SourceAttribution(),
+              const SizedBox(width: 8),
+            ],
+            if (!isArtist)
+              Container(
+                width: 60,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: baseColor,
+                  borderRadius: BorderRadius.circular(4.0),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: const Icon(Icons.more_horiz),
+            ),
+          ],
+        ),
+        visualDensity: VisualDensity.standard);
   }
 }
 

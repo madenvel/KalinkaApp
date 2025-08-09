@@ -1,0 +1,145 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kalinka/browse_item_data_provider_riverpod.dart';
+import 'package:kalinka/browse_item_list.dart'
+    show BrowseItemList, BrowseItemListPlaceholder;
+import 'package:kalinka/constants.dart' show KalinkaConstants;
+import 'package:kalinka/data_model.dart' show BrowseItem;
+import 'package:kalinka/shimmer_effect.dart' show Shimmer;
+
+class BrowseItemTilePreview extends ConsumerWidget {
+  final BrowseItemsSourceDesc sourceDesc;
+  final Function(BuildContext, int, BrowseItem)? onTap;
+  final Function(BuildContext, int, BrowseItem)? onAction;
+  final EdgeInsetsGeometry padding;
+  final Icon actionButtonIcon;
+  final String actionButtonTooltip;
+  final bool shrinkWrap;
+  final int pageSize;
+  final int? size;
+  final bool showSourceAttribution;
+  final bool showImage;
+
+  static const double _kFontSizeSectionHeader = 18.0;
+
+  const BrowseItemTilePreview({
+    super.key,
+    required this.sourceDesc,
+    this.onTap,
+    this.onAction,
+    this.padding = EdgeInsets.zero,
+    this.pageSize = 15,
+    this.size,
+    this.shrinkWrap = true,
+    this.actionButtonIcon = const Icon(Icons.more_horiz),
+    this.actionButtonTooltip = "More options",
+    this.showSourceAttribution = false,
+    this.showImage = true,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final browseItem = sourceDesc.sourceItem;
+    final state = ref.watch(browseItemsProvider(sourceDesc)).valueOrNull;
+
+    if (state == null) {
+      return BrowseItemTilePreviewPlaceholder(browseItem: browseItem);
+    }
+
+    if (state.totalCount == 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+        padding: padding,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader(context, browseItem),
+            BrowseItemList(
+              sourceDesc: sourceDesc,
+              onTap: onTap,
+              onAction: onAction,
+              shrinkWrap: shrinkWrap,
+              pageSize: pageSize,
+              showSourceAttribution: showSourceAttribution,
+              showImage: showImage,
+              actionButtonIcon: actionButtonIcon,
+              actionButtonTooltip: actionButtonTooltip,
+            ),
+          ],
+        ));
+  }
+
+  Widget _buildSectionHeader(BuildContext context, BrowseItem browseItem) {
+    return Padding(
+      padding: const EdgeInsets.only(
+          bottom: KalinkaConstants.kContentVerticalPadding,
+          left: KalinkaConstants.kScreenContentHorizontalPadding,
+          right: KalinkaConstants.kScreenContentHorizontalPadding),
+      child: Text(
+        browseItem.name ?? 'Unknown Section',
+        style: const TextStyle(
+          fontSize: _kFontSizeSectionHeader,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+
+class BrowseItemTilePreviewPlaceholder extends StatelessWidget {
+  final BrowseItem browseItem;
+  final EdgeInsets padding;
+  final bool showSourceAttribution;
+  final bool shrinkWrap;
+  final int itemCount;
+
+  const BrowseItemTilePreviewPlaceholder(
+      {super.key,
+      required this.browseItem,
+      this.padding = EdgeInsets.zero,
+      this.showSourceAttribution = false,
+      this.shrinkWrap = true,
+      this.itemCount = 10});
+
+  @override
+  Widget build(BuildContext context) {
+    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
+    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
+    return Shimmer(
+        baseColor: baseColor,
+        highlightColor: highlightColor,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeaderPlaceholder(context),
+            BrowseItemListPlaceholder(
+                browseItem: browseItem,
+                padding: padding,
+                showSourceAttribution: showSourceAttribution,
+                shrinkWrap: shrinkWrap,
+                itemCount:
+                    browseItem.catalog?.previewConfig?.itemsCount ?? itemCount),
+          ],
+        ));
+  }
+
+  Widget _buildSectionHeaderPlaceholder(BuildContext context) {
+    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
+    return Padding(
+      padding: const EdgeInsets.only(
+          bottom: KalinkaConstants.kContentVerticalPadding,
+          left: KalinkaConstants.kScreenContentHorizontalPadding,
+          right: KalinkaConstants.kScreenContentHorizontalPadding),
+      child: Container(
+        width: 200,
+        height: 20,
+        decoration: BoxDecoration(
+          color: baseColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+}

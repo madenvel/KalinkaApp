@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/action_button.dart' show ActionButton;
 import 'package:kalinka/browse_item_actions.dart' show BrowseItemActions;
-import 'package:kalinka/browse_item_data_provider.dart';
+import 'package:kalinka/browse_item_data_provider_riverpod.dart'
+    show BrowseItemsSourceDesc, BrowseItemsState, browseItemsProvider;
 import 'package:kalinka/constants.dart' show KalinkaConstants;
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_model.dart';
@@ -11,21 +13,23 @@ import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
 import 'package:provider/provider.dart';
 
-class HeroTile extends StatefulWidget {
+class HeroTile extends ConsumerStatefulWidget {
+  final BrowseItemsSourceDesc sourceDesc;
   final void Function(BrowseItem)? onTap;
-  final int maxItems;
+  final CardSize cardSize;
 
   const HeroTile({
     super.key,
+    required this.sourceDesc,
     this.onTap,
-    this.maxItems = 10,
+    this.cardSize = CardSize.small,
   });
 
   @override
-  State<HeroTile> createState() => _HeroTileState();
+  ConsumerState<HeroTile> createState() => _HeroTileState();
 }
 
-class _HeroTileState extends State<HeroTile> {
+class _HeroTileState extends ConsumerState<HeroTile> {
   PageController? _pageController;
   Timer? _autoScrollTimer;
   int _currentIndex = 0;
@@ -95,57 +99,59 @@ class _HeroTileState extends State<HeroTile> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<BrowseItemDataProvider>(
-      builder: (context, provider, child) {
-        final aspectRatio =
-            provider.itemDataSource.item.catalog?.previewConfig?.aspectRatio ??
-                1.0;
-        final cardSize = calculateCardSize(
-          context,
-          provider.itemDataSource.item.catalog?.previewConfig?.cardSize ??
-              CardSize.small,
-        );
+    final state = ref.watch(browseItemsProvider(widget.sourceDesc)).valueOrNull;
 
-        final imageSize = Size(cardSize, cardSize / aspectRatio);
-        final widgetHeight =
-            imageSize.height - KalinkaConstants.kContentVerticalPadding;
+    if (state == null) {
+      return const SizedBox.shrink();
+    }
 
-        if (provider.maybeItemCount == 0) {
-          return _buildEmptyState(context, provider, widgetHeight);
-        }
+    final browseItem = widget.sourceDesc.sourceItem;
+    final aspectRatio = 1.0;
+    final cardSize = calculateCardSize(
+        context, browseItem.catalog?.previewConfig?.cardSize ?? CardSize.small);
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: KalinkaConstants.kScreenContentHorizontalPadding,
-            vertical: KalinkaConstants.kContentVerticalPadding,
-          ),
-          child: Container(
-            height: widgetHeight,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              color: Theme.of(context).colorScheme.surfaceContainerHigh,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+    final imageSize = Size(cardSize, cardSize / aspectRatio);
+    final widgetHeight =
+        imageSize.height - KalinkaConstants.kContentVerticalPadding;
+
+    if (state.totalCount == 0) {
+      return _buildEmptyState(context, state, widgetHeight);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: KalinkaConstants.kScreenContentHorizontalPadding,
+        vertical: KalinkaConstants.kContentVerticalPadding,
+      ),
+      child: Container(
+        height: widgetHeight,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Theme.of(context).colorScheme.surfaceContainerHigh,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: _buildCarousel(context, provider, imageSize),
-            ),
-          ),
-        );
-      },
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: _buildCarousel(context, state, imageSize),
+        ),
+      ),
     );
   }
 
   Widget _buildCarousel(
-      BuildContext context, BrowseItemDataProvider provider, Size imageSize) {
-    final itemCount = provider.maybeItemCount.clamp(0, widget.maxItems);
+      BuildContext context, BrowseItemsState state, Size imageSize) {
+    final sourceItem = widget.sourceDesc.sourceItem;
+    final itemCount = state.totalCount
+        .clamp(0, sourceItem.catalog?.previewConfig?.itemsCount ?? 5);
+
+    final notifier = ref.read(browseItemsProvider(widget.sourceDesc).notifier);
 
     assert(itemCount > 0, 'Item count must be greater than 0');
 
@@ -172,10 +178,14 @@ class _HeroTileState extends State<HeroTile> {
           });
         },
         itemBuilder: (context, index) {
-          final item = provider.getItem(index).item;
+          final item = state.getItem(index);
+
+          if (item == null) {
+            Future.microtask(() => notifier.ensureIndexLoaded(index));
+          }
 
           if (item == null || item.image?.large == null) {
-            return _buildLoadingItem(context, imageSize);
+            return HeroTilePlaceholder(browseItem: sourceItem);
           }
 
           return CachedNetworkImage(
@@ -187,9 +197,9 @@ class _HeroTileState extends State<HeroTile> {
             fit: BoxFit.contain,
             cacheManager: KalinkaMusicCacheManager.instance,
             placeholder: (context, url) =>
-                _buildLoadingItem(context, imageSize),
+                HeroTilePlaceholder(browseItem: sourceItem),
             errorWidget: (context, url, error) =>
-                _buildLoadingItem(context, imageSize),
+                HeroTilePlaceholder(browseItem: sourceItem),
           );
         },
       ),
@@ -327,21 +337,87 @@ class _HeroTileState extends State<HeroTile> {
     );
   }
 
-  double calculateCardSize(BuildContext context, CardSize cardSizeSelection) {
-    final size = MediaQuery.sizeOf(context) +
-        Offset(
-            -2 *
-                (KalinkaConstants.kScreenContentHorizontalPadding -
-                    KalinkaConstants.kSpaceBetweenTiles),
-            0);
-    final double screenCardSizeRatio =
-        cardSizeSelection == CardSize.large ? 2.0 : 2.5;
-    final double cardSize = (size.shortestSide / screenCardSizeRatio)
-        .clamp(300 / screenCardSizeRatio, 500 / screenCardSizeRatio);
-    return cardSize;
+  Widget _buildEmptyState(
+      BuildContext context, BrowseItemsState state, double widgetHeight) {
+    final browseItem = widget.sourceDesc.sourceItem;
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Container(
+        height: widgetHeight,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.surfaceContainer,
+              Theme.of(context).colorScheme.surface,
+            ],
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.photo_library_outlined,
+                size: 48,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'No items available',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (browseItem.name != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  browseItem.name!,
+                  style: TextStyle(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.7),
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
+}
 
-  Widget _buildLoadingItem(BuildContext context, Size imageSize) {
+double calculateCardSize(BuildContext context, CardSize cardSizeSelection) {
+  final size = MediaQuery.sizeOf(context) +
+      Offset(
+          -2 *
+              (KalinkaConstants.kScreenContentHorizontalPadding -
+                  KalinkaConstants.kSpaceBetweenTiles),
+          0);
+  final double screenCardSizeRatio =
+      cardSizeSelection == CardSize.large ? 2.0 : 2.5;
+  final double cardSize = (size.shortestSide / screenCardSizeRatio)
+      .clamp(300 / screenCardSizeRatio, 500 / screenCardSizeRatio);
+  return cardSize;
+}
+
+class HeroTilePlaceholder extends StatelessWidget {
+  final BrowseItem browseItem;
+  const HeroTilePlaceholder({super.key, required this.browseItem});
+
+  @override
+  Widget build(BuildContext context) {
+    final aspectRatio = 1.0;
+    final cardSize = calculateCardSize(
+        context, browseItem.catalog?.previewConfig?.cardSize ?? CardSize.small);
+
+    final imageSize = Size(cardSize, cardSize / aspectRatio);
     final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
     final highlightColor = Theme.of(context).colorScheme.surfaceBright;
     return Container(
@@ -439,60 +515,6 @@ class _HeroTileState extends State<HeroTile> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context, BrowseItemDataProvider provider,
-      double widgetHeight) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Container(
-        height: widgetHeight,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: [
-              Theme.of(context).colorScheme.surfaceContainer,
-              Theme.of(context).colorScheme.surface,
-            ],
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.photo_library_outlined,
-                size: 48,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'No items available',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              if (provider.itemDataSource.item.name != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  provider.itemDataSource.item.name!,
-                  style: TextStyle(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
-                        .withValues(alpha: 0.7),
-                    fontSize: 14,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ],
-          ),
         ),
       ),
     );

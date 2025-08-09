@@ -1,61 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show ConsumerWidget, WidgetRef;
 import 'package:kalinka/browse_item_card.dart' show BrowseItemCard;
-import 'package:kalinka/browse_item_data_source.dart' show BrowseItemDataSource;
+import 'package:kalinka/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/data_model.dart';
-import 'package:kalinka/data_provider.dart' show GenreFilterProvider;
 import 'package:kalinka/genre_filter_chips.dart';
-import 'package:provider/provider.dart';
 
-import 'browse_item_data_provider.dart';
-
-class CatalogBrowseItemView extends StatelessWidget {
-  final BrowseItemDataSource dataSource;
+class CatalogBrowseItemView extends ConsumerWidget {
+  final BrowseItemsSourceDesc sourceDesc;
   final Function(BrowseItem)? onTap;
 
-  CatalogBrowseItemView({super.key, required this.dataSource, this.onTap})
-      : assert(dataSource.item.browseType == BrowseType.catalog,
-            'parentItem.browseType must be "catalog"');
+  const CatalogBrowseItemView(
+      {super.key, required this.sourceDesc, this.onTap});
 
   @override
-  Widget build(BuildContext context) {
-    final parentItem = dataSource.item;
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0.0,
-        title: Text(parentItem.name ?? 'Unknown'),
+        title: Text(sourceDesc.sourceItem.name ?? 'Unknown'),
       ),
-      body: ChangeNotifierProxyProvider<GenreFilterProvider,
-          BrowseItemDataProvider>(
-        create: (context) =>
-            BrowseItemDataProvider.fromDataSource(dataSource: dataSource),
-        update: (_, genreFilterProvider, dataProvider) {
-          final filterList = genreFilterProvider.filter.toList();
-          if (dataProvider == null) {
-            return BrowseItemDataProvider.fromDataSource(dataSource: dataSource)
-              ..maybeUpdateGenreFilter(filterList);
-          }
-          dataProvider.maybeUpdateGenreFilter(filterList);
-          return dataProvider;
-        },
-        child: Consumer<BrowseItemDataProvider>(
-            builder: (context, dataProvider, child) => LayoutBuilder(
-                builder: (context, constraints) =>
-                    _buildGrid(context, constraints, dataProvider))),
+      body: LayoutBuilder(
+        builder: (context, constraints) =>
+            _buildGrid(context, constraints, ref),
       ),
     );
   }
 
-  Widget _buildGrid(BuildContext context, BoxConstraints constraints,
-      BrowseItemDataProvider provider) {
-    final parentItem = provider.itemDataSource.item;
+  Widget _buildGrid(
+      BuildContext context, BoxConstraints constraints, WidgetRef ref) {
+    final provider = browseItemsProvider(sourceDesc);
+    final state = ref.watch(provider).value;
+    final notifier = ref.read(provider.notifier);
+
+    if (state == null) {
+      return CatalogBrowseItemViewPlaceholder(
+          browseItem: sourceDesc.sourceItem);
+    }
+
+    final browseItem = sourceDesc.sourceItem;
     final int crossAxisCount = calculateCrossAxisCount(constraints);
     final double imageWidth = constraints.maxWidth / crossAxisCount;
     final PreviewType previewType =
-        parentItem.catalog?.previewConfig?.type ?? PreviewType.imageText;
+        browseItem.catalog?.previewConfig?.type ?? PreviewType.imageText;
     final bool hasImage = previewType != PreviewType.textOnly;
-    final double imageAspectRatio =
-        parentItem.catalog?.previewConfig?.aspectRatio ?? 1.0;
+    final double imageAspectRatio = previewType == PreviewType.textOnly
+        ? 2.0
+        : 1.0; // Adjust aspect ratio for text-only previews
     const contentPadding = KalinkaConstants.kSpaceBetweenTiles / 2;
     final double cardHeight = hasImage
         ? ((imageWidth - contentPadding * 2) / imageAspectRatio +
@@ -80,35 +72,99 @@ class CatalogBrowseItemView extends StatelessWidget {
                 mainAxisExtent: cardHeight, crossAxisCount: crossAxisCount),
             delegate: SliverChildBuilderDelegate(
               (BuildContext context, int index) {
-                final item = provider.getItem(index).item;
+                final item = state.getItem(index);
+
+                if (item == null) {
+                  Future.microtask(() => notifier.ensureIndexLoaded(index));
+                }
 
                 return BrowseItemCard(
                   item: item,
                   onTap: onTap,
-                  imageAspectRatio: imageAspectRatio,
                   previewContentTypeHint: item != null
                       ? PreviewContentTypeExtension.fromBrowseType(
                           item.browseType)
-                      : parentItem.catalog?.previewConfig?.contentType,
+                      : browseItem.catalog?.previewConfig?.contentType,
                   previewType: previewType,
                 );
               },
-              childCount: provider.maybeItemCount,
+              childCount: state.totalCount,
             ),
           ),
         ),
       ],
     );
   }
+}
 
-  int calculateCrossAxisCount(BoxConstraints constraints) {
-    int crossAxisCount = 2;
-    while ((constraints.maxWidth / crossAxisCount) < 150) {
-      crossAxisCount--;
-    }
-    while ((constraints.maxWidth / crossAxisCount) > 250) {
-      crossAxisCount++;
-    }
-    return crossAxisCount;
+class CatalogBrowseItemViewPlaceholder extends StatelessWidget {
+  final BrowseItem browseItem;
+  final int itemCount;
+  const CatalogBrowseItemViewPlaceholder(
+      {super.key, required this.browseItem, this.itemCount = 30});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+        builder: (context, constraints) => _buildGrid(context, constraints));
   }
+
+  Widget _buildGrid(BuildContext context, BoxConstraints constraints) {
+    final int crossAxisCount = calculateCrossAxisCount(constraints);
+    final double imageWidth = constraints.maxWidth / crossAxisCount;
+    final PreviewType previewType =
+        browseItem.catalog?.previewConfig?.type ?? PreviewType.imageText;
+    final bool hasImage = previewType != PreviewType.textOnly;
+    final double imageAspectRatio = previewType == PreviewType.textOnly
+        ? 2.0
+        : 1.0; // Adjust aspect ratio for text-only previews
+    const contentPadding = KalinkaConstants.kSpaceBetweenTiles / 2;
+    final double cardHeight = hasImage
+        ? ((imageWidth - contentPadding * 2) / imageAspectRatio +
+            contentPadding +
+            52 +
+            6)
+        : (imageWidth - contentPadding * 2) / imageAspectRatio +
+            contentPadding * 2;
+
+    return CustomScrollView(
+      physics: NeverScrollableScrollPhysics(),
+      slivers: [
+        SliverToBoxAdapter(
+          child: GenreFilterChips(),
+        ),
+        // Add the grid content
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: KalinkaConstants.kScreenContentHorizontalPadding -
+                  contentPadding),
+          sliver: SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                mainAxisExtent: cardHeight, crossAxisCount: crossAxisCount),
+            delegate: SliverChildBuilderDelegate(
+              (BuildContext context, int index) {
+                return BrowseItemCard(
+                  previewContentTypeHint:
+                      browseItem.catalog?.previewConfig?.contentType,
+                  previewType: previewType,
+                );
+              },
+              childCount: itemCount,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+int calculateCrossAxisCount(BoxConstraints constraints) {
+  int crossAxisCount = 2;
+  while ((constraints.maxWidth / crossAxisCount) < 150) {
+    crossAxisCount--;
+  }
+  while ((constraints.maxWidth / crossAxisCount) > 250) {
+    crossAxisCount++;
+  }
+  return crossAxisCount;
 }

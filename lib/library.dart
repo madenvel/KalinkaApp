@@ -1,19 +1,57 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show
+        AsyncValueX,
+        ConsumerState,
+        ConsumerStatefulWidget,
+        Notifier,
+        NotifierProvider;
+import 'package:kalinka/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/playlist_creation_dialog.dart';
-import 'package:kalinka/search_results_provider.dart' show SearchTypeProvider;
 import 'package:provider/provider.dart';
 import 'package:kalinka/bottom_menu.dart';
 import 'package:kalinka/data_provider.dart';
-import 'package:kalinka/browse_item_data_provider.dart';
-import 'package:kalinka/browse_item_data_source.dart';
 import 'package:kalinka/browse_item_list.dart';
 
 import 'data_model.dart';
 import 'kalinkaplayer_proxy.dart';
 
-class Library extends StatefulWidget {
+class SearchTypeProvider extends Notifier<SearchType> {
+  void updateSearchType(SearchType searchType) {
+    if (state != searchType) {
+      state = searchType;
+    }
+  }
+
+  @override
+  SearchType build() {
+    return SearchType.album;
+  }
+}
+
+class SearchControllerProvider extends Notifier<SearchController> {
+  @override
+  SearchController build() {
+    final controller = SearchController();
+    ref.onDispose(() {
+      controller.dispose();
+    });
+    return controller;
+  }
+}
+
+final searchControllerProvider =
+    NotifierProvider<SearchControllerProvider, SearchController>(
+  SearchControllerProvider.new,
+);
+
+final searchTypeProvider = NotifierProvider<SearchTypeProvider, SearchType>(
+  SearchTypeProvider.new,
+);
+
+class Library extends ConsumerStatefulWidget {
   const Library({super.key});
 
   static final List<SearchType> searchTypes = [
@@ -30,67 +68,45 @@ class Library extends StatefulWidget {
   ];
 
   @override
-  State<Library> createState() => _LibraryState();
+  ConsumerState<Library> createState() => _LibraryState();
 }
 
-class _LibraryState extends State<Library> {
+class _LibraryState extends ConsumerState<Library> {
   bool searchBarVisible = false;
   String previousSearchText = '';
   SearchType previousSearchType = SearchType.invalid;
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => SearchController()),
-          ChangeNotifierProvider<SearchTypeProvider>(
-              create: (_) => SearchTypeProvider())
-        ],
-        builder: (context, _) {
-          return ChangeNotifierProxyProvider2<SearchTypeProvider,
-                  SearchController, BrowseItemDataProvider>(
-              create: (context) => BrowseItemDataProvider.fromDataSource(
-                  dataSource: BrowseItemDataSource.empty()),
-              update: (context, searchTypeProvider, searchController,
-                  dataProvider) {
-                if (dataProvider == null ||
-                    searchController.text != previousSearchText ||
-                    previousSearchType != searchTypeProvider.searchType) {
-                  previousSearchText = searchController.text;
-                  previousSearchType = searchTypeProvider.searchType;
-                  return BrowseItemDataProvider.fromDataSource(
-                      dataSource: BrowseItemDataSource.favorites(
-                          searchTypeProvider.searchType, searchController.text),
-                      itemsPerRequest: 100);
-                }
-                return dataProvider;
-              },
-              builder: (context, _) => Scaffold(
-                    appBar: AppBar(
-                      titleSpacing: KalinkaConstants.kContentHorizontalPadding,
-                      title: _buildAppBarTitle(context),
-                      actions: !searchBarVisible
-                          ? [
-                              _buildSearchButton(context),
-                              _buildActionButton(context),
-                            ]
-                          : [_buildCancelSearchButton(context)],
-                    ),
-                    body: _buildBody(context),
-                  ));
-        });
+    return Scaffold(
+      appBar: AppBar(
+        titleSpacing: KalinkaConstants.kContentHorizontalPadding,
+        title: _buildAppBarTitle(context),
+        actions: !searchBarVisible
+            ? [
+                _buildSearchButton(context),
+                _buildActionButton(context),
+              ]
+            : [_buildCancelSearchButton(context)],
+      ),
+      body: _buildBody(context),
+    );
   }
 
   Widget _buildAppBarTitle(BuildContext context) {
     if (searchBarVisible) {
-      final controller = context.watch<SearchController>();
       return SearchBar(
         autoFocus: true,
         constraints: BoxConstraints(minHeight: 40),
-        controller: controller,
+        controller: ref.watch(searchControllerProvider),
         elevation: WidgetStateProperty.all(0.0),
         hintText: 'Search...',
         leading: const Icon(Icons.search),
+        onSubmitted: (text) {
+          setState(() {
+            previousSearchText = text;
+          });
+        },
       );
     }
     return const Row(children: [
@@ -119,15 +135,15 @@ class _LibraryState extends State<Library> {
           PlaylistCreationDialog.show(
               context: context,
               onCreateCallback: (playlistId) {
-                final textEdit = context.read<SearchController>();
-                final searchTypeProvider = context.read<SearchTypeProvider>();
-                if (textEdit.text.isEmpty &&
-                    searchTypeProvider.searchType == SearchType.playlist) {
-                  context.read<BrowseItemDataProvider>().refresh();
+                final textEdit = ref.read(searchControllerProvider).text;
+                final searchType = ref.read(searchTypeProvider);
+                if (textEdit.isEmpty && searchType == SearchType.playlist) {
                   return;
                 }
-                textEdit.clear();
-                searchTypeProvider.updateSearchType(SearchType.playlist);
+                ref.read(searchControllerProvider).clear();
+                ref
+                    .read(searchTypeProvider.notifier)
+                    .updateSearchType(SearchType.playlist);
               });
         });
   }
@@ -144,8 +160,8 @@ class _LibraryState extends State<Library> {
   }
 
   Widget _buildChipList(BuildContext context) {
-    final provider = context.watch<SearchTypeProvider>();
-    final searchType = provider.searchType;
+    final searchType = ref.watch(searchTypeProvider);
+    final notifier = ref.read(searchTypeProvider.notifier);
     return Align(
       alignment: Alignment.centerLeft,
       child: SingleChildScrollView(
@@ -166,7 +182,7 @@ class _LibraryState extends State<Library> {
                         Theme.of(context).colorScheme.primaryContainer,
                     showCheckmark: false,
                     onSelected: (_) {
-                      provider.updateSearchType(Library.searchTypes[index]);
+                      notifier.updateSearchType(Library.searchTypes[index]);
                     }),
               );
             })),
@@ -175,9 +191,18 @@ class _LibraryState extends State<Library> {
   }
 
   Widget _buildItemList(BuildContext context) {
-    final provider = context.watch<BrowseItemDataProvider>();
-    if (provider.maybeItemCount == 0) {
-      final searchController = context.read<SearchController>();
+    final sourceDesc = UserFavoriteBrowseItemsDesc(
+        ref.watch(searchTypeProvider),
+        ref.watch(searchControllerProvider).text);
+
+    final state = ref.watch(browseItemsProvider(sourceDesc)).valueOrNull;
+
+    if (state == null) {
+      return BrowseItemListPlaceholder(browseItem: sourceDesc.sourceItem);
+    }
+
+    if (state.totalCount == 0) {
+      final searchController = ref.read(searchControllerProvider);
       return Column(
         children: [
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -194,7 +219,7 @@ class _LibraryState extends State<Library> {
                   ElevatedButton(
                       onPressed: () {
                         setState(() {
-                          context.read<SearchController>().clear();
+                          ref.read(searchControllerProvider).clear();
                           searchBarVisible = false;
                         });
                       },
@@ -208,14 +233,16 @@ class _LibraryState extends State<Library> {
       );
     }
     return BrowseItemList(
-      provider: provider,
+      sourceDesc: sourceDesc,
       shrinkWrap: false,
       actionButtonTooltip: "More options",
       onTap: (context, index, item) {
         if (item.canBrowse) {
           Navigator.of(context).push(
             MaterialPageRoute(builder: (context) {
-              return BrowseItemView(browseItem: item);
+              return BrowseItemView(
+                browseItem: item,
+              );
             }),
           );
         } else if (item.canAdd) {
@@ -227,7 +254,7 @@ class _LibraryState extends State<Library> {
         // A bit of a hack to reload favorites in case of any changes.
         // Doesn't always work so needs to be revisited.
         final favoriteIdsProvider = context.read<UserFavoritesIdsProvider>();
-        final searchTypeProvider = context.read<SearchTypeProvider>();
+        final searchType = ref.read(searchTypeProvider);
         final initialCount = favoriteIdsProvider.countByType;
         showModalBottomSheet(
             context: context,
@@ -239,9 +266,9 @@ class _LibraryState extends State<Library> {
               return BottomMenu(parentContext: parentContext, browseItem: item);
             }).then((_) {
           final newCount = favoriteIdsProvider.countByType;
-          final type = searchTypeProvider.searchType;
-          if (context.mounted && initialCount[type] != newCount[type]) {
-            context.read<BrowseItemDataProvider>().refresh();
+          if (context.mounted &&
+              initialCount[searchType] != newCount[searchType]) {
+            ref.invalidate(browseItemsProvider(sourceDesc));
           }
         });
       },
@@ -273,7 +300,7 @@ class _LibraryState extends State<Library> {
       onPressed: () {
         setState(() {
           searchBarVisible = false;
-          context.read<SearchController>().clear();
+          ref.read(searchControllerProvider).clear();
         });
       },
     );

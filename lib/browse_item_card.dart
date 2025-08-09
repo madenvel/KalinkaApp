@@ -21,7 +21,6 @@ import 'package:kalinka/shimmer_effect.dart' show Shimmer;
 
 class BrowseItemCard extends StatelessWidget {
   final BrowseItem? item;
-  final double imageAspectRatio;
   final PreviewContentType? previewContentTypeHint;
   final PreviewType? previewType;
   final Function(BrowseItem)? onTap;
@@ -35,7 +34,6 @@ class BrowseItemCard extends StatelessWidget {
       this.onTap,
       this.previewType,
       this.previewContentTypeHint,
-      this.imageAspectRatio = 1.0,
       this.showSourceAttribution = true});
 
   @override
@@ -44,19 +42,11 @@ class BrowseItemCard extends StatelessWidget {
       return _buildPlaceholderCard(context);
     }
 
-    final contentType = previewContentTypeHint ??
-        PreviewContentTypeExtension.fromBrowseType(item!.browseType);
-
-    switch (contentType) {
-      case PreviewContentType.catalog:
-        return _buildCategoryCard(context);
-      case PreviewContentType.album:
-      case PreviewContentType.artist:
-      case PreviewContentType.playlist:
-        return _buildImageCard(context);
-      case PreviewContentType.track:
-        return _buildImageCard(context);
+    if (previewType == PreviewType.textOnly) {
+      return _buildCategoryCard(context);
     }
+
+    return _buildImageCard(context);
   }
 
   Widget _buildPlaceholderCard(BuildContext context) {
@@ -65,6 +55,7 @@ class BrowseItemCard extends StatelessWidget {
             item?.browseType ?? BrowseType.album);
     final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
     final highlightColor = Theme.of(context).colorScheme.surfaceBright;
+
     return Shimmer(
         baseColor: baseColor,
         highlightColor: highlightColor,
@@ -72,7 +63,7 @@ class BrowseItemCard extends StatelessWidget {
           hasTitle: previewType != PreviewType.textOnly,
           hasSubtitle: previewType != PreviewType.textOnly &&
               contentType != PreviewContentType.artist,
-          aspectRatio: imageAspectRatio,
+          aspectRatio: previewType == PreviewType.textOnly ? 2.0 : 1.0,
           borderRadius: KalinkaConstants.kDefaultBorderRadius,
           shape: contentType == PreviewContentType.artist
               ? BoxShape.circle
@@ -107,7 +98,6 @@ class BrowseItemCard extends StatelessWidget {
             imageProvider: imageProvider,
             title: _buildTitle(context),
             subtitle: _buildSubtitle(context),
-            aspectRatio: imageAspectRatio,
             onTap: () => onTap?.call(item!),
             borderRadius: KalinkaConstants.kDefaultBorderRadius,
             shape: contentType == PreviewContentType.artist
@@ -133,7 +123,6 @@ class BrowseItemCard extends StatelessWidget {
       icon: _buildImageCardIcon(context),
       title: _buildTitle(context),
       subtitle: _buildSubtitle(context),
-      aspectRatio: imageAspectRatio,
       onTap: () => onTap?.call(item!),
       shape: contentType == PreviewContentType.artist
           ? BoxShape.circle
@@ -192,7 +181,7 @@ class BrowseItemCard extends StatelessWidget {
           fontWeight: FontWeight.bold,
           overflow: TextOverflow.ellipsis),
       borderRadius: KalinkaConstants.kDefaultBorderRadius,
-      aspectRatio: imageAspectRatio,
+      aspectRatio: 2.0,
     );
   }
 

@@ -11,7 +11,7 @@ class CategoryCard extends StatelessWidget {
     required this.colorB,
     this.borderRadius = BorderRadius.zero,
     this.onTap,
-    this.aspectRatio = 1.0,
+    this.aspectRatio = 2.0,
     this.padding = const EdgeInsets.symmetric(
         horizontal: KalinkaConstants.kSpaceBetweenTiles / 2,
         vertical: KalinkaConstants.kSpaceBetweenTiles / 2),

@@ -1,51 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:kalinka/data_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show ConsumerState, ConsumerStatefulWidget, WidgetRef;
+import 'package:kalinka/genre_filter_provider.dart';
 
-class GenreSelector extends StatefulWidget {
+class GenreSelector extends ConsumerStatefulWidget {
   const GenreSelector({super.key});
 
   @override
-  State<GenreSelector> createState() => _GenreSelectorState();
+  ConsumerState<GenreSelector> createState() => _GenreSelectorState();
 }
 
-class _GenreSelectorState extends State<GenreSelector> {
+class _GenreSelectorState extends ConsumerState<GenreSelector> {
   final Set<String> _selectedGenres = {};
-  GenreFilterProvider? _genreFilterProvider;
-
-  void setGenreFilters() {
-    final provider = context.read<GenreFilterProvider>();
-    // Check if both lists contain the same elements (ignoring order)
-    if (_selectedGenres.length == provider.filter.length &&
-        _selectedGenres.containsAll(provider.filter)) {
-      return;
-    }
-    setState(() {
-      _selectedGenres.clear();
-      _selectedGenres.addAll(provider.filter);
-    });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _genreFilterProvider = context.read<GenreFilterProvider>();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<GenreFilterProvider>().addListener(setGenreFilters);
-      setGenreFilters();
-    });
-  }
-
-  @override
-  void dispose() {
-    _genreFilterProvider?.removeListener(setGenreFilters);
-    super.dispose();
-  }
+  bool _hasStartedSelection = false;
 
   @override
   Widget build(BuildContext context) {
@@ -56,50 +23,82 @@ class _GenreSelectorState extends State<GenreSelector> {
           TextButton(
               child: const Text('Done'),
               onPressed: () {
-                final provider = context.read<GenreFilterProvider>();
-                provider.filter.clear();
-                provider.filter.addAll(_selectedGenres);
-                provider.commitFilterChange();
+                if (_hasStartedSelection) {
+                  ref
+                      .read(genreFilterProvider.notifier)
+                      .setSelectedGenres(_selectedGenres.toList());
+                }
                 Navigator.pop(context);
               })
         ],
       ),
-      body: _buildGenreSelectorList(context),
+      body: _buildGenreSelectorList(context, ref),
     );
   }
 
-  Widget _buildGenreSelectorList(BuildContext context) {
-    return Consumer<GenreFilterProvider>(builder: (context, provider, _) {
-      return FutureBuilder(
-          future: provider.isLoaded,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return const Center(child: Text('Error loading genres'));
-            }
-            return ListView.builder(
-              itemCount: provider.genres.length,
-              itemBuilder: (context, index) {
-                return SwitchListTile(
-                  title: Text(provider.genres[index].name),
-                  value: _selectedGenres.contains(provider.genres[index].id) ||
-                      _selectedGenres.isEmpty,
-                  onChanged: (value) {
-                    setState(() {
-                      if (value == true || _selectedGenres.isEmpty) {
-                        _selectedGenres.add(provider.genres[index].id);
-                      } else {
-                        _selectedGenres.remove(provider.genres[index].id);
-                      }
-                    });
-                  },
-                  controlAffinity: ListTileControlAffinity.leading,
-                );
-              },
-            );
-          });
+  bool _hasSelectedGenres() {
+    if (_hasStartedSelection) {
+      return _selectedGenres.isNotEmpty;
+    }
+    return ref.watch(genreFilterProvider).value?.selectedGenres.isNotEmpty ??
+        false;
+  }
+
+  bool _isGenreSelected(String genreId) {
+    if (_hasStartedSelection) {
+      return _selectedGenres.contains(genreId);
+    }
+    return ref
+            .watch(genreFilterProvider)
+            .value
+            ?.selectedGenres
+            .contains(genreId) ??
+        false;
+  }
+
+  void _startSelection() {
+    if (_hasStartedSelection) return;
+    _hasStartedSelection = true;
+    _selectedGenres.clear();
+    _selectedGenres.addAll(ref.read(genreFilterProvider).value!.selectedGenres);
+  }
+
+  void _addGenre(String genreId) {
+    _startSelection();
+
+    setState(() {
+      _selectedGenres.add(genreId);
     });
+  }
+
+  void _removeGenre(String genreId) {
+    _startSelection();
+    setState(() {
+      _selectedGenres.remove(genreId);
+    });
+  }
+
+  Widget _buildGenreSelectorList(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(genreFilterProvider).value!;
+    final hasSelectedGenres = _hasSelectedGenres();
+
+    return ListView.builder(
+      itemCount: state.genres.length,
+      itemBuilder: (context, index) {
+        final genreId = state.genres[index].id;
+        return SwitchListTile(
+          title: Text(state.genres[index].name),
+          value: _isGenreSelected(genreId) || !hasSelectedGenres,
+          onChanged: (value) {
+            if (value || !hasSelectedGenres) {
+              _addGenre(genreId);
+            } else {
+              _removeGenre(genreId);
+            }
+          },
+          controlAffinity: ListTileControlAffinity.leading,
+        );
+      },
+    );
   }
 }
