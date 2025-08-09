@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget;
-import 'package:kalinka/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/service_discovery.dart';
 import 'package:kalinka/service_discovery_widget.dart'
     show ServiceDiscoveryWidget;
