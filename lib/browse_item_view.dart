@@ -4,16 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:kalinka/action_button.dart' show ActionButton;
 import 'package:kalinka/bottom_menu.dart' show BottomMenu;
 import 'package:kalinka/browse_item_actions.dart' show BrowseItemActions;
-import 'package:kalinka/browse_item_data_provider.dart'
-    show BrowseItemDataProvider;
-import 'package:kalinka/browse_item_data_source.dart' show BrowseItemDataSource;
+import 'package:kalinka/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
 import 'package:kalinka/favorite_button.dart';
 import 'package:kalinka/polka_dot_painter.dart';
-import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
-import 'package:kalinka/browse_item_list.dart';
+import 'package:kalinka/preview_section.dart' show PreviewSection;
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
 import 'package:provider/provider.dart';
 import 'data_model.dart';
@@ -151,7 +148,11 @@ class _BrowseItemViewState extends State<BrowseItemView> {
           if (index == 0) {
             return _buildHeader(context, albumImage);
           } else if (index < sections.length + 1) {
-            return _buildSection(context, sections[index - 1]);
+            final section = sections[index - 1];
+            return PreviewSection(
+              sourceDesc: DefaultBrowseItemsSourceDesc(section),
+              onItemSelected: widget.onItemSelected,
+            );
           }
 
           return const SizedBox(
@@ -160,19 +161,6 @@ class _BrowseItemViewState extends State<BrowseItemView> {
         },
       ),
     );
-  }
-
-  void _onListItemTapAction(BuildContext context, int index, BrowseItem item) {
-    widget.onItemSelected?.call(item);
-    if (item.canBrowse) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => BrowseItemView(browseItem: item),
-        ),
-      );
-    } else if (item.canAdd) {
-      BrowseItemActions.replaceAndPlay(context, item, 0);
-    }
   }
 
   // --- Header Building Logic ---
@@ -487,42 +475,6 @@ class _BrowseItemViewState extends State<BrowseItemView> {
         ],
       ),
     );
-  }
-
-  // --- Sections ---
-
-  Widget _buildSection(BuildContext context, BrowseItem section) {
-    if (section.browseType != BrowseType.catalog) {
-      return SizedBox.shrink(); // Skip non-catalog sections
-    }
-
-    switch (section.catalog?.previewConfig?.type) {
-      case PreviewType.imageText:
-      case PreviewType.textOnly:
-        return PreviewSectionCard(
-          padding: const EdgeInsets.only(
-              bottom: KalinkaConstants.kSpaceBetweenSections),
-          dataSource: BrowseItemDataSource.browse(section),
-        );
-      case PreviewType.tile:
-        final parentContext = context;
-        return ChangeNotifierProvider<BrowseItemDataProvider>(
-            create: (_) => BrowseItemDataProvider.fromDataSource(
-                  dataSource: BrowseItemDataSource.browse(section),
-                ),
-            builder: (context, _) => BrowseItemList(
-                  padding: const EdgeInsets.only(
-                      bottom: KalinkaConstants.kSpaceBetweenSections),
-                  showHeader: true,
-                  showImage: widget.browseItem.browseType != BrowseType.album,
-                  provider: context.watch<BrowseItemDataProvider>(),
-                  onTap: _onListItemTapAction,
-                  onAction: (_, __, BrowseItem item) =>
-                      _showItemMenu(context, parentContext, item: item),
-                ));
-      default:
-        return SizedBox.shrink(); // Skip unsupported types
-    }
   }
 
   // --- Actions ---

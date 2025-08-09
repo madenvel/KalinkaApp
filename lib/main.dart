@@ -3,12 +3,16 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
+import 'package:kalinka/browse_item_data_provider_riverpod.dart'
+    show sharedPrefsProvider;
 import 'package:kalinka/connection_manager.dart';
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/home_screen.dart' show HomeScreen;
 import 'package:kalinka/search.dart' show SearchScreen;
 import 'package:kalinka/shimmer_effect.dart' show ShimmerProvider;
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart'
+    show SharedPreferences;
 import 'data_provider.dart';
 import 'home_screen.dart';
 import 'library.dart';
@@ -16,8 +20,13 @@ import 'playbar.dart';
 import 'search.dart';
 import 'swipable_tabs.dart';
 
-void main() {
-  runApp(ProviderScope(child: const KalinkaMusic()));
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+
+  runApp(ProviderScope(overrides: [
+    sharedPrefsProvider.overrideWithValue(prefs),
+  ], child: const KalinkaMusic()));
 }
 
 class MyCustomScrollBehavior extends MaterialScrollBehavior {

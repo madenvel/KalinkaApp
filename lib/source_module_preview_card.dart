@@ -1,31 +1,22 @@
+import 'dart:math' show min;
+
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod
+import 'package:flutter_riverpod/flutter_riverpod.dart'
     show
         AsyncValueX,
         ConsumerWidget,
-        FutureProvider,
         StateNotifier,
         StateNotifierProvider,
         WidgetRef;
-import 'package:kalinka/browse_item_data_provider.dart';
-import 'package:kalinka/browse_item_data_source.dart' show BrowseItemDataSource;
-import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
-import 'package:kalinka/catalog_browse_item_view.dart'
-    show CatalogBrowseItemView;
+import 'package:kalinka/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/constants.dart';
-import 'package:kalinka/data_model.dart'
-    show BrowseItem, BrowseItemsList, BrowseType, PreviewType;
-import 'package:kalinka/data_provider.dart' show GenreFilterProvider;
-import 'package:kalinka/hero_tile.dart' show HeroTile;
-import 'package:kalinka/kalinkaplayer_proxy.dart' show KalinkaPlayerProxy;
-import 'package:kalinka/preview_section_card.dart' show PreviewSectionCard;
+import 'package:kalinka/data_model.dart' show BrowseItem;
+import 'package:kalinka/preview_section.dart';
 import 'package:kalinka/source_attribution.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart'
     show SharedPreferencesWithCache, SharedPreferencesWithCacheOptions;
 
-class SourceCollapseStateNotifier
-    extends riverpod.StateNotifier<Map<String, bool>> {
+class SourceCollapseStateNotifier extends StateNotifier<Map<String, bool>> {
   SharedPreferencesWithCache? prefs;
   bool _isInitialized = false;
 
@@ -93,31 +84,25 @@ class SourceCollapseStateNotifier
   }
 }
 
-// Provider for individual source catalog data with seamless paging and caching
-final sourceCatalogProvider =
-    riverpod.FutureProvider.family<BrowseItemsList, String>(
-        (ref, sourceId) async {
-  final proxy = KalinkaPlayerProxy();
-  return proxy.browse(sourceId, limit: 3);
-});
-
 // Provider for managing collapsed states of source modules
-final sourceCollapseStateProvider = riverpod.StateNotifierProvider<
-    SourceCollapseStateNotifier, Map<String, bool>>((ref) {
+final sourceCollapseStateProvider =
+    StateNotifierProvider<SourceCollapseStateNotifier, Map<String, bool>>(
+        (ref) {
   return SourceCollapseStateNotifier();
 });
 
-class SourceModule extends riverpod.ConsumerWidget {
+class SourceModule extends ConsumerWidget {
   final BrowseItem source;
   final VoidCallback? onShowMoreClicked;
 
   const SourceModule({super.key, required this.source, this.onShowMoreClicked});
 
   @override
-  Widget build(BuildContext context, riverpod.WidgetRef ref) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final collapseState = ref.watch(sourceCollapseStateProvider);
     final isCollapsed = collapseState[source.id] ?? false;
-    final sourceCatalog = ref.watch(sourceCatalogProvider(source.id));
+    final desc = DefaultBrowseItemsSourceDesc(source);
+    final asyncState = ref.watch(browseItemsProvider(desc));
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -125,8 +110,8 @@ class SourceModule extends riverpod.ConsumerWidget {
         children: [
           _buildTitleBar(context, ref, isCollapsed),
           if (!isCollapsed)
-            sourceCatalog.when(
-              data: (catalog) => _buildExpandedContent(context, catalog),
+            asyncState.when(
+              data: (state) => _buildExpandedContent(context, ref, state, desc),
               loading: () => const Padding(
                 padding: EdgeInsets.all(32.0),
                 child: CircularProgressIndicator(),
@@ -144,8 +129,7 @@ class SourceModule extends riverpod.ConsumerWidget {
     );
   }
 
-  Widget _buildTitleBar(
-      BuildContext context, riverpod.WidgetRef ref, bool isCollapsed) {
+  Widget _buildTitleBar(BuildContext context, WidgetRef ref, bool isCollapsed) {
     return ListTile(
       leading: SourceAttribution(id: source.id, size: 36.0),
       title: Text(
@@ -166,109 +150,39 @@ class SourceModule extends riverpod.ConsumerWidget {
     );
   }
 
-  Widget _buildExpandedContent(BuildContext context, BrowseItemsList catalog) {
-    if (catalog.items.isEmpty) {
+  Widget _buildExpandedContent(BuildContext context, WidgetRef ref,
+      BrowseItemsState state, BrowseItemsSourceDesc desc) {
+    if (state.totalCount == 0) {
       return const Padding(
         padding: EdgeInsets.all(32.0),
         child: Text('No content available'),
       );
     }
 
-    // Find hero item (first large image item or fallback to first item)
-    final heroItem = _findHeroItem(catalog.items);
-
-    // Build preview rows (max 3)
-    final previewRows = _buildPreviewRows(
-        context, catalog.items.where((item) => item != heroItem).toList());
-
     return Column(
       children: [
-        if (heroItem != null)
-          ChangeNotifierProxyProvider<GenreFilterProvider,
-              BrowseItemDataProvider>(
-            create: (_) => BrowseItemDataProvider.fromDataSource(
-              dataSource: BrowseItemDataSource.browse(heroItem),
-              itemCountLimit: 5,
-            ),
-            update: (_, genreFilterProvider, dataProvider) {
-              final filterList = genreFilterProvider.filter.toList();
-              if (dataProvider == null) {
-                return BrowseItemDataProvider.fromDataSource(
-                    dataSource: BrowseItemDataSource.browse(heroItem))
-                  ..maybeUpdateGenreFilter(filterList);
-              }
-              dataProvider.maybeUpdateGenreFilter(filterList);
-              return dataProvider;
-            },
-            child: Padding(
-              padding: const EdgeInsets.only(
-                  bottom: KalinkaConstants.kSpaceBetweenSections),
-              child: HeroTile(
-                onTap: (BrowseItem item) => _onTap(context, item),
+        ...List.generate(min(state.totalCount, 3), (index) {
+          final item = state.getItem(index);
+          if (item == null) {
+            Future.microtask(() => ref
+                .read(browseItemsProvider(desc).notifier)
+                .ensureIndexLoaded(index));
+            return PreviewSectionPlaceholder(browseItem: desc.sourceItem);
+          }
+          return PreviewSection(
+            sourceDesc: DefaultBrowseItemsSourceDesc(item.copyWith(
+              catalog: item.catalog?.copyWith(
+                previewConfig: item.catalog?.previewConfig?.copyWith(
+                  rowsCount: 1, // Force single row for grid preview
+                ),
               ),
-            ),
-          ),
-        ...previewRows,
-        if (catalog.total > 3) _buildShowMoreButton(context),
+            )),
+          );
+        }),
+        if (state.totalCount > 3) _buildShowMoreButton(context),
         const SizedBox(height: 16),
       ],
     );
-  }
-
-  BrowseItem? _findHeroItem(List<BrowseItem> items) {
-    // First try to find an item with preview_config type=image and card_size=large
-    for (final item in items) {
-      final preview = item.catalog?.previewConfig;
-      if (preview?.type == PreviewType.carousel) {
-        return item;
-      }
-    }
-    return null;
-  }
-
-  void _onTap(BuildContext context, BrowseItem item) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) {
-        if (item.browseType == BrowseType.catalog) {
-          return CatalogBrowseItemView(
-              dataSource: BrowseItemDataSource.browse(item),
-              onTap: (item) => _onTap(context, item));
-        }
-
-        return BrowseItemView(browseItem: item);
-      }),
-    );
-  }
-
-  List<Widget> _buildPreviewRows(BuildContext context, List<BrowseItem> items) {
-    final rows = <Widget>[];
-
-    for (final item in items) {
-      rows.add(Padding(
-        padding: const EdgeInsets.only(
-            bottom: KalinkaConstants.kSpaceBetweenSections),
-        child: PreviewSectionCard(
-          dataSource: BrowseItemDataSource.browse(item),
-          rowsCount: 1,
-          onSeeAll: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CatalogBrowseItemView(
-                    dataSource: BrowseItemDataSource.browse(item),
-                    onTap: (item) {
-                      if (item.canBrowse) {
-                        _onTap(context, item);
-                      }
-                    }),
-              ),
-            );
-          },
-        ),
-      ));
-    }
-
-    return rows;
   }
 
   Widget _buildShowMoreButton(BuildContext context) {

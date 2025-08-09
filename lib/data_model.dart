@@ -358,7 +358,7 @@ class Playlist {
       };
 }
 
-enum PreviewType { imageText, textOnly, carousel, tile, none }
+enum PreviewType { imageText, textOnly, carousel, tile, tileNumbered, none }
 
 extension PreviewTypeExtension on PreviewType {
   String toValue() {
@@ -371,6 +371,8 @@ extension PreviewTypeExtension on PreviewType {
         return 'carousel';
       case PreviewType.tile:
         return 'tile';
+      case PreviewType.tileNumbered:
+        return 'tile_numbered';
       case PreviewType.none:
         return 'none';
     }
@@ -386,6 +388,8 @@ extension PreviewTypeExtension on PreviewType {
         return PreviewType.carousel;
       case 'tile':
         return PreviewType.tile;
+      case 'tile_numbered':
+        return PreviewType.tileNumbered;
       case 'none':
         return PreviewType.none;
       default:
@@ -489,7 +493,6 @@ class Preview {
   final PreviewType type;
   final PreviewContentType? contentType;
   final int? rowsCount;
-  final double? aspectRatio;
   final CardSize? cardSize;
 
   Preview({
@@ -497,7 +500,6 @@ class Preview {
     required this.type,
     this.contentType,
     this.rowsCount,
-    this.aspectRatio,
     this.cardSize,
   });
 
@@ -508,7 +510,6 @@ class Preview {
             ? null
             : PreviewContentTypeExtension.fromValue(json["content_type"]),
         rowsCount: json["rows_count"],
-        aspectRatio: json["aspect_ratio"]?.toDouble(),
         cardSize: json["card_size"] == null
             ? null
             : CardSizeExtension.fromValue(json["card_size"]),
@@ -519,9 +520,24 @@ class Preview {
         "type": type.toValue(),
         "content_type": contentType?.toValue(),
         "rows_count": rowsCount,
-        "aspect_ratio": aspectRatio,
         "card_size": cardSize?.toValue(),
       };
+
+  Preview copyWith({
+    int? itemsCount,
+    PreviewType? type,
+    PreviewContentType? contentType,
+    int? rowsCount,
+    CardSize? cardSize,
+  }) {
+    return Preview(
+      itemsCount: itemsCount ?? this.itemsCount,
+      type: type ?? this.type,
+      contentType: contentType ?? this.contentType,
+      rowsCount: rowsCount ?? this.rowsCount,
+      cardSize: cardSize ?? this.cardSize,
+    );
+  }
 }
 
 class Catalog {
@@ -561,6 +577,24 @@ class Catalog {
         "can_genre_filter": canGenreFilter,
         "preview_config": previewConfig?.toJson(),
       };
+
+  Catalog copyWith({
+    String? id,
+    String? title,
+    AlbumImage? image,
+    String? description,
+    bool? canGenreFilter,
+    Preview? previewConfig,
+  }) {
+    return Catalog(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      image: image ?? this.image,
+      description: description ?? this.description,
+      canGenreFilter: canGenreFilter ?? this.canGenreFilter,
+      previewConfig: previewConfig ?? this.previewConfig,
+    );
+  }
 }
 
 class BrowseItemsList {
@@ -682,7 +716,7 @@ class BrowseItem {
   final Catalog? catalog;
   final List<BrowseItem>? sections;
 
-  BrowseItem(
+  const BrowseItem(
       {required this.id,
       this.name,
       this.subname,

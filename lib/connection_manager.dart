@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:kalinka/browse_item_cache.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show ConsumerState, ConsumerStatefulWidget;
+import 'package:kalinka/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/service_discovery.dart';
 import 'package:kalinka/service_discovery_widget.dart'
     show ServiceDiscoveryWidget;
@@ -12,17 +14,17 @@ import 'package:kalinka/event_listener.dart';
 import 'package:kalinka/fg_service.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 
-class ConnectionManager extends StatefulWidget {
+class ConnectionManager extends ConsumerStatefulWidget {
   final Widget child;
   final Function? onConnected;
 
   const ConnectionManager({super.key, required this.child, this.onConnected});
 
   @override
-  State<ConnectionManager> createState() => _ConnectionManagerState();
+  ConsumerState<ConnectionManager> createState() => _ConnectionManagerState();
 }
 
-class _ConnectionManagerState extends State<ConnectionManager> {
+class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
   bool _connected = false;
 
   int _connectionAttemptsInRound = 0;
@@ -46,7 +48,6 @@ class _ConnectionManagerState extends State<ConnectionManager> {
       EventType.NetworkDisconnected: (args) {
         logger.d('Disconnected!!!');
         setState(() {
-          BrowseItemCache().invalidate();
           _connected = false;
         });
         if (_connectionAttemptsInRound >= _maxConnectionAttemptsInRound) {
