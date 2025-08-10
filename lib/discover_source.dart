@@ -42,10 +42,11 @@ class DiscoverSource extends ConsumerWidget {
 
   Widget _buildBody(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
-    final state = ref.watch(browseItemsProvider(sourceDesc)).valueOrNull;
+    final asyncValue = ref.watch(browseItemsProvider(sourceDesc));
+    final state = asyncValue.valueOrNull;
     final notifier = ref.read(browseItemsProvider(sourceDesc).notifier);
 
-    if (state == null) {
+    if (state == null || asyncValue.isLoading) {
       return Center(child: CircularProgressIndicator());
     }
 

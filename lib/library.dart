@@ -195,9 +195,10 @@ class _LibraryState extends ConsumerState<Library> {
         ref.watch(searchTypeProvider),
         ref.watch(searchControllerProvider).text);
 
-    final state = ref.watch(browseItemsProvider(sourceDesc)).valueOrNull;
+    final asyncValue = ref.watch(browseItemsProvider(sourceDesc));
+    final state = asyncValue.valueOrNull;
 
-    if (state == null) {
+    if (state == null || asyncValue.isLoading) {
       return BrowseItemListPlaceholder(browseItem: sourceDesc.sourceItem);
     }
 

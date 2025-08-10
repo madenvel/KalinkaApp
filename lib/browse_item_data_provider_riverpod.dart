@@ -243,7 +243,7 @@ class BrowseItemsController
         (pageSize ?? state.valueOrNull?.pageSize ?? defaultItemsPerPage);
     final offset = page * activePageSize;
     final genreIds = _desc.canGenreFilter
-        ? ref.watch(genreFilterProvider).valueOrNull?.selectedGenres.toList()
+        ? ref.read(genreFilterProvider).valueOrNull?.selectedGenres.toList()
         : null;
     final res = await _repository.fetchItems(
         offset: offset, limit: activePageSize, genreIds: genreIds);

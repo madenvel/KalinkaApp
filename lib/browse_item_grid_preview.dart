@@ -47,8 +47,9 @@ class BrowseItemGridPreview extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(browseItemsProvider(sourceDesc)).valueOrNull;
-    if (state == null) {
+    final asyncValue = ref.watch(browseItemsProvider(sourceDesc));
+    final state = asyncValue.valueOrNull;
+    if (state == null || asyncValue.isLoading) {
       return BrowseItemGridPreviewPlaceholder(
           browseItem: sourceDesc.sourceItem);
     }

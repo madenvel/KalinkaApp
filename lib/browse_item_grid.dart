@@ -34,9 +34,10 @@ class BrowseItemGrid extends ConsumerWidget {
 
   Widget _buildGrid(
       BuildContext context, BoxConstraints constraints, WidgetRef ref) {
-    final state = ref.watch(browseItemsProvider(sourceDesc)).valueOrNull;
+    final asyncValue = ref.watch(browseItemsProvider(sourceDesc));
+    final state = asyncValue.valueOrNull;
 
-    if (state == null) {
+    if (state == null || asyncValue.isLoading) {
       return BrowseItemGridPlaceHolder(
           browseItem: sourceDesc.sourceItem, textLabelHeight: textLabelHeight);
     }
