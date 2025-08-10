@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show ConsumerWidget, WidgetRef;
+    show AsyncValueX, ConsumerWidget, WidgetRef;
 import 'package:kalinka/browse_item_card.dart' show BrowseItemCard;
 import 'package:kalinka/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/constants.dart';
@@ -31,10 +31,11 @@ class CatalogBrowseItemView extends ConsumerWidget {
   Widget _buildGrid(
       BuildContext context, BoxConstraints constraints, WidgetRef ref) {
     final provider = browseItemsProvider(sourceDesc);
-    final state = ref.watch(provider).value;
+    final asyncValue = ref.watch(provider);
+    final state = asyncValue.valueOrNull;
     final notifier = ref.read(provider.notifier);
 
-    if (state == null) {
+    if (state == null || asyncValue.isLoading) {
       return CatalogBrowseItemViewPlaceholder(
           browseItem: sourceDesc.sourceItem);
     }
@@ -126,6 +127,9 @@ class CatalogBrowseItemViewPlaceholder extends StatelessWidget {
             6)
         : (imageWidth - contentPadding * 2) / imageAspectRatio +
             contentPadding * 2;
+
+    // final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
+    // final highlightColor = Theme.of(context).colorScheme.surfaceBright;
 
     return CustomScrollView(
       physics: NeverScrollableScrollPhysics(),

@@ -86,10 +86,11 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildSections(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(browseItemsProvider(sourceDesc)).valueOrNull;
+    final asyncValue = ref.watch(browseItemsProvider(sourceDesc));
+    final state = asyncValue.valueOrNull;
     final notifier = ref.read(browseItemsProvider(sourceDesc).notifier);
 
-    if (state == null) {
+    if (state == null || asyncValue.isLoading) {
       return Center(child: CircularProgressIndicator());
     }
 
