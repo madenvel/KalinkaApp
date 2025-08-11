@@ -1,33 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kalinka/browse_item_data_provider_riverpod.dart';
 
 /// Model class to hold connection settings state
 class ConnectionSettings {
   final String name;
   final String host;
   final int port;
-  final bool isLoaded;
 
   const ConnectionSettings({
     required this.name,
     required this.host,
     required this.port,
-    required this.isLoaded,
   });
 
   /// Check if connection settings are properly configured
   bool get isSet => host.isNotEmpty && port > 0;
-
-  /// Resolve a URL based on the current connection settings
-  String resolveUrl(String url) {
-    if (url.startsWith('http')) {
-      return url;
-    }
-    if (url.startsWith('/')) {
-      return 'http://$host:$port$url';
-    }
-    return 'http://$host:$port/$url';
-  }
+  Uri get baseUrl => Uri.parse('http://$host:$port');
 
   ConnectionSettings copyWith({
     String? name,
@@ -39,7 +28,6 @@ class ConnectionSettings {
       name: name ?? this.name,
       host: host ?? this.host,
       port: port ?? this.port,
-      isLoaded: isLoaded ?? this.isLoaded,
     );
   }
 
@@ -49,101 +37,72 @@ class ConnectionSettings {
     return other is ConnectionSettings &&
         other.name == name &&
         other.host == host &&
-        other.port == port &&
-        other.isLoaded == isLoaded;
+        other.port == port;
   }
 
   @override
   int get hashCode {
-    return Object.hash(name, host, port, isLoaded);
+    return Object.hash(name, host, port);
   }
 
   @override
   String toString() {
-    return 'ConnectionSettings(name: $name, host: $host, port: $port, isLoaded: $isLoaded)';
+    return 'ConnectionSettings(name: $name, host: $host, port: $port)';
   }
 }
 
 /// StateNotifier for managing connection settings
-class ConnectionSettingsNotifier extends StateNotifier<ConnectionSettings> {
+class ConnectionSettingsNotifier extends AsyncNotifier<ConnectionSettings> {
   static const String sharedPrefName = 'Kalinka.name';
   static const String sharedPrefHost = 'Kalinka.host';
   static const String sharedPrefPort = 'Kalinka.port';
 
-  ConnectionSettingsNotifier()
-      : super(const ConnectionSettings(
-          name: '',
-          host: '',
-          port: 0,
-          isLoaded: false,
-        )) {
-    _init();
-  }
+  late SharedPreferences _sharedPrefs;
 
   /// Initialize settings from SharedPreferences
-  Future<void> _init() async {
-    final prefs = await SharedPreferences.getInstance();
-    final name = prefs.getString(sharedPrefName) ?? 'Unknown';
-    final host = prefs.getString(sharedPrefHost) ?? '';
-    final port = prefs.getInt(sharedPrefPort) ?? 0;
+  Future<ConnectionSettings> _load() async {
+    final name = _sharedPrefs.getString(sharedPrefName) ?? 'Unknown';
+    final host = _sharedPrefs.getString(sharedPrefHost) ?? '';
+    final port = _sharedPrefs.getInt(sharedPrefPort) ?? 0;
 
-    state = ConnectionSettings(
+    return ConnectionSettings(
       name: name,
       host: host,
       port: port,
-      isLoaded: true,
     );
   }
 
   /// Set device connection settings
   Future<void> setDevice(String name, String host, int port) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(sharedPrefName, name);
-    await prefs.setString(sharedPrefHost, host);
-    await prefs.setInt(sharedPrefPort, port);
+    await _sharedPrefs.setString(sharedPrefName, name);
+    await _sharedPrefs.setString(sharedPrefHost, host);
+    await _sharedPrefs.setInt(sharedPrefPort, port);
 
-    state = ConnectionSettings(
+    state = AsyncData(ConnectionSettings(
       name: name,
       host: host,
       port: port,
-      isLoaded: true,
-    );
+    ));
   }
 
   /// Reset connection settings
   void reset() {
-    state = const ConnectionSettings(
+    state = AsyncData(ConnectionSettings(
       name: '',
       host: '',
       port: 0,
-      isLoaded: true,
-    );
+    ));
+  }
+
+  @override
+  Future<ConnectionSettings> build() async {
+    // Get SharedPreferences from the provider
+    _sharedPrefs = ref.read(sharedPrefsProvider);
+    return _load();
   }
 }
 
 /// Provider for connection settings
 final connectionSettingsProvider =
-    StateNotifierProvider<ConnectionSettingsNotifier, ConnectionSettings>(
-  (ref) => ConnectionSettingsNotifier(),
-);
-
-/// Convenience providers for commonly used values
-final isConnectionSetProvider = Provider<bool>((ref) {
-  return ref.watch(connectionSettingsProvider).isSet;
-});
-
-final isConnectionLoadedProvider = Provider<bool>((ref) {
-  return ref.watch(connectionSettingsProvider).isLoaded;
-});
-
-final connectionNameProvider = Provider<String>((ref) {
-  return ref.watch(connectionSettingsProvider).name;
-});
-
-final connectionHostProvider = Provider<String>((ref) {
-  return ref.watch(connectionSettingsProvider).host;
-});
-
-final connectionPortProvider = Provider<int>((ref) {
-  return ref.watch(connectionSettingsProvider).port;
-});
+    AsyncNotifierProvider<ConnectionSettingsNotifier, ConnectionSettings>(
+        ConnectionSettingsNotifier.new);

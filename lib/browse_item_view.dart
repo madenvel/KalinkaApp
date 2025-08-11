@@ -1,18 +1,18 @@
 import 'package:cached_network_image/cached_network_image.dart'
     show CachedNetworkImage;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/action_button.dart' show ActionButton;
 import 'package:kalinka/bottom_menu.dart' show BottomMenu;
 import 'package:kalinka/browse_item_actions.dart' show BrowseItemActions;
 import 'package:kalinka/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/custom_cache_manager.dart';
-import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
 import 'package:kalinka/favorite_button.dart';
 import 'package:kalinka/polka_dot_painter.dart';
 import 'package:kalinka/preview_section.dart' show PreviewSection;
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
-import 'package:provider/provider.dart';
+import 'package:kalinka/url_resolver.dart';
 import 'data_model.dart';
 
 // --- Constants ---
@@ -29,7 +29,7 @@ const double _kFontSizeBody = 14.0;
 const double _kAppBarTitleScrollOffsetBuffer = 100.0; // Buffer after image
 const double _kBorderRadius = 12.0;
 
-class BrowseItemView extends StatefulWidget {
+class BrowseItemView extends ConsumerStatefulWidget {
   final BrowseItem browseItem;
   final Function(BrowseItem)? onItemSelected;
 
@@ -38,10 +38,10 @@ class BrowseItemView extends StatefulWidget {
             "browseItem must have either artist or canAdd property");
 
   @override
-  State<BrowseItemView> createState() => _BrowseItemViewState();
+  ConsumerState<BrowseItemView> createState() => _BrowseItemViewState();
 }
 
-class _BrowseItemViewState extends State<BrowseItemView> {
+class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
   late ScrollController _scrollController;
   bool _showAppBarTitle = false;
   final GlobalKey _albumCoverKey =
@@ -189,9 +189,7 @@ class _BrowseItemViewState extends State<BrowseItemView> {
             // Foreground Content (Image, Info, Buttons)
             if (albumImage?.isNotEmpty ?? false)
               CachedNetworkImage(
-                imageUrl: context
-                    .read<ConnectionSettingsProvider>()
-                    .resolveUrl(albumImage!),
+                imageUrl: ref.read(urlResolverProvider).abs(albumImage!),
                 cacheManager: KalinkaMusicCacheManager.instance,
                 placeholder: (_, __) => _buildHeaderPlaceholder(context),
                 errorWidget: (_, __, ___) => _buildHeaderView(context, null),

@@ -1,22 +1,23 @@
 import 'package:cached_network_image/cached_network_image.dart'
     show CachedNetworkImage;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show ConsumerWidget, WidgetRef;
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/custom_cache_manager.dart'
     show KalinkaMusicCacheManager;
 import 'package:kalinka/data_model.dart' show BrowseItem, CardSize;
 import 'package:kalinka/browse_item_view.dart';
-import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
-import 'package:provider/provider.dart';
+import 'package:kalinka/url_resolver.dart' show urlResolverProvider;
 
-class LargeImagePreviewCard extends StatelessWidget {
+class LargeImagePreviewCard extends ConsumerWidget {
   final BrowseItem section;
 
   const LargeImagePreviewCard({super.key, required this.section});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cardSize = calculateCardSize(context, CardSize.small);
 
     final imageUrl = section.image?.large ?? section.image?.small;
@@ -45,9 +46,7 @@ class LargeImagePreviewCard extends StatelessWidget {
               fadeOutDuration: Duration.zero,
               height: cardSize,
               cacheManager: KalinkaMusicCacheManager.instance,
-              imageUrl: context
-                  .read<ConnectionSettingsProvider>()
-                  .resolveUrl(imageUrl),
+              imageUrl: ref.read(urlResolverProvider).abs(imageUrl),
               imageBuilder: (context, imageProvider) => Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),

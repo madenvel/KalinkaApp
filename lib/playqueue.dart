@@ -1,5 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show ConsumerWidget, WidgetRef;
+import 'package:kalinka/url_resolver.dart' show urlResolverProvider;
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
@@ -141,7 +144,7 @@ class _PlayQueueState extends State<PlayQueue>
   }
 }
 
-class ImageWithIndicator extends StatelessWidget {
+class ImageWithIndicator extends ConsumerWidget {
   final String? imageUrl;
   final double size;
   final bool showIndicator;
@@ -150,7 +153,7 @@ class ImageWithIndicator extends StatelessWidget {
       {super.key, this.imageUrl, this.size = 48, this.showIndicator = false});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Stack(children: [
       Positioned.fill(
           child: imageUrl != null
@@ -159,9 +162,7 @@ class ImageWithIndicator extends StatelessWidget {
                   fadeOutDuration: Duration.zero,
                   fit: BoxFit.cover,
                   cacheManager: KalinkaMusicCacheManager.instance,
-                  imageUrl: context
-                      .read<ConnectionSettingsProvider>()
-                      .resolveUrl(imageUrl!),
+                  imageUrl: ref.read(urlResolverProvider).abs(imageUrl!),
                   imageBuilder: (context, imageProvider) => Container(
                       decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(4),

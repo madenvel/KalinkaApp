@@ -1,5 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show ConsumerState, ConsumerStatefulWidget;
+import 'package:kalinka/url_resolver.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/fg_service.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
@@ -9,16 +12,16 @@ import 'custom_cache_manager.dart';
 import 'data_model.dart';
 import 'data_provider.dart';
 
-class Playbar extends StatefulWidget {
+class Playbar extends ConsumerStatefulWidget {
   const Playbar({super.key, this.onTap});
 
   final Function? onTap;
 
   @override
-  State<Playbar> createState() => _PlaybarState();
+  ConsumerState<Playbar> createState() => _PlaybarState();
 }
 
-class _PlaybarState extends State<Playbar> {
+class _PlaybarState extends ConsumerState<Playbar> {
   _PlaybarState();
 
   final CarouselSliderController _carouselController =
@@ -199,8 +202,7 @@ class _PlaybarState extends State<Playbar> {
         child: CachedNetworkImage(
           fit: BoxFit.contain,
           cacheManager: KalinkaMusicCacheManager.instance,
-          imageUrl:
-              context.read<ConnectionSettingsProvider>().resolveUrl(imgSource),
+          imageUrl: ref.read(urlResolverProvider).abs(imgSource),
           imageBuilder: (context, imageProvider) => Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(4),

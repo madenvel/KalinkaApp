@@ -4,7 +4,13 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart'
     show FilteringTextInputFormatter, TextInputFormatter;
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
+    show
+        AsyncValueX,
+        ConsumerState,
+        ConsumerStatefulWidget,
+        ConsumerWidget,
+        WidgetRef;
+import 'package:kalinka/connection_settings_provider.dart';
 import 'package:kalinka/data_model.dart' show ModuleState;
 import 'package:kalinka/service_discovery.dart'
     show ServiceDiscoveryDataProvider;
@@ -13,7 +19,6 @@ import 'package:kalinka/modules_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/service_discovery_widget.dart';
-import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
 import 'package:kalinka/event_listener.dart';
 import 'package:logger/logger.dart';
 
@@ -33,7 +38,8 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildBody(BuildContext context, WidgetRef ref) {
-    final connectionSettings = context.watch<ConnectionSettingsProvider>();
+    final connectionSettings =
+        ref.read(connectionSettingsProvider).requireValue;
     if (!connectionSettings.isSet) {
       return Center(
         child: Text('No connection settings available.'),
@@ -49,7 +55,7 @@ class SettingsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildConnectionInformation(context),
+            _buildConnectionInformation(context, ref),
             const SizedBox(height: KalinkaConstants.kContentVerticalPadding),
             _buildDynamicSettings(context, ref),
           ],
@@ -58,8 +64,9 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildConnectionInformation(BuildContext context) {
-    final connectionSettings = context.watch<ConnectionSettingsProvider>();
+  Widget _buildConnectionInformation(BuildContext context, WidgetRef ref) {
+    final connectionSettings =
+        ref.read(connectionSettingsProvider).requireValue;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -69,7 +76,7 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             visualDensity: VisualDensity.standard,
             leading: Image.asset('assets/kalinka_icon.png', height: 35),
-            title: Text('${connectionSettings.name}'),
+            title: Text(connectionSettings.name),
             subtitle:
                 Text('${connectionSettings.host}:${connectionSettings.port}'),
             trailing: IconButton(
@@ -87,8 +94,9 @@ class SettingsScreen extends ConsumerWidget {
                 )
                     .then((item) {
                   if (item != null) {
-                    connectionSettings.setDevice(
-                        item.name, item.ipAddress, item.port);
+                    ref
+                        .read(connectionSettingsProvider.notifier)
+                        .setDevice(item.name, item.ipAddress, item.port);
                   }
                 });
               },
