@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show AsyncValueX, ConsumerState, ConsumerStatefulWidget;
+import 'package:kalinka/browse_item_data_provider_riverpod.dart'
+    show browseItemsProvider;
 import 'package:kalinka/connection_settings_provider.dart';
 import 'package:kalinka/service_discovery.dart';
 import 'package:kalinka/service_discovery_widget.dart'
@@ -45,6 +47,7 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
     subscriptionId = EventListener().registerCallback({
       EventType.NetworkDisconnected: (args) {
         logger.d('Disconnected!!!');
+
         setState(() {
           _connected = false;
         });
@@ -93,13 +96,11 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
     if (!mounted) {
       return;
     }
-    logger.i(
-        'DSAVIN: Connection settings changed: $settings, connected=$_connected');
 
     if (_connected) {
       _audioPlayerService.hideNotificationControls();
-      logger.i('DSAVIN: Stopping existing connection');
       _eventListener.stopListening();
+      ref.invalidate(browseItemsProvider);
     }
 
     _connected = false;
@@ -109,7 +110,6 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
     final host = settings.host;
     final port = settings.port;
     if (host.isNotEmpty && port != 0) {
-      logger.i('DSAVIN: Starting new connection to $host:$port');
       _eventListener.startListening(host, port);
       _kalinkaPlayerProxy.connect(host, port);
     }
@@ -184,8 +184,6 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
                 child: ServiceDiscoveryWidget())))
         .then((item) {
       if (item != null) {
-        logger.i(
-            'DSAVIN: Setting new device: ${item.name}, ${item.ipAddress}:${item.port}');
         notifier.setDevice(item.name, item.ipAddress, item.port);
       }
     });
