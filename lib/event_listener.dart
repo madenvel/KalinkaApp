@@ -125,6 +125,7 @@ class EventListener {
 
   void startListening(String host, int port) async {
     if (_isRunning) {
+      logger.i('Already listening to events');
       return;
     }
     final String url = 'http://$host:$port/queue/events';
@@ -165,9 +166,11 @@ class EventListener {
       }
     } catch (e) {
       logger.e('Stream connection failure: $e');
+    } finally {
+      _invokeCallbacks(EventType.NetworkDisconnected, []);
+      _isRunning = false;
+      logger.i("Stopped listening to events");
     }
-    _invokeCallbacks(EventType.NetworkDisconnected, []);
-    _isRunning = false;
   }
 
   (EventType, List<dynamic>) _parseEvent(String data) {
@@ -228,7 +231,11 @@ class EventListener {
     }
 
     for (var callback in _callbacks[eventType]!.values) {
-      callback(args);
+      try {
+        callback(args);
+      } catch (e) {
+        logger.e("Error invoking callback for event $eventType: $e");
+      }
     }
   }
 
