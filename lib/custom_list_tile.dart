@@ -1,12 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show ConsumerWidget, WidgetRef;
+import 'package:kalinka/url_resolver.dart' show urlResolverProvider;
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/soundwave.dart';
 import 'custom_cache_manager.dart';
 import 'data_model.dart';
 
-class CustomListTile extends StatelessWidget {
+class CustomListTile extends ConsumerWidget {
   final BrowseItem browseItem;
   final int? index;
   final Widget? trailing;
@@ -28,16 +31,16 @@ class CustomListTile extends StatelessWidget {
       this.showDuration = false});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return InkWell(
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
             !noLeadingIcon
-                ? _buildLeadingIcon(context)
+                ? _buildLeadingIcon(context, ref)
                 : const SizedBox.shrink(),
-            Expanded(child: _buildTextInfo(context)),
+            Expanded(child: _buildTextInfo(context, ref)),
             trailing ?? const SizedBox.shrink()
           ]),
         ));
@@ -53,7 +56,7 @@ class CustomListTile extends StatelessWidget {
     return "$hours:$minutes:${seconds.toString().padLeft(2, '0')}";
   }
 
-  Widget _buildTextInfo(BuildContext context) {
+  Widget _buildTextInfo(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.only(left: 8.0, right: 8.0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -107,7 +110,7 @@ class CustomListTile extends StatelessWidget {
     }
   }
 
-  Widget _buildLeadingIcon(BuildContext context) {
+  Widget _buildLeadingIcon(BuildContext context, WidgetRef ref) {
     PlayerState state = context.watch<PlayerStateProvider>().state;
     String playedTrackId = state.currentTrack?.id ?? '';
     String? currentId = browseItem.id;
@@ -123,7 +126,7 @@ class CustomListTile extends StatelessWidget {
                   child: index != null
                       ? _buildLeadingNumber(context)
                       : _buildItemImage(
-                          context, browseItem, _getFallbackIcon()))),
+                          context, browseItem, _getFallbackIcon(), ref))),
           showPlayIndicator && isCurrent
               ? const Center(child: SoundwaveWidget())
               : const SizedBox.shrink()
@@ -141,8 +144,8 @@ class CustomListTile extends StatelessWidget {
     );
   }
 
-  Widget _buildItemImage(
-      BuildContext context, BrowseItem item, IconData fallbackIcon) {
+  Widget _buildItemImage(BuildContext context, BrowseItem item,
+      IconData fallbackIcon, WidgetRef ref) {
     String? image;
     if (item.image != null) {
       image = item.image!.small ?? item.image!.thumbnail ?? item.image!.large;
@@ -170,9 +173,7 @@ class CustomListTile extends StatelessWidget {
                         image: imageProvider, fit: BoxFit.cover),
                   ),
                 ),
-                imageUrl: context
-                    .read<ConnectionSettingsProvider>()
-                    .resolveUrl(image),
+                imageUrl: ref.read(urlResolverProvider).abs(image),
                 placeholder: (context, url) => Container(
                     decoration: BoxDecoration(
                         borderRadius:

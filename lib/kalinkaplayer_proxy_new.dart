@@ -1,39 +1,70 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'data_model.dart';
+import 'dart:convert' show json, jsonDecode, jsonEncode, utf8;
 
-class KalinkaPlayerProxy {
-  static final KalinkaPlayerProxy _instance = KalinkaPlayerProxy._internal();
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http show Client, Response;
+import 'package:kalinka/connection_settings_provider.dart'
+    show connectionSettingsProvider;
+import 'package:kalinka/data_model.dart'
+    show
+        BrowseItem,
+        BrowseItemsList,
+        FavoriteIds,
+        GenreList,
+        ModulesAndDevices,
+        PlayerState,
+        Playlist,
+        SearchType,
+        SearchTypeExtension,
+        SeekStatusMessage,
+        StatusMessage,
+        TrackList,
+        Volume;
 
-  factory KalinkaPlayerProxy() {
-    return _instance;
-  }
+abstract class KalinkaPlayerProxy {
+  Future<StatusMessage> play([int? index]);
+  Future<StatusMessage> next();
+  Future<StatusMessage> previous();
+  Future<StatusMessage> add(List<String> items);
+  Future<StatusMessage> remove(int index);
+  Future<StatusMessage> pause({bool paused = true});
+  Future<StatusMessage> stop();
+  Future<TrackList> listTracks({int offset = 0, int limit = 100});
+  Future<PlayerState> getState();
+  Future<StatusMessage> setPlaybackMode(
+      {bool? repeatOne, bool? repeatAll, bool? shuffle});
+  Future<BrowseItemsList> search(SearchType queryType, String query,
+      {int offset = 0, int limit = 30});
+  Future<BrowseItemsList> browse(String id,
+      {int offset = 0, int limit = 10, List<String>? genreIds});
+  Future<BrowseItemsList> browseItem(BrowseItem item,
+      {int offset = 0, int limit = 10, List<String>? genreIds});
+  Future<BrowseItem> getMetadata(String id);
+  Future<BrowseItemsList> getFavorite(SearchType queryType,
+      {int offset = 0, int limit = 10, String filter = ''});
+  Future<StatusMessage> addFavorite(SearchType queryType, String id);
+  Future<StatusMessage> removeFavorite(SearchType queryType, String id);
+  Future<FavoriteIds> getFavoriteIds();
+  Future<void> clear();
+  Future<void> setVolume(int volume);
+  Future<Volume> getVolume();
+  Future<GenreList> getGenres();
+  Future<SeekStatusMessage> seek(int positionMs);
+  Future<Playlist> playlistCreate(String name, String? description);
+  Future<void> playlistDelete(String playlistId);
+  Future<Playlist> playlistAddTracks(String playlistId, List<String> trackIds);
+  Future<BrowseItemsList> playlistUserList(int offset, int limit);
+  Future<Map<String, dynamic>> getSettings();
+  Future<ModulesAndDevices> listModules();
+  Future<void> saveSettings(Map<String, dynamic> settings);
+  Future<void> restartServer();
+  void close();
+}
 
-  KalinkaPlayerProxy._internal();
-
-  http.Client client = http.Client();
-  String host = '';
-  int port = 0;
-
-  void connect(String host, int port) {
-    // Close the old client to cancel any pending requests
-    client.close();
-    // Create a new client instance
-    client = http.Client();
-
-    this.host = host;
-    this.port = port;
-  }
-
-  void disconnect() {
-    // Close the client to cancel any pending requests
-    client.close();
-    // Create a new client instance for future use
-    client = http.Client();
-
-    host = '';
-    port = 0;
-  }
+class KalinkaPlayerProxyImpl implements KalinkaPlayerProxy {
+  KalinkaPlayerProxyImpl({required this.host, required this.port});
+  final http.Client client = http.Client();
+  final String host;
+  final int port;
 
   Uri _buildUri(String endpoint, [Map<String, dynamic>? queryParameters]) {
     return Uri(
@@ -45,6 +76,7 @@ class KalinkaPlayerProxy {
     );
   }
 
+  @override
   Future<StatusMessage> play([int? index]) async {
     final url = _buildUri(
         '/queue/play', index != null ? {'index': index.toString()} : null);
@@ -53,6 +85,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<StatusMessage> next() async {
     final url = _buildUri('/queue/next');
     return client.put(url).then((response) {
@@ -60,6 +93,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<StatusMessage> previous() async {
     final url = _buildUri('/queue/prev');
     return client.put(url).then((response) {
@@ -67,6 +101,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<StatusMessage> add(List<String> items) async {
     final url = _buildUri('/queue/add');
     return client
@@ -78,6 +113,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<StatusMessage> remove(int index) async {
     final url = _buildUri('/queue/remove', {'index': index.toString()});
     return client.post(url).then((response) {
@@ -85,6 +121,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<StatusMessage> pause({bool paused = true}) async {
     final url = _buildUri('/queue/pause', {'paused': paused.toString()});
     return client.put(url).then((response) {
@@ -92,6 +129,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<StatusMessage> stop() async {
     final url = _buildUri('/queue/stop');
     return client.put(url).then((response) {
@@ -99,6 +137,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<TrackList> listTracks({int offset = 0, int limit = 100}) async {
     final url = _buildUri('/queue/list',
         {'offset': offset.toString(), 'limit': limit.toString()});
@@ -111,6 +150,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<PlayerState> getState() async {
     final url = _buildUri('/queue/state');
     return client.get(url).then((response) {
@@ -122,6 +162,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<StatusMessage> setPlaybackMode(
       {bool? repeatOne, bool? repeatAll, bool? shuffle}) async {
     final url = _buildUri('/queue/mode', {
@@ -135,6 +176,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<BrowseItemsList> search(SearchType queryType, String query,
       {int offset = 0, int limit = 30}) async {
     final url = _buildUri('/search/${queryType.toStringValue()}/$query',
@@ -149,6 +191,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<BrowseItemsList> browse(String id,
       {int offset = 0, int limit = 10, List<String>? genreIds}) async {
     final url = _buildUri('/browse/$id', {
@@ -166,6 +209,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<BrowseItemsList> browseItem(BrowseItem item,
       {int offset = 0, int limit = 10, List<String>? genreIds}) {
     if (item.canBrowse) {
@@ -175,6 +219,7 @@ class KalinkaPlayerProxy {
     return Future.value(BrowseItemsList(0, 0, 0, []));
   }
 
+  @override
   Future<BrowseItem> getMetadata(String id) async {
     final url = _buildUri('/get/$id');
     return client.get(url).then((response) {
@@ -186,6 +231,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<BrowseItemsList> getFavorite(SearchType queryType,
       {int offset = 0, int limit = 10, String filter = ''}) async {
     final url = _buildUri('/favorite/list/${queryType.toStringValue()}', {
@@ -204,6 +250,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<StatusMessage> addFavorite(SearchType queryType, String id) async {
     final url = _buildUri('/favorite/add/${queryType.toStringValue()}/$id');
     return client.put(url).then((response) {
@@ -211,6 +258,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<StatusMessage> removeFavorite(SearchType queryType, String id) async {
     final url = _buildUri('/favorite/remove/${queryType.toStringValue()}/$id');
     return client.delete(url).then((response) {
@@ -218,6 +266,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<FavoriteIds> getFavoriteIds() async {
     final url = _buildUri('/favorite/ids');
     return client.get(url).then((response) {
@@ -229,6 +278,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<void> clear() async {
     final url = _buildUri('/queue/clear');
     return client.put(url).then((response) {
@@ -238,6 +288,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<void> setVolume(int volume) async {
     final url = _buildUri('/device/set_volume',
         {'device_id': 'musiccast', 'volume': volume.toString()});
@@ -248,6 +299,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<Volume> getVolume() async {
     final url = _buildUri('/device/get_volume', {'device_id': 'musiccast'});
     return client.get(url).then((response) {
@@ -258,6 +310,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<GenreList> getGenres() async {
     final url = _buildUri('/genre/list');
     return client.get(url).then((response) {
@@ -268,6 +321,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<SeekStatusMessage> seek(int positionMs) async {
     final url = _buildUri(
         '/queue/current_track/seek', {'position_ms': positionMs.toString()});
@@ -281,6 +335,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<Playlist> playlistCreate(String name, String? description) async {
     final url = _buildUri('/playlist/create',
         {'name': name, if (description != null) 'description': description});
@@ -292,6 +347,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<void> playlistDelete(String playlistId) async {
     final url = _buildUri('/playlist/delete', {'playlist_id': playlistId});
     return client.delete(url).then((response) {
@@ -302,6 +358,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<Playlist> playlistAddTracks(
       String playlistId, List<String> trackIds) async {
     final url = _buildUri('/playlist/add_tracks', {'playlist_id': playlistId});
@@ -317,6 +374,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<BrowseItemsList> playlistUserList(int offset, int limit) async {
     final url = _buildUri('/playlist/list');
     return client.get(url).then((response) {
@@ -328,6 +386,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<Map<String, dynamic>> getSettings() async {
     final url = _buildUri('/server/config');
     return client.get(url).then((response) {
@@ -338,6 +397,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<ModulesAndDevices> listModules() async {
     final url = _buildUri('/server/modules');
     return client.get(url).then((response) {
@@ -349,6 +409,7 @@ class KalinkaPlayerProxy {
     });
   }
 
+  @override
   Future<void> saveSettings(Map<String, dynamic> settings) async {
     final url = _buildUri('/server/config');
     final String encodedSettings = jsonEncode(settings);
@@ -361,6 +422,7 @@ class KalinkaPlayerProxy {
     }
   }
 
+  @override
   Future<void> restartServer() async {
     final url = _buildUri('/server/restart');
     return client.put(url).then((response) {
@@ -377,4 +439,31 @@ class KalinkaPlayerProxy {
     }
     return StatusMessage.fromJson(json.decode(utf8.decode(response.bodyBytes)));
   }
+
+  @override
+  Future<void> close() async {
+    return client.close();
+  }
 }
+
+// The proxy instance itself (constructed once, disposed automatically)
+final kalinkaProxyProvider = Provider<KalinkaPlayerProxy>((ref) {
+  final host =
+      ref.watch(connectionSettingsProvider.select((a) => a.requireValue.host));
+  final port =
+      ref.watch(connectionSettingsProvider.select((a) => a.requireValue.port));
+
+  final proxy = KalinkaPlayerProxyImpl(host: host, port: port);
+
+  ref.onDispose(() async {
+    await proxy.close();
+  });
+
+  // Keep alive if you navigate across screens frequently
+  // final link = ref.keepAlive();
+
+  // Optional: release after some idle time
+  // Timer(const Duration(minutes: 10), link.close);
+
+  return proxy;
+});

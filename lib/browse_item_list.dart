@@ -10,6 +10,7 @@ import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/soundwave.dart';
 import 'package:kalinka/source_attribution.dart' show SourceAttribution;
+import 'package:kalinka/url_resolver.dart';
 import 'package:provider/provider.dart';
 import 'data_model.dart';
 import 'shimmer_effect.dart' show Shimmer;
@@ -179,8 +180,7 @@ class _BrowseItemListState extends ConsumerState<BrowseItemList> {
       BuildContext context, BrowseItem item, int index, String? albumImage) {
     if (albumImage != null) {
       return CachedNetworkImage(
-          imageUrl:
-              context.read<ConnectionSettingsProvider>().resolveUrl(albumImage),
+          imageUrl: ref.read(urlResolverProvider).abs(albumImage),
           fit: BoxFit.cover,
           imageBuilder: (context, imageProvider) => _buildTrackListItemTile(
               context,

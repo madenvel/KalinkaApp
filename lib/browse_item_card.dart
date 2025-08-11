@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/category_card.dart' show CategoryCard;
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/custom_cache_manager.dart';
@@ -10,16 +11,15 @@ import 'package:kalinka/data_model.dart'
         PreviewContentType,
         PreviewContentTypeExtension,
         PreviewType;
-import 'package:kalinka/data_provider.dart' show ConnectionSettingsProvider;
 import 'package:kalinka/image_card_tile.dart' show ImageCardTile;
 import 'package:kalinka/image_card_tile_placeholder.dart'
     show ImageCardTilePlaceholder;
 import 'package:kalinka/source_attribution.dart' show SourceAttribution;
 import 'package:kalinka/text_card_colors.dart' show TextCardColors;
-import 'package:provider/provider.dart' show ReadContext;
+import 'package:kalinka/url_resolver.dart';
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
 
-class BrowseItemCard extends StatelessWidget {
+class BrowseItemCard extends ConsumerWidget {
   final BrowseItem? item;
   final PreviewContentType? previewContentTypeHint;
   final PreviewType? previewType;
@@ -37,7 +37,7 @@ class BrowseItemCard extends StatelessWidget {
       this.showSourceAttribution = true});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (item == null) {
       return _buildPlaceholderCard(context);
     }
@@ -46,7 +46,7 @@ class BrowseItemCard extends StatelessWidget {
       return _buildCategoryCard(context);
     }
 
-    return _buildImageCard(context);
+    return _buildImageCard(context, ref);
   }
 
   Widget _buildPlaceholderCard(BuildContext context) {
@@ -75,7 +75,7 @@ class BrowseItemCard extends StatelessWidget {
         ));
   }
 
-  Widget _buildImageCard(BuildContext context) {
+  Widget _buildImageCard(BuildContext context, WidgetRef ref) {
     assert(item != null, 'Item must not be null for image card');
 
     final image =
@@ -85,8 +85,7 @@ class BrowseItemCard extends StatelessWidget {
       return _buildIconCard(context);
     }
 
-    final connectionSettings = context.read<ConnectionSettingsProvider>();
-    final imageUrl = connectionSettings.resolveUrl(image);
+    final imageUrl = ref.read(urlResolverProvider).abs(image);
     final contentType = previewContentTypeHint ??
         PreviewContentTypeExtension.fromBrowseType(item!.browseType);
 

@@ -1,7 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show ConsumerState, ConsumerStatefulWidget;
 import 'package:kalinka/action_button.dart' show ActionButton;
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
+import 'package:kalinka/url_resolver.dart' show urlResolverProvider;
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/favorite_button.dart';
@@ -25,14 +28,14 @@ class _NowPlayingConstants {
   static const double albumArtRadius = 16.0;
 }
 
-class NowPlaying extends StatefulWidget {
+class NowPlaying extends ConsumerStatefulWidget {
   const NowPlaying({super.key});
 
   @override
-  State<NowPlaying> createState() => _NowPlayingState();
+  ConsumerState<NowPlaying> createState() => _NowPlayingState();
 }
 
-class _NowPlayingState extends State<NowPlaying> {
+class _NowPlayingState extends ConsumerState<NowPlaying> {
   final logger = Logger();
   bool isSeeking = false;
   double seekValue = 0;
@@ -462,8 +465,7 @@ class _NowPlayingState extends State<NowPlaying> {
         fadeInDuration: Duration.zero,
         fadeOutDuration: Duration.zero,
         cacheManager: KalinkaMusicCacheManager.instance,
-        imageUrl:
-            context.read<ConnectionSettingsProvider>().resolveUrl(imageUrl),
+        imageUrl: ref.read(urlResolverProvider).abs(imageUrl),
         fit: BoxFit.contain,
         placeholder: (_, __) => _buildAlbumShimmeringPlaceholder(),
         errorWidget: (_, __, ___) => _buildAlbumPlaceholder(),

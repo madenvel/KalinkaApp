@@ -2,22 +2,21 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show ConsumerState, ConsumerStatefulWidget;
+    show AsyncValueX, ConsumerState, ConsumerStatefulWidget;
+import 'package:kalinka/connection_settings_provider.dart';
 import 'package:kalinka/service_discovery.dart';
 import 'package:kalinka/service_discovery_widget.dart'
     show ServiceDiscoveryWidget;
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
-import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/event_listener.dart';
 import 'package:kalinka/fg_service.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 
 class ConnectionManager extends ConsumerStatefulWidget {
   final Widget child;
-  final Function? onConnected;
 
-  const ConnectionManager({super.key, required this.child, this.onConnected});
+  const ConnectionManager({super.key, required this.child});
 
   @override
   ConsumerState<ConnectionManager> createState() => _ConnectionManagerState();
@@ -31,7 +30,7 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
   final int _maxConnectionAttemptsInRound = 3;
   int _totalConnectionAttempts = 0;
 
-  late String subscriptionId;
+  late final String subscriptionId;
 
   final EventListener _eventListener = EventListener();
   final KalinkaPlayerProxy _kalinkaPlayerProxy = KalinkaPlayerProxy();
@@ -53,8 +52,8 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
           _waitTime = (_waitTime * 2).clamp(1, 8);
           _connectionAttemptsInRound = 0;
         }
-        final provider = context.read<ConnectionSettingsProvider>();
-        if (provider.isSet) {
+        final settings = ref.read(connectionSettingsProvider);
+        if (settings.requireValue.isSet) {
           Timer(Duration(seconds: _waitTime), () {
             if (!_connected) {
               logger.i('Attempting to reconnect, $_connectionAttemptsInRound');
@@ -63,9 +62,11 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
                 _totalConnectionAttempts++;
               });
 
-              final host = provider.host;
-              final port = provider.port;
+              final host = settings.requireValue.host;
+              final port = settings.requireValue.port;
               _eventListener.startListening(host, port);
+              _kalinkaPlayerProxy.connect(host, port);
+              logger.i("Attempting to listen to $host:$port");
             }
           });
         }
@@ -76,23 +77,28 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
           _connectionAttemptsInRound = 0;
           _totalConnectionAttempts =
               0; // Reset total attempts on successful connection
-          widget.onConnected?.call();
-          final provider = context.read<ConnectionSettingsProvider>();
-          final host = provider.host;
-          final port = provider.port;
-          _audioPlayerService.init(host, port);
+          final settings = ref.read(connectionSettingsProvider).requireValue;
+          _audioPlayerService.init(settings.host, settings.port);
         });
       }
     });
-    context.read<ConnectionSettingsProvider>().addListener(onSettingsChanged);
+    ref.listenManual(connectionSettingsProvider, (previous, next) {
+      if (previous != next) {
+        Future.microtask(() => onSettingsChanged(next.requireValue));
+      }
+    });
   }
 
-  void onSettingsChanged() {
+  Future<void> onSettingsChanged(ConnectionSettings settings) async {
     if (!mounted) {
       return;
     }
+    logger.i(
+        'DSAVIN: Connection settings changed: $settings, connected=$_connected');
+
     if (_connected) {
       _audioPlayerService.hideNotificationControls();
+      logger.i('DSAVIN: Stopping existing connection');
       _eventListener.stopListening();
     }
 
@@ -100,22 +106,14 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
     _connectionAttemptsInRound = 0;
     _totalConnectionAttempts = 0; // Reset total attempts when settings change
     _waitTime = 1; // Reset wait time to initial value
-    final provider = context.read<ConnectionSettingsProvider>();
-    final host = provider.host;
-    final port = provider.port;
+    final host = settings.host;
+    final port = settings.port;
     if (host.isNotEmpty && port != 0) {
+      logger.i('DSAVIN: Starting new connection to $host:$port');
       _eventListener.startListening(host, port);
       _kalinkaPlayerProxy.connect(host, port);
     }
     setState(() {});
-  }
-
-  @override
-  void deactivate() {
-    super.deactivate();
-    context
-        .read<ConnectionSettingsProvider>()
-        .removeListener(onSettingsChanged);
   }
 
   @override
@@ -126,26 +124,28 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        body: Consumer<ConnectionSettingsProvider>(
-            builder: (context, provider, _) => _buildBody(context, provider)));
+    return Scaffold(body: _buildBody(context));
   }
 
-  Widget _buildBody(BuildContext context, ConnectionSettingsProvider provider) {
-    final isHostPortSet = provider.isSet;
-    if (!provider.isLoaded) {
-      return const SizedBox.shrink();
-    }
+  Widget _buildBody(BuildContext context) {
+    final settings = ref.watch(connectionSettingsProvider);
 
-    if (!isHostPortSet || !_connected) {
-      return buildConnectingScreen(context, provider);
-    } else {
-      return widget.child;
-    }
+    return settings.when(data: (data) {
+      final isHostPortSet = data.isSet;
+      if (!isHostPortSet || !_connected) {
+        return buildConnectingScreen(context, data);
+      } else {
+        return widget.child;
+      }
+    }, error: (error, stackTrace) {
+      return Center(child: Text('Error: $error'));
+    }, loading: () {
+      return Center(child: CircularProgressIndicator());
+    });
   }
 
   Widget buildConnectingScreen(
-      BuildContext context, ConnectionSettingsProvider provider) {
+      BuildContext context, ConnectionSettings settings) {
     return Center(
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         CircleAvatar(
@@ -157,7 +157,7 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
           ),
         ),
         const SizedBox(height: 16),
-        if (provider.isSet &&
+        if (settings.isSet &&
             _totalConnectionAttempts <= _totalConnectionAttemptsToShowSpinner)
           const SizedBox(
               width: 16,
@@ -165,18 +165,18 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
               child: CircularProgressIndicator(strokeWidth: 2.0))
         else
           ElevatedButton(
-              child: Text(provider.isSet
+              child: Text(settings.isSet
                   ? 'Connect To New Streamer'
                   : 'Connect To Streamer'),
               onPressed: () {
-                _showDiscoveryScreen(context, provider);
+                _showDiscoveryScreen(context);
               })
       ]),
     );
   }
 
-  void _showDiscoveryScreen(
-      BuildContext context, ConnectionSettingsProvider provider) {
+  void _showDiscoveryScreen(BuildContext context) {
+    final notifier = ref.read(connectionSettingsProvider.notifier);
     Navigator.of(context, rootNavigator: true)
         .push(MaterialPageRoute(
             builder: (context) => ChangeNotifierProvider(
@@ -184,7 +184,9 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
                 child: ServiceDiscoveryWidget())))
         .then((item) {
       if (item != null) {
-        provider.setDevice(item.name, item.ipAddress, item.port);
+        logger.i(
+            'DSAVIN: Setting new device: ${item.name}, ${item.ipAddress}:${item.port}');
+        notifier.setDevice(item.name, item.ipAddress, item.port);
       }
     });
   }

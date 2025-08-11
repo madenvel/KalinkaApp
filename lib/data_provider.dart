@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:logger/logger.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data_model.dart';
 import 'event_listener.dart';
@@ -478,66 +477,6 @@ class VolumeControlProvider with ChangeNotifier {
   void dispose() {
     EventListener().unregisterCallback(subscriptionId);
     super.dispose();
-  }
-}
-
-class ConnectionSettingsProvider with ChangeNotifier {
-  String _name = '';
-  String _host = '';
-  int _port = 0;
-  bool _isLoaded = false;
-
-  final String sharedPrefName = 'Kalinka.name';
-  final String sharedPrefHost = 'Kalinka.host';
-  final String sharedPrefPort = 'Kalinka.port';
-
-  get name => _name;
-  get host => _host;
-  get port => _port;
-  get isSet => _host.isNotEmpty && _port > 0;
-  get isLoaded => _isLoaded;
-
-  String resolveUrl(String url) {
-    if (url.startsWith('http')) {
-      return url;
-    }
-    if (url.startsWith('/')) {
-      return 'http://$_host:$_port$url';
-    }
-    return 'http://$_host:$_port/$url';
-  }
-
-  ConnectionSettingsProvider() {
-    _init();
-  }
-
-  Future<void> _init() {
-    return SharedPreferences.getInstance().then((prefs) {
-      _name = prefs.getString(sharedPrefName) ?? 'Unknown';
-      _host = prefs.getString(sharedPrefHost) ?? '';
-      _port = prefs.getInt(sharedPrefPort) ?? 0;
-      _isLoaded = true;
-      notifyListeners();
-    });
-  }
-
-  Future<void> setDevice(String name, String host, int port) {
-    return SharedPreferences.getInstance().then((prefs) {
-      prefs.setString(sharedPrefName, name);
-      prefs.setString(sharedPrefHost, host);
-      prefs.setInt(sharedPrefPort, port);
-      _name = name;
-      _host = host;
-      _port = port;
-      notifyListeners();
-    });
-  }
-
-  void reset() {
-    _name = '';
-    _host = '';
-    _port = 0;
-    notifyListeners();
   }
 }
 

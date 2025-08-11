@@ -2,22 +2,25 @@ import 'dart:collection';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show ConsumerState, ConsumerStatefulWidget;
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_model.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:kalinka/playlist_creation_dialog.dart';
+import 'package:kalinka/url_resolver.dart';
 import 'package:provider/provider.dart';
 
-class AddToPlaylist extends StatefulWidget {
+class AddToPlaylist extends ConsumerStatefulWidget {
   final BrowseItemsList items;
   const AddToPlaylist({super.key, required this.items});
 
   @override
-  State<AddToPlaylist> createState() => AddToPlaylistState();
+  ConsumerState<AddToPlaylist> createState() => AddToPlaylistState();
 }
 
-class AddToPlaylistState extends State<AddToPlaylist> {
+class AddToPlaylistState extends ConsumerState<AddToPlaylist> {
   // Set to keep track of selected playlist IDs
   Set<String> selectedPlaylists = {};
 
@@ -287,8 +290,7 @@ class AddToPlaylistState extends State<AddToPlaylist> {
     if (imageUrl != null) {
       return CachedNetworkImage(
         cacheManager: KalinkaMusicCacheManager.instance,
-        imageUrl:
-            context.read<ConnectionSettingsProvider>().resolveUrl(imageUrl),
+        imageUrl: ref.read(urlResolverProvider).abs(imageUrl),
         imageBuilder: (context, imageProvider) => Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
