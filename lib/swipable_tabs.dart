@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show ConsumerState, ConsumerStatefulWidget;
 import 'package:kalinka/add_to_playlist.dart';
 import 'package:kalinka/event_listener.dart';
-import 'package:kalinka/kalinkaplayer_proxy.dart';
+import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
 import 'package:kalinka/polka_dot_painter.dart' show PolkaDotPainter;
 import 'package:kalinka/shimmer_effect.dart' show ShimmerProvider;
 import 'package:provider/provider.dart';
@@ -12,14 +14,14 @@ import 'package:kalinka/data_provider.dart';
 import 'nowplaying.dart';
 import 'playqueue.dart';
 
-class SwipableTabs extends StatefulWidget {
+class SwipableTabs extends ConsumerStatefulWidget {
   const SwipableTabs({super.key});
 
   @override
-  State<SwipableTabs> createState() => _SwipableTabsState();
+  ConsumerState<SwipableTabs> createState() => _SwipableTabsState();
 }
 
-class _SwipableTabsState extends State<SwipableTabs>
+class _SwipableTabsState extends ConsumerState<SwipableTabs>
     with TickerProviderStateMixin {
   late final TabController controller;
   int _index = 0;
@@ -142,7 +144,7 @@ class _SwipableTabsState extends State<SwipableTabs>
                                   title: const Text('Clear Queue'),
                                   onTap: () {
                                     Navigator.pop(context);
-                                    KalinkaPlayerProxy().clear();
+                                    ref.read(kalinkaProxyProvider).clear();
                                   },
                                 ),
                               ],

@@ -3,7 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
-import 'package:kalinka/browse_item_data_provider_riverpod.dart'
+import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart'
     show sharedPrefsProvider;
 import 'package:kalinka/connection_manager.dart';
 import 'package:kalinka/constants.dart';
@@ -50,10 +50,6 @@ class KalinkaMusic extends StatelessWidget {
         providers: [
           ChangeNotifierProvider(create: (context) => TrackListProvider()),
           ChangeNotifierProvider(create: (context) => PlayerStateProvider()),
-          ChangeNotifierProvider(
-              create: (context) => UserFavoritesIdsProvider()),
-          ChangeNotifierProvider(create: (context) => GenreFilterProvider()),
-          ChangeNotifierProvider(create: (context) => UserPlaylistProvider()),
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,

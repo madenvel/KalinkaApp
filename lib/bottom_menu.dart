@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/add_to_playlist.dart';
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
-import 'package:provider/provider.dart';
+import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
+    show kalinkaProxyProvider;
+import 'package:kalinka/providers/user_favoriteids_provider.dart'
+    show userFavoritesIdsProvider;
+import 'package:kalinka/providers/user_playlist_provider.dart';
 import 'package:kalinka/custom_list_tile.dart';
 import 'package:kalinka/data_model.dart';
-import 'package:kalinka/data_provider.dart';
-import 'package:kalinka/kalinkaplayer_proxy.dart';
 
-class BottomMenu extends StatelessWidget {
+class BottomMenu extends ConsumerWidget {
   final BrowseItem browseItem;
   final BuildContext parentContext;
   final bool showPlay;
@@ -21,22 +24,19 @@ class BottomMenu extends StatelessWidget {
       this.showAddToQueue = true});
 
   @override
-  Widget build(BuildContext context) {
-    return Consumer<UserFavoritesIdsProvider>(
-        builder: (context, favoritesProvider, _) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildHeader(),
-          const Divider(),
-          ..._buildPlaybackControls(context),
-          ..._buildPlaylistOptions(context),
-          ..._buildFavoriteOptions(context, favoritesProvider),
-          ..._buildNavigationOptions(context),
-          SizedBox(height: 16 + MediaQuery.of(context).viewPadding.bottom),
-        ],
-      );
-    });
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildHeader(),
+        const Divider(),
+        ..._buildPlaybackControls(context, ref),
+        ..._buildPlaylistOptions(context),
+        ..._buildFavoriteOptions(context, ref),
+        ..._buildNavigationOptions(context, ref),
+        SizedBox(height: 16 + MediaQuery.of(context).viewPadding.bottom),
+      ],
+    );
   }
 
   Widget _buildHeader() {
@@ -48,18 +48,19 @@ class BottomMenu extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildPlaybackControls(BuildContext context) {
+  List<Widget> _buildPlaybackControls(BuildContext context, WidgetRef ref) {
     List<Widget> widgets = [];
+    final kalinkaApi = ref.read(kalinkaProxyProvider);
 
     if (showPlay && browseItem.canAdd == true) {
       widgets.add(ListTile(
         title: const Text('Play'),
         leading: const Icon(Icons.play_arrow),
         onTap: () {
-          KalinkaPlayerProxy().clear().then((_) {
-            return KalinkaPlayerProxy().add([browseItem.id]);
+          kalinkaApi.clear().then((_) {
+            return kalinkaApi.add([browseItem.id]);
           }).then((_) {
-            return KalinkaPlayerProxy().play();
+            return kalinkaApi.play();
           });
           Navigator.pop(context);
         },
@@ -71,7 +72,7 @@ class BottomMenu extends StatelessWidget {
         title: const Text('Add to queue'),
         leading: const Icon(Icons.queue_music),
         onTap: () {
-          KalinkaPlayerProxy().add([browseItem.id]).then((_) {
+          kalinkaApi.add([browseItem.id]).then((_) {
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                 content: Text('Added item to playueue'),
@@ -111,31 +112,33 @@ class BottomMenu extends StatelessWidget {
     ];
   }
 
-  List<Widget> _buildFavoriteOptions(
-      BuildContext context, UserFavoritesIdsProvider favoritesProvider) {
+  List<Widget> _buildFavoriteOptions(BuildContext context, WidgetRef ref) {
     List<Widget> widgets = [];
+    final state = ref.watch(userFavoritesIdsProvider).valueOrNull;
+    if (state == null) return [];
 
-    if (browseItem.canFavorite && !favoritesProvider.isFavorite(browseItem)) {
+    final notifier = ref.read(userFavoritesIdsProvider.notifier);
+
+    if (browseItem.canFavorite && !state.contains(browseItem.id) == true) {
       widgets.add(ListTile(
         title: const Text('Add to favorites'),
         leading: const Icon(Icons.favorite),
         onTap: () {
-          favoritesProvider.add(browseItem);
+          notifier.add(browseItem);
           Navigator.pop(context);
         },
       ));
     }
 
-    if (browseItem.canFavorite && favoritesProvider.isFavorite(browseItem)) {
+    if (browseItem.canFavorite && state.contains(browseItem.id)) {
       widgets.add(ListTile(
         title: const Text('Delete from favorites'),
         leading: const Icon(Icons.heart_broken),
         onTap: () {
-          favoritesProvider.remove(browseItem);
+          notifier.remove(browseItem);
           if (browseItem.browseType == BrowseType.playlist) {
-            UserPlaylistProvider playlistProvider =
-                context.read<UserPlaylistProvider>();
-            playlistProvider.removePlaylist(browseItem.playlist!);
+            final playlistNotifier = ref.read(userPlaylistProvider.notifier);
+            playlistNotifier.removePlaylist(browseItem.playlist!);
           }
           Navigator.pop(context);
         },
@@ -145,7 +148,9 @@ class BottomMenu extends StatelessWidget {
     return widgets;
   }
 
-  List<Widget> _buildNavigationOptions(BuildContext context) {
+  List<Widget> _buildNavigationOptions(BuildContext context, WidgetRef ref) {
+    final kalinkaApi = ref.read(kalinkaProxyProvider);
+
     List<Widget> widgets = [];
     final albumId = browseItem.album?.id ?? browseItem.track?.album?.id;
     final artistId =
@@ -156,7 +161,7 @@ class BottomMenu extends StatelessWidget {
         title: const Text('More from this Album'),
         leading: const Icon(Icons.album),
         onTap: () {
-          KalinkaPlayerProxy().getMetadata(albumId).then((BrowseItem item) {
+          kalinkaApi.getMetadata(albumId).then((BrowseItem item) {
             if (context.mounted) {
               Navigator.pop(context);
               Navigator.push(
@@ -174,7 +179,7 @@ class BottomMenu extends StatelessWidget {
         title: const Text('More from this Artist'),
         leading: const Icon(Icons.person),
         onTap: () {
-          KalinkaPlayerProxy().getMetadata(artistId).then((BrowseItem item) {
+          kalinkaApi.getMetadata(artistId).then((BrowseItem item) {
             if (context.mounted) {
               Navigator.pop(context);
               Navigator.push(

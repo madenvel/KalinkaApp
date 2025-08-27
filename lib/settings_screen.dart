@@ -14,7 +14,7 @@ import 'package:kalinka/connection_settings_provider.dart';
 import 'package:kalinka/data_model.dart' show ModuleState;
 import 'package:kalinka/service_discovery.dart'
     show ServiceDiscoveryDataProvider;
-import 'package:kalinka/settings_provider.dart';
+import 'package:kalinka/providers/settings_provider.dart';
 import 'package:kalinka/modules_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/constants.dart';
@@ -108,11 +108,11 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildDynamicSettings(BuildContext context, WidgetRef ref) {
-    var provider = ref.watch(settingsProvider);
-    if (provider.isLoading) {
+    final state = ref.watch(settingsProvider).valueOrNull;
+    if (state == null) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (provider.currentSettings.isEmpty) {
+    if (state.currentSettings.isEmpty) {
       return SizedBox.shrink();
     }
     return DynamicSettingsSection(path: 'root');
@@ -155,10 +155,13 @@ class DynamicSettingsSubsection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var provider = ref.watch(settingsProvider);
-    var modulesState = ref.watch(modulesProvider);
-    var setting = provider.getCurrentValue(path);
-    var isChanged = provider.isPathChanged(path);
+    final state = ref.watch(settingsProvider).valueOrNull;
+    if (state == null) {
+      return SizedBox.shrink();
+    }
+    final modulesState = ref.watch(modulesProvider);
+    final setting = state.getCurrentValue(path);
+    final isChanged = state.isPathChanged(path);
     ModuleState? moduleStatus = modulesState.getModuleStatus(path);
 
     return ListTile(
@@ -195,7 +198,11 @@ class DynamicSettingsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final setting = ref.watch(settingsProvider).getCurrentValue(path);
+    final state = ref.watch(settingsProvider).valueOrNull;
+    if (state == null) {
+      return SizedBox.shrink();
+    }
+    final setting = state.getCurrentValue(path);
 
     if (setting == null) {
       return Padding(
@@ -252,7 +259,12 @@ class DynamicSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var setting = ref.read(settingsProvider).getCurrentValue(path);
+    final state = ref.watch(settingsProvider).valueOrNull;
+    if (state == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final setting = state.getCurrentValue(path);
     assert(setting != null,
         'Settings for path "$path" not found. Please check your settings configuration.');
     return Scaffold(
@@ -293,7 +305,13 @@ class SettingEditorWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var setting = ref.read(settingsProvider).getCurrentValue(path);
+    final state = ref.watch(settingsProvider).valueOrNull;
+
+    if (state == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final setting = state.getCurrentValue(path);
 
     assert(setting != null,
         'Settings for path "$path" not found. Please check your settings configuration.');
@@ -439,7 +457,11 @@ class ListSettingEditor extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var setting = ref.read(settingsProvider).getCurrentValue(path);
+    final state = ref.watch(settingsProvider).valueOrNull;
+    if (state == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final setting = state.getCurrentValue(path);
 
     assert(setting != null,
         'Settings for path "$path" not found. Please check your settings configuration.');
@@ -505,9 +527,12 @@ class DynamicSettingsPrimitiveItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var provider = ref.watch(settingsProvider);
-    var setting = provider.getCurrentValue(path);
-    var isChanged = provider.isSettingChanged(path);
+    final state = ref.watch(settingsProvider).valueOrNull;
+    if (state == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final setting = state.getCurrentValue(path);
+    final isChanged = state.isSettingChanged(path);
 
     assert(setting != null,
         'Settings for path "$path" not found. Please check your settings configuration.');
@@ -573,9 +598,12 @@ class DynamicSettingsListItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var provider = ref.watch(settingsProvider);
-    var setting = provider.getCurrentValue(path);
-    var isChanged = provider.isSettingChanged(path);
+    var state = ref.watch(settingsProvider).valueOrNull;
+    if (state == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final setting = state.getCurrentValue(path);
+    final isChanged = state.isSettingChanged(path);
 
     assert(setting != null,
         'Settings for path "$path" not found. Please check your settings configuration.');
@@ -627,7 +655,9 @@ class DynamicSettingsListItem extends ConsumerWidget {
 
 Future<void> showEditDialog(
     BuildContext context, WidgetRef ref, String path) async {
-  var setting = ref.read(settingsProvider).getCurrentValue(path);
+  final state = ref.read(settingsProvider).valueOrNull;
+  if (state == null) return;
+  final setting = state.getCurrentValue(path);
   final isPassword =
       setting.containsKey('password') && setting['password'] == true;
 
@@ -714,10 +744,13 @@ class SettingsChangedBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = ref.watch(settingsProvider);
-    final hasChanges = provider.hasChanges;
+    final state = ref.watch(settingsProvider).valueOrNull;
+    if (state == null) {
+      return SizedBox.shrink();
+    }
+    final hasChanges = state.hasChanges;
 
-    final isError = provider.error != null && provider.error!.isNotEmpty;
+    final isError = state.error != null && state.error!.isNotEmpty;
 
     if (!hasChanges) {
       return const SizedBox.shrink();
@@ -745,7 +778,7 @@ class SettingsChangedBanner extends ConsumerWidget {
                       ? Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('${provider.error}'),
+                            Text('${state.error}'),
                             const SizedBox(
                                 height:
                                     KalinkaConstants.kContentVerticalPadding),

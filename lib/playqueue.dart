@@ -1,25 +1,26 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show ConsumerWidget, WidgetRef;
-import 'package:kalinka/url_resolver.dart' show urlResolverProvider;
+    show ConsumerStatefulWidget, ConsumerWidget, ConsumerState, WidgetRef;
+import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
+    show kalinkaProxyProvider;
+import 'package:kalinka/providers/url_resolver.dart' show urlResolverProvider;
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_provider.dart';
-import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import 'custom_cache_manager.dart';
 import 'data_model.dart';
 import 'soundwave.dart';
 
-class PlayQueue extends StatefulWidget {
+class PlayQueue extends ConsumerStatefulWidget {
   const PlayQueue({super.key});
 
   @override
-  State<PlayQueue> createState() => _PlayQueueState();
+  ConsumerState<PlayQueue> createState() => _PlayQueueState();
 }
 
-class _PlayQueueState extends State<PlayQueue>
+class _PlayQueueState extends ConsumerState<PlayQueue>
     with AutomaticKeepAliveClientMixin {
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener =
@@ -111,6 +112,7 @@ class _PlayQueueState extends State<PlayQueue>
 
   Widget _buildTrackTile(
       BuildContext context, Track track, bool isCurrentTrack, int index) {
+    final kalinkaApi = ref.read(kalinkaProxyProvider);
     return ListTile(
       tileColor: isCurrentTrack
           ? null
@@ -135,10 +137,10 @@ class _PlayQueueState extends State<PlayQueue>
       trailing: IconButton(
           icon: const Icon(Icons.clear),
           onPressed: () {
-            KalinkaPlayerProxy().remove(index);
+            kalinkaApi.remove(index);
           }),
       onTap: () {
-        KalinkaPlayerProxy().play(index);
+        kalinkaApi.play(index);
       },
     );
   }

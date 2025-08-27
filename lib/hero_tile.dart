@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/action_button.dart' show ActionButton;
 import 'package:kalinka/browse_item_actions.dart' show BrowseItemActions;
-import 'package:kalinka/browse_item_data_provider_riverpod.dart'
+import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart'
     show BrowseItemsSourceDesc, BrowseItemsState, browseItemsProvider;
 import 'package:kalinka/constants.dart' show KalinkaConstants;
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_model.dart';
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
-import 'package:kalinka/url_resolver.dart';
+import 'package:kalinka/providers/url_resolver.dart';
 
 class HeroTile extends ConsumerStatefulWidget {
   final BrowseItemsSourceDesc sourceDesc;
@@ -313,7 +313,7 @@ class _HeroTileState extends ConsumerState<HeroTile> {
     return IconButton.filled(
       icon:
           Icon(Icons.play_arrow_rounded, size: 36, color: colorScheme.surface),
-      onPressed: () => BrowseItemActions.replaceAndPlay(context, item, 0),
+      onPressed: () => BrowseItemActions.replaceAndPlay(context, ref, item, 0),
       style: IconButton.styleFrom(
           backgroundColor: colorScheme.secondary,
           foregroundColor: colorScheme.surface,
@@ -328,7 +328,7 @@ class _HeroTileState extends ConsumerState<HeroTile> {
   Widget _buildEnqueueButton(BuildContext context, BrowseItem item) {
     return ActionButton(
       onPressed: () {
-        BrowseItemActions.addToQueueAction(context, item);
+        BrowseItemActions.addToQueueAction(context, ref, item);
       },
       icon: Icons.queue_music_rounded,
       tooltip: 'Enqueue',

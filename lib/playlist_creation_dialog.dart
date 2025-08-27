@@ -1,35 +1,121 @@
-// Static class that handles playlist creation dialog
+// Dialog for playlist creation that supports Riverpod providers
 import 'package:flutter/material.dart';
-import 'package:kalinka/data_model.dart' show SearchType;
-import 'package:kalinka/data_provider.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kalinka/providers/user_favoriteids_provider.dart';
+import 'package:kalinka/providers/user_playlist_provider.dart';
 
 class PlaylistCreationDialog {
-  static void show(
-      {required BuildContext context,
-      Function(String playlistId)? onCreateCallback}) {
-    final TextEditingController playlistNameController =
-        TextEditingController();
-    final TextEditingController playlistDescriptionController =
-        TextEditingController();
-
+  static void show({
+    required BuildContext context,
+    Function(String playlistId)? onCreateCallback,
+  }) {
     showDialog(
       context: context,
-      builder: (context) => _buildDialog(
-        context,
-        playlistNameController,
-        playlistDescriptionController,
-        onCreateCallback,
+      builder: (context) => PlaylistCreationDialogWidget(
+        onCreateCallback: onCreateCallback,
       ),
     );
   }
+}
 
-  static AlertDialog _buildDialog(
-    BuildContext context,
-    TextEditingController nameController,
-    TextEditingController descriptionController,
-    Function(String playlistId)? onCreateCallback,
-  ) {
+class PlaylistCreationDialogWidget extends ConsumerStatefulWidget {
+  final Function(String playlistId)? onCreateCallback;
+
+  const PlaylistCreationDialogWidget({
+    super.key,
+    this.onCreateCallback,
+  });
+
+  @override
+  ConsumerState<PlaylistCreationDialogWidget> createState() =>
+      _PlaylistCreationDialogWidgetState();
+}
+
+class _PlaylistCreationDialogWidgetState
+    extends ConsumerState<PlaylistCreationDialogWidget> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+  bool _isCreating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+    _descriptionController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleCreatePlaylist() async {
+    if (_nameController.text.isEmpty || _isCreating) return;
+
+    setState(() {
+      _isCreating = true;
+    });
+
+    try {
+      final playlistProvider = ref.read(userPlaylistProvider.notifier);
+
+      // Create the playlist
+      final playlist = await playlistProvider.addPlaylist(
+        _nameController.text,
+        _descriptionController.text,
+      );
+
+      // Add to favorites using the new Riverpod provider
+      ref.read(userFavoritesIdsProvider.notifier).addIdOnly(playlist.id);
+
+      // Call the callback with the newly created playlist ID
+      widget.onCreateCallback?.call(playlist.id);
+
+      // Close the dialog
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check, color: Colors.green),
+                const SizedBox(width: 8),
+                Text('Playlist \'${_nameController.text}\' created'),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      // Handle error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.red),
+                const SizedBox(width: 8),
+                Text('Failed to create playlist: $error'),
+              ],
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCreating = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Create New Playlist'),
       content: SingleChildScrollView(
@@ -37,78 +123,48 @@ class PlaylistCreationDialog {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              controller: nameController,
+              controller: _nameController,
               decoration: const InputDecoration(labelText: 'Playlist Name'),
+              enabled: !_isCreating,
+              onSubmitted: (_) => _handleCreatePlaylist(),
             ),
             const SizedBox(height: 20),
             TextField(
-              controller: descriptionController,
-              decoration:
-                  const InputDecoration(labelText: 'Playlist Description'),
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Playlist Description',
+              ),
+              enabled: !_isCreating,
+              onSubmitted: (_) => _handleCreatePlaylist(),
             ),
           ],
         ),
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+          onPressed: _isCreating
+              ? null
+              : () => Navigator.of(context, rootNavigator: true).pop(),
           child: const Text('Cancel'),
         ),
         ListenableBuilder(
-          listenable: nameController,
+          listenable: _nameController,
           builder: (context, child) {
             return ElevatedButton(
-              onPressed: nameController.text.isNotEmpty
-                  ? () {
-                      _handleCreateNewPlaylist(
-                        context,
-                        nameController.text,
-                        descriptionController.text,
-                        onCreateCallback,
-                      );
-                      Navigator.of(context, rootNavigator: true).pop();
-                    }
+              onPressed: _nameController.text.isNotEmpty && !_isCreating
+                  ? _handleCreatePlaylist
                   : null,
-              child: const Text('Create'),
+              child: _isCreating
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Create'),
             );
           },
         ),
       ],
     );
-  }
-
-  static void _handleCreateNewPlaylist(
-    BuildContext context,
-    String name,
-    String description,
-    Function(String playlistId)? onCreateCallback,
-  ) async {
-    if (name.isEmpty) return;
-
-    UserPlaylistProvider provider = context.read<UserPlaylistProvider>();
-    UserFavoritesIdsProvider favoritesProvider =
-        context.read<UserFavoritesIdsProvider>();
-
-    await provider.addPlaylist(name, description).then((value) {
-      favoritesProvider.addIdOnly(SearchType.playlist, value.id);
-
-      // Call the callback with newly created playlist ID
-      onCreateCallback?.call(value.id);
-
-      // Show success message
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check, color: Colors.green),
-                const SizedBox(width: 8),
-                Text('Playlist \'$name\' created'),
-              ],
-            ),
-          ),
-        );
-      }
-    });
   }
 }

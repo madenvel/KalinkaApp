@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/data_model.dart'
     show ModuleInfo, ModuleState, ModulesAndDevices;
 import 'package:kalinka/event_listener.dart' show EventListener, EventType;
+import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
+    show KalinkaPlayerProxy, kalinkaProxyProvider;
 import 'package:logger/logger.dart';
-import 'kalinkaplayer_proxy.dart';
 
 /// State class for modules and devices
 class ModulesState {
@@ -164,9 +165,11 @@ class ModulesNotifier extends StateNotifier<ModulesState> {
 }
 
 /// Provider for the ModulesNotifier
-final modulesProvider = StateNotifierProvider<ModulesNotifier, ModulesState>(
-  (ref) => ModulesNotifier(KalinkaPlayerProxy()),
-);
+final modulesProvider =
+    StateNotifierProvider<ModulesNotifier, ModulesState>((ref) {
+  final kalinkaApi = ref.watch(kalinkaProxyProvider);
+  return ModulesNotifier(kalinkaApi);
+});
 
 /// Convenience providers for commonly used values
 final isModulesLoadingProvider = Provider<bool>((ref) {

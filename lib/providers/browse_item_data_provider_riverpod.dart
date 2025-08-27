@@ -11,8 +11,10 @@ import 'package:kalinka/data_model.dart'
         PreviewContentTypeExtension,
         PreviewType,
         SearchType;
-import 'package:kalinka/genre_filter_provider.dart';
-import 'package:kalinka/kalinkaplayer_proxy.dart';
+import 'package:kalinka/providers/genre_filter_provider.dart';
+import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
+    show KalinkaPlayerProxy, kalinkaProxyProvider;
+import 'package:logger/logger.dart' show Logger;
 import 'package:shared_preferences/shared_preferences.dart'
     show SharedPreferences;
 
@@ -143,13 +145,11 @@ class BrowseItemsState {
   final int pageSize;
   final Map<int, List<BrowseItem>> pages;
   final Set<int> loadingPages;
-  final Object? error;
   const BrowseItemsState({
     required this.totalCount,
     this.pageSize = 30,
     this.pages = const {},
     this.loadingPages = const {},
-    this.error,
   });
 
   BrowseItem? getItem(int index) {
@@ -165,14 +165,12 @@ class BrowseItemsState {
     int? pageSize,
     Map<int, List<BrowseItem>>? pages,
     Set<int>? loadingPages,
-    Object? error,
   }) {
     return BrowseItemsState(
       totalCount: totalCount ?? this.totalCount,
       pageSize: pageSize ?? this.pageSize,
       pages: pages ?? this.pages,
       loadingPages: loadingPages ?? this.loadingPages,
-      error: error ?? this.error,
     );
   }
 
@@ -187,6 +185,7 @@ class BrowseItemsController
     extends FamilyAsyncNotifier<BrowseItemsState, BrowseItemsSourceDesc> {
   late BrowseItemsSourceDesc _desc;
   late BrowseItemsRepository _repository;
+  final logger = Logger();
 
   BrowseItemsSourceDesc get desc => _desc;
 
@@ -245,16 +244,21 @@ class BrowseItemsController
     final genreIds = _desc.canGenreFilter
         ? ref.read(genreFilterProvider).valueOrNull?.selectedGenres.toList()
         : null;
-    final res = await _repository.fetchItems(
-        offset: offset, limit: activePageSize, genreIds: genreIds);
-
-    return res;
+    try {
+      final res = await _repository.fetchItems(
+          offset: offset, limit: activePageSize, genreIds: genreIds);
+      return res;
+    } catch (e) {
+      logger.e("Error fetching browse items: $e");
+      rethrow;
+    }
   }
 }
 
 class DefaultBrowseItemsRepository extends BrowseItemsRepository {
+  final KalinkaPlayerProxy kalinkaApi;
   final String id;
-  const DefaultBrowseItemsRepository(this.id);
+  const DefaultBrowseItemsRepository(this.kalinkaApi, this.id);
 
   @override
   Future<BrowseItemsList> fetchItems({
@@ -262,8 +266,8 @@ class DefaultBrowseItemsRepository extends BrowseItemsRepository {
     required int limit,
     List<String>? genreIds,
   }) async {
-    return KalinkaPlayerProxy()
-        .browse(id, offset: offset, limit: limit, genreIds: genreIds);
+    return kalinkaApi.browse(id,
+        offset: offset, limit: limit, genreIds: genreIds);
   }
 
   @override
@@ -272,10 +276,12 @@ class DefaultBrowseItemsRepository extends BrowseItemsRepository {
 
 class SearchBrowseItemsRepository extends BrowseItemsRepository {
   const SearchBrowseItemsRepository(
+    this.kalinkaApi,
     this.searchType,
     this.query,
   );
 
+  final KalinkaPlayerProxy kalinkaApi;
   final SearchType searchType;
   final String query;
 
@@ -285,8 +291,7 @@ class SearchBrowseItemsRepository extends BrowseItemsRepository {
     required int limit,
     List<String>? genreIds,
   }) async {
-    return KalinkaPlayerProxy()
-        .search(searchType, query, offset: offset, limit: limit);
+    return kalinkaApi.search(searchType, query, offset: offset, limit: limit);
   }
 
   @override
@@ -294,17 +299,20 @@ class SearchBrowseItemsRepository extends BrowseItemsRepository {
 }
 
 class UserFavoriteBrowseItemsRepository extends BrowseItemsRepository {
+  final KalinkaPlayerProxy kalinkaApi;
   final SearchType searchType;
   final String filter;
 
   UserFavoriteBrowseItemsRepository(
-      {required this.searchType, required this.filter});
+      {required this.kalinkaApi,
+      required this.searchType,
+      required this.filter});
 
   @override
   Future<BrowseItemsList> fetchItems(
       {required int offset, required int limit, List<String>? genreIds}) {
-    return KalinkaPlayerProxy()
-        .getFavorite(searchType, filter: filter, offset: offset, limit: limit);
+    return kalinkaApi.getFavorite(searchType,
+        filter: filter, offset: offset, limit: limit);
   }
 
   @override
@@ -394,13 +402,15 @@ const emptyBrowseItemRepository = EmptyBrowseItemsRepository();
 
 final browseItemRepositoryProvider =
     Provider.family<BrowseItemsRepository, BrowseItemsSourceDesc>((ref, desc) {
+  final kalinkaApi = ref.read(kalinkaProxyProvider);
   final source = switch (desc) {
     DefaultBrowseItemsSourceDesc(:final browseItem) =>
-      DefaultBrowseItemsRepository(browseItem.id),
+      DefaultBrowseItemsRepository(kalinkaApi, browseItem.id),
     SearchBrowseItemsSourceDesc(:final searchType, :final query) =>
-      SearchBrowseItemsRepository(searchType, query),
+      SearchBrowseItemsRepository(kalinkaApi, searchType, query),
     UserFavoriteBrowseItemsDesc(:final searchType, :final filter) =>
-      UserFavoriteBrowseItemsRepository(searchType: searchType, filter: filter),
+      UserFavoriteBrowseItemsRepository(
+          kalinkaApi: kalinkaApi, searchType: searchType, filter: filter),
     SharedPrefsBrowseItemsSourceDesc(:final prefsKey) =>
       SharedPrefsBrowseItemsRepository(
           prefs: ref.read(sharedPrefsProvider), key: prefsKey),

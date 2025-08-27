@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show AsyncValueX, ConsumerState, ConsumerStatefulWidget;
-import 'package:kalinka/browse_item_data_provider_riverpod.dart'
+import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart'
     show browseItemsProvider;
 import 'package:kalinka/connection_settings_provider.dart';
 import 'package:kalinka/service_discovery.dart';
@@ -13,7 +13,6 @@ import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/event_listener.dart';
 import 'package:kalinka/fg_service.dart';
-import 'package:kalinka/kalinkaplayer_proxy.dart';
 
 class ConnectionManager extends ConsumerStatefulWidget {
   final Widget child;
@@ -35,7 +34,6 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
   late final String subscriptionId;
 
   final EventListener _eventListener = EventListener();
-  final KalinkaPlayerProxy _kalinkaPlayerProxy = KalinkaPlayerProxy();
   final AudioPlayerService _audioPlayerService = AudioPlayerService();
   final logger = Logger();
 
@@ -68,7 +66,6 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
               final host = settings.requireValue.host;
               final port = settings.requireValue.port;
               _eventListener.startListening(host, port);
-              _kalinkaPlayerProxy.connect(host, port);
               logger.i("Attempting to listen to $host:$port");
             }
           });
@@ -111,7 +108,6 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
     final port = settings.port;
     if (host.isNotEmpty && port != 0) {
       _eventListener.startListening(host, port);
-      _kalinkaPlayerProxy.connect(host, port);
     }
     setState(() {});
   }

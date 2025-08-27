@@ -4,13 +4,13 @@ import 'package:cached_network_image/cached_network_image.dart'
     show CachedNetworkImage;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kalinka/browse_item_data_provider_riverpod.dart'
+import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart'
     show BrowseItemsSourceDesc, BrowseItemsState, browseItemsProvider;
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/soundwave.dart';
 import 'package:kalinka/source_attribution.dart' show SourceAttribution;
-import 'package:kalinka/url_resolver.dart';
+import 'package:kalinka/providers/url_resolver.dart';
 import 'package:provider/provider.dart';
 import 'data_model.dart';
 import 'shimmer_effect.dart' show Shimmer;

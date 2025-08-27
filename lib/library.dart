@@ -6,17 +6,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
         ConsumerStatefulWidget,
         Notifier,
         NotifierProvider;
-import 'package:kalinka/browse_item_data_provider_riverpod.dart';
+import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
 import 'package:kalinka/constants.dart';
+import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
 import 'package:kalinka/playlist_creation_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/bottom_menu.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/browse_item_list.dart';
 
-import 'data_model.dart';
-import 'kalinkaplayer_proxy.dart';
+import 'package:kalinka/data_model.dart';
 
 class SearchTypeProvider extends Notifier<SearchType> {
   void updateSearchType(SearchType searchType) {
@@ -252,11 +252,6 @@ class _LibraryState extends ConsumerState<Library> {
       },
       onAction: (context, index, item) {
         final parentContext = context;
-        // A bit of a hack to reload favorites in case of any changes.
-        // Doesn't always work so needs to be revisited.
-        final favoriteIdsProvider = context.read<UserFavoritesIdsProvider>();
-        final searchType = ref.read(searchTypeProvider);
-        final initialCount = favoriteIdsProvider.countByType;
         showModalBottomSheet(
             context: context,
             showDragHandle: true,
@@ -265,13 +260,7 @@ class _LibraryState extends ConsumerState<Library> {
             scrollControlDisabledMaxHeightRatio: 0.7,
             builder: (context) {
               return BottomMenu(parentContext: parentContext, browseItem: item);
-            }).then((_) {
-          final newCount = favoriteIdsProvider.countByType;
-          if (context.mounted &&
-              initialCount[searchType] != newCount[searchType]) {
-            ref.invalidate(browseItemsProvider(sourceDesc));
-          }
-        });
+            });
       },
       pageSize: 0,
       showSourceAttribution: true,
@@ -279,6 +268,7 @@ class _LibraryState extends ConsumerState<Library> {
   }
 
   void _playTrack(BuildContext context, String trackId, int index) async {
+    final kalinkaApi = ref.read(kalinkaProxyProvider);
     PlayerState state = context.read<PlayerStateProvider>().state;
 
     bool needToAdd = true;
@@ -287,11 +277,11 @@ class _LibraryState extends ConsumerState<Library> {
     }
 
     if (!needToAdd) {
-      KalinkaPlayerProxy().play(index);
+      kalinkaApi.play(index);
     } else {
-      await KalinkaPlayerProxy().clear();
-      await KalinkaPlayerProxy().add([trackId]);
-      await KalinkaPlayerProxy().play();
+      await kalinkaApi.clear();
+      await kalinkaApi.add([trackId]);
+      await kalinkaApi.play();
     }
   }
 

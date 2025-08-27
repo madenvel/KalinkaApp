@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
         StateNotifier,
         StateNotifierProvider,
         WidgetRef;
-import 'package:kalinka/browse_item_data_provider_riverpod.dart';
+import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/data_model.dart' show BrowseItem;
 import 'package:kalinka/preview_section.dart';

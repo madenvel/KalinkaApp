@@ -1,14 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show ConsumerState, ConsumerStatefulWidget;
+    show AsyncValueX, ConsumerState, ConsumerStatefulWidget;
 import 'package:kalinka/action_button.dart' show ActionButton;
+import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
+import 'package:kalinka/providers/volume_control_provider.dart';
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
-import 'package:kalinka/url_resolver.dart' show urlResolverProvider;
+import 'package:kalinka/providers/url_resolver.dart' show urlResolverProvider;
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/favorite_button.dart';
-import 'package:kalinka/kalinkaplayer_proxy.dart';
 
 import 'add_to_playlist.dart';
 import 'custom_cache_manager.dart';
@@ -39,10 +40,12 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   final logger = Logger();
   bool isSeeking = false;
   double seekValue = 0;
+  late final KalinkaPlayerProxy kalinkaApi;
 
   @override
   void initState() {
     super.initState();
+    kalinkaApi = ref.read(kalinkaProxyProvider);
     if (mounted) {
       context.read<PlayerStateProvider>().addListener(streamPositionUpdated);
     }
@@ -80,7 +83,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
         const SizedBox(height: _NowPlayingConstants.sectionSpacing),
         _buildTrackProgressSection(),
         _buildButtonsBar(context),
-        _buildVolumeSection(context),
+        _buildVolumeControl(context),
         const SizedBox(height: _NowPlayingConstants.sectionSpacing)
       ]),
     );
@@ -91,13 +94,6 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
       create: (context) => TrackPositionProvider(),
       builder: (context, _) =>
           RepaintBoundary(child: _buildProgressBarWidget(context)),
-    );
-  }
-
-  Widget _buildVolumeSection(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => VolumeControlProvider(),
-      builder: (context, _) => _buildVolumeControl(context),
     );
   }
 
@@ -232,7 +228,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
 
   void _handleSeek(double value) {
     logger.i('Seeking to $value');
-    KalinkaPlayerProxy().seek(value.toInt()).then((response) {
+    kalinkaApi.seek(value.toInt()).then((response) {
       if (response.positionMs == null || response.positionMs! < 0) {
         logger.w('Seek failed, position=${response.positionMs}');
         setState(() {
@@ -265,46 +261,46 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildVolumeControl(BuildContext context) {
-    return Consumer<VolumeControlProvider>(
-      builder: (context, provider, _) {
-        final bool supported = provider.supported;
+    final state = ref.watch(volumeControlProvider).valueOrNull;
+    if (state == null) {
+      return SizedBox.shrink();
+    }
+    final notifier = ref.read(volumeControlProvider.notifier);
+    final bool supported = state.supported;
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Row(mainAxisSize: MainAxisSize.max, children: [
-            const Icon(Icons.volume_down, size: 24),
-            Expanded(
-              child: RepaintBoundary(
-                  child: SliderTheme(
-                data: SliderThemeData(
-                  trackHeight: 3,
-                  thumbShape:
-                      const RoundSliderThumbShape(enabledThumbRadius: 6),
-                  overlayShape:
-                      const RoundSliderOverlayShape(overlayRadius: 14),
-                ),
-                child: Slider(
-                  value: provider.volume,
-                  min: 0,
-                  max: provider.maxVolume.toDouble(),
-                  onChangeStart: supported
-                      ? (_) => provider.blockNotifications = true
-                      : null,
-                  onChanged:
-                      supported ? (value) => provider.volume = value : null,
-                  onChangeEnd: supported
-                      ? (value) {
-                          provider.volume = value;
-                          provider.blockNotifications = false;
-                        }
-                      : null,
-                ),
-              )),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(mainAxisSize: MainAxisSize.max, children: [
+        const Icon(Icons.volume_down, size: 24),
+        Expanded(
+          child: RepaintBoundary(
+              child: SliderTheme(
+            data: SliderThemeData(
+              trackHeight: 3,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
             ),
-            const Icon(Icons.volume_up, size: 24)
-          ]),
-        );
-      },
+            child: Slider(
+              value: state.volume.toDouble(),
+              min: 0,
+              max: state.maxVolume.toDouble(),
+              onChangeStart: supported
+                  ? (_) => notifier.setBlockNotifications(true)
+                  : null,
+              onChanged: supported
+                  ? (value) => notifier.setVolume(value.toInt())
+                  : null,
+              onChangeEnd: supported
+                  ? (value) {
+                      notifier.setVolume(value.toInt());
+                      notifier.setBlockNotifications(false);
+                    }
+                  : null,
+            ),
+          )),
+        ),
+        const Icon(Icons.volume_up, size: 24)
+      ]),
     );
   }
 
@@ -329,20 +325,23 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildVolumeControlButton(BuildContext context) {
-    return ChangeNotifierProvider(
-        create: (context) => VolumeControlProvider(),
-        builder: (context, _) {
-          final provider = context.watch<VolumeControlProvider>();
-          final IconData iconData = provider.volume > provider.maxVolume / 2
-              ? Icons.volume_up
-              : provider.volume == 0
-                  ? Icons.volume_off
-                  : Icons.volume_down;
-          return IconButton(
-              icon: Icon(iconData),
-              onPressed: provider.supported ? () {} : null,
-              tooltip: 'Volume Control');
-        });
+    final state = ref.watch(volumeControlProvider).valueOrNull;
+    if (state == null) {
+      return const IconButton(
+          icon: Icon(Icons.volume_off),
+          onPressed: null,
+          tooltip: "No volume control available");
+    }
+
+    final IconData iconData = state.volume > state.maxVolume / 2
+        ? Icons.volume_up
+        : state.volume == 0
+            ? Icons.volume_off
+            : Icons.volume_down;
+    return IconButton(
+        icon: Icon(iconData),
+        onPressed: state.supported ? () {} : null,
+        tooltip: 'Volume Control');
   }
 
   IconData _getPlaybackIcon(PlayerStateType state) {
@@ -366,7 +365,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
     return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
       ActionButton(
         icon: Icons.fast_rewind,
-        onPressed: () => KalinkaPlayerProxy().previous(),
+        onPressed: () => kalinkaApi.previous(),
         fixedButtonSize: 56,
       ),
       const SizedBox(width: 16),
@@ -385,7 +384,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
       const SizedBox(width: 16),
       ActionButton(
         icon: Icons.fast_forward,
-        onPressed: () => KalinkaPlayerProxy().next(),
+        onPressed: () => kalinkaApi.next(),
         fixedButtonSize: 56,
       ),
     ]);
@@ -394,13 +393,13 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   void _handlePlayPause(PlayerStateType state) {
     switch (state) {
       case PlayerStateType.playing:
-        KalinkaPlayerProxy().pause(paused: true);
+        kalinkaApi.pause(paused: true);
         break;
       case PlayerStateType.paused:
-        KalinkaPlayerProxy().pause(paused: false);
+        kalinkaApi.pause(paused: false);
         break;
       default:
-        KalinkaPlayerProxy().play();
+        kalinkaApi.play();
     }
   }
 
@@ -431,7 +430,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
       repeatSingle = false;
     }
 
-    KalinkaPlayerProxy().setPlaybackMode(
+    kalinkaApi.setPlaybackMode(
       repeatOne: repeatSingle,
       repeatAll: repeatAll,
     );

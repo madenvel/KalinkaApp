@@ -2,10 +2,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget;
-import 'package:kalinka/url_resolver.dart';
+import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
+    show KalinkaPlayerProxy, kalinkaProxyProvider;
+import 'package:kalinka/providers/url_resolver.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/fg_service.dart';
-import 'package:kalinka/kalinkaplayer_proxy.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
 import 'custom_cache_manager.dart';
@@ -26,7 +27,9 @@ class _PlaybarState extends ConsumerState<Playbar> {
 
   final CarouselSliderController _carouselController =
       CarouselSliderController();
+
   int _currentPageIndex = 0;
+  late final KalinkaPlayerProxy kalinkaApi;
 
   double? _calculateRelativeProgress(BuildContext context) {
     int position = context.watch<TrackPositionProvider>().position;
@@ -38,8 +41,11 @@ class _PlaybarState extends ConsumerState<Playbar> {
   @override
   void initState() {
     super.initState();
-    AudioPlayerService().showNotificationControls();
-    context.read<PlayerStateProvider>().addListener(playerStateChanged);
+    if (mounted) {
+      kalinkaApi = ref.read(kalinkaProxyProvider);
+      AudioPlayerService().showNotificationControls();
+      context.read<PlayerStateProvider>().addListener(playerStateChanged);
+    }
   }
 
   @override
@@ -148,14 +154,14 @@ class _PlaybarState extends ConsumerState<Playbar> {
           onPressed: () {
             switch (provider.state.state) {
               case PlayerStateType.playing:
-                KalinkaPlayerProxy().pause(paused: true);
+                kalinkaApi.pause(paused: true);
                 break;
               case PlayerStateType.paused:
-                KalinkaPlayerProxy().pause(paused: false);
+                kalinkaApi.pause(paused: false);
                 break;
               case PlayerStateType.stopped:
               case PlayerStateType.error:
-                KalinkaPlayerProxy().play();
+                kalinkaApi.play();
                 break;
               default:
                 break;
@@ -234,7 +240,7 @@ class _PlaybarState extends ConsumerState<Playbar> {
             onPageChanged: (index, reason) {
               if (reason == CarouselPageChangedReason.manual) {
                 _currentPageIndex = index;
-                KalinkaPlayerProxy().play(index);
+                kalinkaApi.play(index);
               } else if (reason == CarouselPageChangedReason.controller) {
                 _currentPageIndex = index;
               }
