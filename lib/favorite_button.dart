@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/constants.dart' show KalinkaConstants;
+import 'package:kalinka/providers/user_favoriteids_provider.dart';
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
-import 'package:provider/provider.dart';
 import 'package:kalinka/data_model.dart';
-import 'package:kalinka/data_provider.dart';
 
-class FavoriteButton extends StatelessWidget {
+class FavoriteButton extends ConsumerWidget {
   final BrowseItem item;
   final double size;
 
@@ -16,18 +16,15 @@ class FavoriteButton extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (SearchType.values.indexWhere((element) =>
             element == SearchTypeExtension.fromBrowseType(item.browseType)) ==
         -1) {
       return const SizedBox.shrink();
     }
-    UserFavoritesIdsProvider favoritesProvider =
-        context.watch<UserFavoritesIdsProvider>();
-    bool isFavorite = favoritesProvider
-        .favorite(SearchTypeExtension.fromBrowseType(item.browseType))
-        .ids
-        .contains(item.id);
+
+    final state = ref.watch(userFavoritesIdsProvider);
+    bool isFavorite = state.valueOrNull?.contains(item.id) ?? false;
 
     final colorScheme = Theme.of(context).colorScheme;
     final buttonSize = KalinkaConstants.kButtonSize;
@@ -37,12 +34,13 @@ class FavoriteButton extends StatelessWidget {
     return Shimmer(
         baseColor: baseColor,
         highlightColor: highlightColor,
-        enabled: !favoritesProvider.idsLoaded,
+        enabled: !state.isLoading,
         child: IconButton.filled(
-          onPressed: favoritesProvider.idsLoaded
+          onPressed: state.isLoading
               ? () {
+                  final notifier = ref.read(userFavoritesIdsProvider.notifier);
                   if (isFavorite) {
-                    favoritesProvider.remove(item).catchError((error) {
+                    notifier.remove(item).catchError((error) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                           content:
@@ -52,7 +50,7 @@ class FavoriteButton extends StatelessWidget {
                       }
                     });
                   } else {
-                    favoritesProvider.add(item).catchError((error) {
+                    notifier.add(item).catchError((error) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                           content: Text('Failed to add to favorites, $error'),

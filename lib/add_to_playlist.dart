@@ -3,14 +3,15 @@ import 'dart:collection';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show ConsumerState, ConsumerStatefulWidget;
+    show AsyncValueX, ConsumerState, ConsumerStatefulWidget;
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_model.dart';
-import 'package:kalinka/data_provider.dart';
-import 'package:kalinka/kalinkaplayer_proxy.dart';
+import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
+    show kalinkaProxyProvider;
 import 'package:kalinka/playlist_creation_dialog.dart';
-import 'package:kalinka/url_resolver.dart';
-import 'package:provider/provider.dart';
+import 'package:kalinka/providers/url_resolver.dart';
+import 'package:kalinka/providers/user_playlist_provider.dart'
+    show userPlaylistProvider;
 
 class AddToPlaylist extends ConsumerStatefulWidget {
   final BrowseItemsList items;
@@ -73,8 +74,9 @@ class AddToPlaylistState extends ConsumerState<AddToPlaylist> {
 
   Future<void> _fetchTracksFromBrowseItem(BrowseItem item, int elementNo,
       SplayTreeMap<int, List<Track>> trackMap) async {
+    final kalinkaApi = ref.read(kalinkaProxyProvider);
     var initialResults =
-        await KalinkaPlayerProxy().browseItem(item, offset: 0, limit: 100);
+        await kalinkaApi.browseItem(item, offset: 0, limit: 100);
 
     List<Track> tracks = initialResults.items
         .where((e) => e.track != null)
@@ -83,8 +85,7 @@ class AddToPlaylistState extends ConsumerState<AddToPlaylist> {
 
     int offset = 100;
     while (offset < initialResults.total) {
-      var chunk = await KalinkaPlayerProxy()
-          .browse(item.id, offset: offset, limit: 100);
+      var chunk = await kalinkaApi.browse(item.id, offset: offset, limit: 100);
 
       tracks.addAll(
           chunk.items.where((e) => e.track != null).map((e) => e.track!));
@@ -97,15 +98,21 @@ class AddToPlaylistState extends ConsumerState<AddToPlaylist> {
   }
 
   Future<void> _addTracksToPlaylists(List<String> trackIds) async {
-    UserPlaylistProvider provider = context.read<UserPlaylistProvider>();
+    final kalinkaApi = ref.read(kalinkaProxyProvider);
+    final state = ref.read(userPlaylistProvider).valueOrNull;
+
+    if (state == null) {
+      _showSnackBar('Failed to load playlists', Icons.error, isError: true);
+      return;
+    }
+
     List<Future> addFutures = [];
     Map<String, String> playlistNames = {};
 
     for (String playlistId in selectedPlaylists) {
-      var playlist = provider.playlists.firstWhere((p) => p.id == playlistId);
+      var playlist = state.items.firstWhere((p) => p.id == playlistId);
       playlistNames[playlistId] = playlist.name ?? "";
-      addFutures
-          .add(KalinkaPlayerProxy().playlistAddTracks(playlistId, trackIds));
+      addFutures.add(kalinkaApi.playlistAddTracks(playlistId, trackIds));
     }
 
     // Show a loading spinner overlay
@@ -123,7 +130,7 @@ class AddToPlaylistState extends ConsumerState<AddToPlaylist> {
       await Future.wait(addFutures);
 
       if (mounted) {
-        provider.refresh();
+        ref.read(userPlaylistProvider.notifier).refresh();
         _showSuccessMessage(trackIds.length);
       }
     } catch (error) {
@@ -190,25 +197,46 @@ class AddToPlaylistState extends ConsumerState<AddToPlaylist> {
           ),
         ],
       ),
-      body: _buildBody(context),
+      body: _buildBody(),
     );
   }
 
-  Widget _buildBody(BuildContext context) {
-    UserPlaylistProvider provider = context.watch<UserPlaylistProvider>();
-    List<BrowseItem> playlists = provider.playlists;
+  Widget _buildBody() {
+    final state = ref.watch(userPlaylistProvider);
+    return state.when(data: (s) {
+      List<BrowseItem> playlists = s.items;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildCreatePlaylistButton(),
-          const Divider(thickness: 1),
-          _buildPlaylistsList(playlists),
-        ],
-      ),
-    );
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildCreatePlaylistButton(),
+            const Divider(thickness: 1),
+            _buildPlaylistsList(playlists),
+          ],
+        ),
+      );
+    }, loading: () {
+      return const Center(child: CircularProgressIndicator());
+    }, error: (error, stack) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error, color: Colors.red),
+            const SizedBox(height: 8),
+            Text('Failed to load playlists: $error'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () =>
+                  ref.read(userPlaylistProvider.notifier).refresh(),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _buildCreatePlaylistButton() {

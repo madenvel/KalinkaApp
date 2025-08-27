@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show ConsumerWidget, WidgetRef;
 import 'package:kalinka/bottom_menu.dart' show BottomMenu;
 import 'package:kalinka/browse_item_actions.dart' show BrowseItemActions;
-import 'package:kalinka/browse_item_data_provider_riverpod.dart'
+import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart'
     show BrowseItemsSourceDesc;
 import 'package:kalinka/browse_item_grid_preview.dart'
     show BrowseItemGridPreview, BrowseItemGridPreviewPlaceholder;
@@ -14,7 +16,7 @@ import 'package:kalinka/data_model.dart'
 import 'package:kalinka/hero_tile.dart' show HeroTile, HeroTilePlaceholder;
 import 'package:kalinka/large_image_preview_card.dart';
 
-class PreviewSection extends StatelessWidget {
+class PreviewSection extends ConsumerWidget {
   final BrowseItemsSourceDesc sourceDesc;
   final Function(BrowseItem)? onItemSelected;
   final VoidCallback? onSeeMore;
@@ -34,7 +36,7 @@ class PreviewSection extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final browseItem = sourceDesc.sourceItem;
     final previewType = browseItem.catalog?.previewConfig?.type;
     switch (previewType) {
@@ -57,7 +59,8 @@ class PreviewSection extends StatelessWidget {
           padding: const EdgeInsets.only(
               bottom: KalinkaConstants.kSpaceBetweenSections),
           showImage: previewType == PreviewType.tile,
-          onTap: _onListItemTapAction,
+          onTap: (context, index, browseItem) =>
+              _onListItemTapAction(context, ref, index, browseItem),
           onAction: (_, __, BrowseItem item) =>
               _showItemMenu(context, parentContext, item),
           showSourceAttribution: showSourceAttribution,
@@ -65,7 +68,8 @@ class PreviewSection extends StatelessWidget {
       case PreviewType.carousel:
         return HeroTile(
           sourceDesc: sourceDesc,
-          onTap: (BrowseItem item) => _onListItemTapAction(context, 0, item),
+          onTap: (BrowseItem item) =>
+              _onListItemTapAction(context, ref, 0, item),
         );
       case PreviewType.none:
         return LargeImagePreviewCard(section: browseItem);
@@ -74,7 +78,8 @@ class PreviewSection extends StatelessWidget {
     }
   }
 
-  void _onListItemTapAction(BuildContext context, int index, BrowseItem item) {
+  void _onListItemTapAction(
+      BuildContext context, WidgetRef ref, int index, BrowseItem item) {
     onItemSelected?.call(item);
     if (item.canBrowse) {
       Navigator.of(context).push(
@@ -83,7 +88,7 @@ class PreviewSection extends StatelessWidget {
         ),
       );
     } else if (item.canAdd) {
-      BrowseItemActions.replaceAndPlay(context, item, 0);
+      BrowseItemActions.replaceAndPlay(context, ref, item, 0);
     }
   }
 

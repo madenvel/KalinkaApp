@@ -5,14 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/action_button.dart' show ActionButton;
 import 'package:kalinka/bottom_menu.dart' show BottomMenu;
 import 'package:kalinka/browse_item_actions.dart' show BrowseItemActions;
-import 'package:kalinka/browse_item_data_provider_riverpod.dart';
+import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/favorite_button.dart';
 import 'package:kalinka/polka_dot_painter.dart';
 import 'package:kalinka/preview_section.dart' show PreviewSection;
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
-import 'package:kalinka/url_resolver.dart';
+import 'package:kalinka/providers/url_resolver.dart';
 import 'data_model.dart';
 
 // --- Constants ---
@@ -437,7 +437,7 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
                 ),
               ),
               onPressed: () => BrowseItemActions.replaceAndPlay(
-                  context, widget.browseItem, 0),
+                  context, ref, widget.browseItem, 0),
               style: FilledButton.styleFrom(
                 backgroundColor: colorScheme.secondary,
                 foregroundColor: colorScheme.surface,
@@ -456,7 +456,7 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
             ActionButton(
                 icon: Icons.queue_music,
                 onPressed: () => BrowseItemActions.addToQueueAction(
-                    context, widget.browseItem),
+                    context, ref, widget.browseItem),
                 tooltip: 'Add to queue'),
           if (!isArtist) const SizedBox(width: 12),
           if (!isArtist)

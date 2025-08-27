@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show ConsumerWidget, WidgetRef;
 import 'package:kalinka/data_model.dart' show Genre;
-import 'package:kalinka/genre_filter_provider.dart' show genreFilterProvider;
+import 'package:kalinka/providers/genre_filter_provider.dart'
+    show genreFilterProvider;
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
 import 'package:kalinka/genre_selector.dart';
 import 'package:kalinka/constants.dart';

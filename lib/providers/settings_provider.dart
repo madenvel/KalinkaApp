@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/event_listener.dart' show EventListener, EventType;
+import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
+    show KalinkaPlayerProxy, kalinkaProxyProvider;
 import 'package:logger/logger.dart';
-import 'kalinkaplayer_proxy.dart';
 
 /// Model class to hold both original and current settings state
 class SettingsState {
@@ -140,109 +141,103 @@ bool _deepEquals(dynamic a, dynamic b) {
 }
 
 /// Riverpod provider for settings management
-class SettingsNotifier extends StateNotifier<SettingsState> {
-  final KalinkaPlayerProxy _proxy;
+class SettingsNotifier extends AsyncNotifier<SettingsState> {
+  late final KalinkaPlayerProxy _proxy;
   final Logger _logger = Logger();
   final EventListener _eventListener = EventListener.instance;
   String eventListenerId = '';
 
-  SettingsNotifier(this._proxy)
-      : super(const SettingsState(
-          originalSettings: {},
-          currentSettings: {},
-          changedPaths: {},
-          isLoading: true,
-        )) {
-    loadSettings();
+  @override
+  Future<SettingsState> build() async {
+    _proxy = ref.watch(kalinkaProxyProvider);
+
+    final newState = await loadSettings();
 
     eventListenerId = _eventListener.registerCallback({
       EventType.NetworkConnected: (data) {
         loadSettings();
       },
       EventType.NetworkDisconnected: (data) {
-        state = state.copyWith(
+        state = AsyncData(SettingsState(
+          originalSettings: {},
+          currentSettings: {},
+          changedPaths: {},
           error: 'Network disconnected. Unable to load settings.',
-          isLoading: false,
-        );
+        ));
       },
     });
-  }
 
-  @override
-  void dispose() {
-    _eventListener.unregisterCallback(eventListenerId);
-    super.dispose();
+    ref.onDispose(() {
+      _eventListener.unregisterCallback(eventListenerId);
+    });
+
+    return newState;
   }
 
   /// Load settings from the server
-  Future<void> loadSettings() async {
-    state = state.copyWith(
-        isLoading: true,
-        error: null,
-        originalSettings: {},
-        currentSettings: {},
-        changedPaths: {});
-
+  Future<SettingsState> loadSettings() async {
     try {
       final settings = await _proxy.getSettings();
       final originalCopy = _deepCopy(settings);
       final currentCopy = _deepCopy(settings);
 
-      state = SettingsState(
-        originalSettings: originalCopy,
-        currentSettings: currentCopy,
-        changedPaths: {},
-        isLoading: false,
-      );
-
-      _logger.i('Settings loaded successfully');
+      return SettingsState(
+          originalSettings: originalCopy,
+          currentSettings: currentCopy,
+          changedPaths: {});
     } catch (e) {
       _logger.e('Failed to load settings: $e');
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      return SettingsState(
+          originalSettings: {},
+          currentSettings: {},
+          changedPaths: {},
+          error: e.toString());
     }
   }
 
   /// Get original settings
   Map<String, dynamic> getOriginalSettings() {
-    return Map<String, dynamic>.from(state.originalSettings);
+    return Map<String, dynamic>.from(state.valueOrNull?.originalSettings ?? {});
   }
 
   /// Get current settings
   Map<String, dynamic> getCurrentSettings() {
-    return Map<String, dynamic>.from(state.currentSettings);
+    return Map<String, dynamic>.from(state.valueOrNull?.currentSettings ?? {});
   }
 
   /// Set value at specific path in current settings
   void setValue(String path, dynamic value) {
-    final newCurrentSettings = _deepCopy(state.currentSettings);
+    final s = state.valueOrNull;
+    if (s == null) return;
+
+    final newCurrentSettings = _deepCopy(s.currentSettings);
     _setNestedValue(newCurrentSettings, path, value);
-    final originalValue = state.getOriginalValue(path)['value'];
+    final originalValue = s.getOriginalValue(path)['value'];
     bool removeValue = _deepEquals(originalValue, value);
 
     final updatedChangedPaths = removeValue
-        ? (_deepCopy(state.changedPaths)..remove(path))
+        ? (_deepCopy(s.changedPaths)..remove(path))
         : {
-            ..._deepCopy(state.changedPaths),
+            ..._deepCopy(s.changedPaths),
             path: {
               'original': originalValue,
               'current': value,
             }
           };
 
-    state = state.copyWith(
+    state = AsyncData(s.copyWith(
       currentSettings: newCurrentSettings,
       changedPaths: updatedChangedPaths,
-    );
+    ));
     _logger.d('Setting updated: $path = $value');
   }
 
   /// Revert a setting to its original value using path
   void revertSetting(String path) {
-    if (state.changedPaths.containsKey(path)) {
-      final originalValue = state.changedPaths[path]['original'];
+    final s = state.valueOrNull;
+    if (s == null) return;
+    if (s.changedPaths.containsKey(path)) {
+      final originalValue = s.changedPaths[path]['original'];
       setValue(path, originalValue);
       _logger.d('Setting reverted: $path = $originalValue');
     }
@@ -250,43 +245,53 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
   /// Revert all settings to original values
   void revertAllSettings() {
-    final originalCopy = _deepCopy(state.originalSettings);
-    state = state.copyWith(currentSettings: originalCopy, changedPaths: {});
+    final s = state.valueOrNull;
+    if (s == null) return;
+    final originalCopy = _deepCopy(s.originalSettings);
+    state =
+        AsyncData(s.copyWith(currentSettings: originalCopy, changedPaths: {}));
     _logger.d('All settings reverted to original values');
   }
 
   /// Save current settings to server
   Future<bool> saveSettings() async {
+    final s = state.valueOrNull;
+    if (s == null) return false;
+
     try {
       // Prepare a map of path -> current value for changed settings
       final Map<String, dynamic> changedValues = {
-        for (final path in state.changedPaths.keys)
-          path: state.changedPaths[path]['current']
+        for (final path in s.changedPaths.keys)
+          path: s.changedPaths[path]['current']
       };
       await _proxy.saveSettings(changedValues);
 
       // Update original settings to match current settings after successful save
-      final newOriginal = _deepCopy(state.currentSettings);
-      state = state.copyWith(originalSettings: newOriginal, changedPaths: {});
+      final newOriginal = _deepCopy(s.currentSettings);
+      state = AsyncData(
+          s.copyWith(originalSettings: newOriginal, changedPaths: {}));
 
       _logger.i('Settings saved successfully');
       return true;
     } catch (e) {
       _logger.e('Failed to save settings: $e');
-      state = state.copyWith(error: '$e');
+      state = AsyncData(s.copyWith(error: '$e'));
       return false;
     }
   }
 
   /// Restart the server (useful after settings changes)
   Future<bool> restartServer() async {
+    final s = state.valueOrNull;
+    if (s == null) return false;
+
     try {
       await _proxy.restartServer();
       _logger.i('Server restart requested successfully');
       return true;
     } catch (e) {
       _logger.e('Failed to restart server: $e');
-      state = state.copyWith(error: 'Failed to restart server: $e');
+      state = AsyncData(s.copyWith(error: 'Failed to restart server: $e'));
       return false;
     }
   }
@@ -346,15 +351,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 }
 
 /// Provider for the SettingsNotifier
-final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>(
-  (ref) => SettingsNotifier(KalinkaPlayerProxy()),
+final settingsProvider = AsyncNotifierProvider<SettingsNotifier, SettingsState>(
+  SettingsNotifier.new,
 );
 
 /// Convenience providers for commonly used values
 final isSettingsLoadingProvider = Provider<bool>((ref) {
   return ref.watch(settingsProvider).isLoading;
-});
-
-final settingsErrorProvider = Provider<String?>((ref) {
-  return ref.watch(settingsProvider).error;
 });

@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show ConsumerWidget, WidgetRef;
-import 'package:kalinka/url_resolver.dart' show urlResolverProvider;
+import 'package:kalinka/providers/url_resolver.dart' show urlResolverProvider;
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/soundwave.dart';

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show WidgetRef;
 import 'package:kalinka/add_to_playlist.dart' show AddToPlaylist;
 import 'package:kalinka/data_model.dart' show BrowseItem, BrowseItemsList;
-import 'package:kalinka/kalinkaplayer_proxy.dart' show KalinkaPlayerProxy;
+import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
+    show kalinkaProxyProvider;
 
 class BrowseItemActions {
   static void addToPlaylistAction(BuildContext context, BrowseItem browseItem) {
@@ -15,8 +17,10 @@ class BrowseItemActions {
     );
   }
 
-  static void addToQueueAction(BuildContext context, BrowseItem browseItem) {
-    KalinkaPlayerProxy().add([browseItem.id]).then((_) {
+  static void addToQueueAction(
+      BuildContext context, WidgetRef ref, BrowseItem browseItem) {
+    final kalinkaApi = ref.read(kalinkaProxyProvider);
+    kalinkaApi.add([browseItem.id]).then((_) {
       // Optional: Show confirmation dialog only on success
       if (context.mounted) {
         // Check if the widget is still in the tree
@@ -47,13 +51,14 @@ class BrowseItemActions {
     });
   }
 
-  static Future<void> replaceAndPlay(
-      BuildContext context, BrowseItem browseItem, int index) async {
+  static Future<void> replaceAndPlay(BuildContext context, WidgetRef ref,
+      BrowseItem browseItem, int index) async {
     final id = browseItem.id;
+    final kalinkaApi = ref.read(kalinkaProxyProvider);
     try {
-      await KalinkaPlayerProxy().clear();
-      await KalinkaPlayerProxy().add([id]);
-      await KalinkaPlayerProxy().play(index);
+      await kalinkaApi.clear();
+      await kalinkaApi.add([id]);
+      await kalinkaApi.play(index);
     } catch (e) {
       // Handle potential errors from the player proxy
       if (context.mounted) {

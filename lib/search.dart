@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/bottom_menu.dart' show BottomMenu;
 
-import 'package:kalinka/browse_item_data_provider_riverpod.dart'
+import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart'
     show
         SearchBrowseItemsSourceDesc,
         SharedPrefsBrowseItemsRepository,
@@ -22,7 +22,7 @@ import 'package:kalinka/data_model.dart'
         SearchType,
         SearchTypeExtension;
 import 'package:kalinka/preview_section.dart' show PreviewSection;
-import 'search_history_provider.dart';
+import 'providers/search_history_provider.dart';
 
 const int maxRecentItemsSize = 5;
 

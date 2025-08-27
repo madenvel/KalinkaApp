@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show AsyncData, AsyncNotifier, AsyncNotifierProvider;
 import 'package:kalinka/data_model.dart' show Genre;
-import 'package:kalinka/kalinkaplayer_proxy.dart' show KalinkaPlayerProxy;
+import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
 
 class GenreFilterList {
   final List<Genre> genres;
@@ -56,7 +56,7 @@ class GenreFilterProvider extends AsyncNotifier<GenreFilterList> {
 
   @override
   Future<GenreFilterList> build() async {
-    final genres = await KalinkaPlayerProxy().getGenres();
+    final genres = await ref.watch(kalinkaProxyProvider).getGenres();
 
     return GenreFilterList(
       genres: genres.items,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show AsyncValueX, ConsumerWidget, WidgetRef;
-import 'package:kalinka/browse_item_data_provider_riverpod.dart';
+import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/catalog_browse_item_view.dart'
     show CatalogBrowseItemView;
 import 'package:kalinka/constants.dart';

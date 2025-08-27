@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, WidgetRef;
-import 'package:kalinka/genre_filter_provider.dart';
+import 'package:kalinka/providers/genre_filter_provider.dart';
 
 class GenreSelector extends ConsumerStatefulWidget {
   const GenreSelector({super.key});

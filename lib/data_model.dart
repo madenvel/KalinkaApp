@@ -612,6 +612,8 @@ class BrowseItemsList {
         json["total"],
         List<BrowseItem>.from(json["items"].map((x) => BrowseItem.fromJson(x))),
       );
+
+  factory BrowseItemsList.empty() => BrowseItemsList(0, 0, 0, []);
 }
 
 class TrackList {
