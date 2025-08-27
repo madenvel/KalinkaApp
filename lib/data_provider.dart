@@ -52,44 +52,6 @@ class TrackListProvider with ChangeNotifier {
   }
 }
 
-class PlaybackModeProvider with ChangeNotifier {
-  PlaybackMode _mode =
-      PlaybackMode(repeatAll: false, repeatSingle: false, shuffle: false);
-
-  PlaybackMode get mode => _mode;
-  bool get repeatAll => _mode.repeatAll;
-  bool get repeatSingle => _mode.repeatSingle;
-  bool get shuffle => _mode.shuffle;
-
-  late String subscriptionId;
-
-  final EventListener _eventListener = EventListener();
-
-  PlaybackModeProvider() {
-    subscriptionId = _eventListener.registerCallback({
-      EventType.NetworkDisconnected: (_) {
-        _mode =
-            PlaybackMode(repeatAll: false, repeatSingle: false, shuffle: false);
-        notifyListeners();
-      },
-      EventType.StateReplay: (args) {
-        _mode = args[2];
-        notifyListeners();
-      },
-      EventType.PlaybackModeChanged: (args) {
-        _mode = args[0];
-        notifyListeners();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _eventListener.unregisterCallback(subscriptionId);
-    super.dispose();
-  }
-}
-
 class PlayerStateProvider with ChangeNotifier {
   PlayerState _state = PlayerState(state: PlayerStateType.stopped);
   bool _isLoading = true;

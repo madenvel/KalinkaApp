@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
     show AsyncValueX, ConsumerState, ConsumerStatefulWidget;
 import 'package:kalinka/action_button.dart' show ActionButton;
 import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
+import 'package:kalinka/providers/playback_mode_provider.dart'
+    show playbackModeProvider;
 import 'package:kalinka/providers/volume_control_provider.dart';
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
 import 'package:kalinka/providers/url_resolver.dart' show urlResolverProvider;
@@ -404,43 +406,32 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildRepeatButton() {
-    return ChangeNotifierProvider(
-      create: (_) => PlaybackModeProvider(),
-      child: Consumer<PlaybackModeProvider>(
-        builder: (_, provider, __) => IconButton(
-          icon: Icon(_getRepeatIcon(provider)),
+    final playbackModeState = ref.watch(playbackModeProvider);
+    final notifier = ref.read(playbackModeProvider.notifier);
+    return playbackModeState.when(
+      data: (playbackModeState) {
+        return IconButton(
+          icon: Icon(_getRepeatIcon(playbackModeState)),
           iconSize: 28,
-          onPressed: () => _cycleRepeatMode(provider),
-        ),
+          onPressed: () => notifier.cycleRepeatMode(),
+        );
+      },
+      loading: () => const IconButton(
+          icon: Icon(Icons.loop), iconSize: 28, onPressed: null),
+      error: (error, stack) => IconButton(
+        icon: const Icon(Icons.error, color: Colors.red),
+        iconSize: 28,
+        onPressed: null,
+        tooltip: 'Error loading playback mode',
       ),
     );
   }
 
-  void _cycleRepeatMode(PlaybackModeProvider provider) {
-    var repeatSingle = provider.repeatSingle;
-    var repeatAll = provider.repeatAll;
-
-    if (!repeatSingle && !repeatAll) {
-      repeatAll = true;
-    } else if (repeatAll && !repeatSingle) {
-      repeatAll = false;
-      repeatSingle = true;
-    } else {
-      repeatAll = false;
-      repeatSingle = false;
-    }
-
-    kalinkaApi.setPlaybackMode(
-      repeatOne: repeatSingle,
-      repeatAll: repeatAll,
-    );
-  }
-
-  IconData _getRepeatIcon(PlaybackModeProvider provider) {
-    if (provider.repeatSingle) {
+  IconData _getRepeatIcon(PlaybackMode state) {
+    if (state.repeatSingle) {
       return Icons.repeat_one;
     }
-    if (provider.repeatAll) {
+    if (state.repeatAll) {
       return Icons.repeat;
     }
     return Icons.arrow_right_alt;
