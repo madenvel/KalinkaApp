@@ -1014,42 +1014,34 @@ class Genre {
 
 class FavoriteAdded {
   final String id;
-  final SearchType type;
 
   FavoriteAdded({
     required this.id,
-    required this.type,
   });
 
   factory FavoriteAdded.fromJson(Map<String, dynamic> json) => FavoriteAdded(
         id: json["id"],
-        type: SearchTypeExtension.fromStringValue(json["type"]),
       );
 
   Map<String, dynamic> toJson() => {
         "id": id,
-        "type": type,
       };
 }
 
 class FavoriteRemoved {
   final String id;
-  final String type;
 
   FavoriteRemoved({
     required this.id,
-    required this.type,
   });
 
   factory FavoriteRemoved.fromJson(Map<String, dynamic> json) =>
       FavoriteRemoved(
         id: json["id"],
-        type: json["type"],
       );
 
   Map<String, dynamic> toJson() => {
         "id": id,
-        "type": type,
       };
 }
 

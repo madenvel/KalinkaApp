@@ -24,56 +24,67 @@ class FavoriteButton extends ConsumerWidget {
     }
 
     final state = ref.watch(userFavoritesIdsProvider);
-    bool isFavorite = state.valueOrNull?.contains(item.id) ?? false;
 
-    final colorScheme = Theme.of(context).colorScheme;
-    final buttonSize = KalinkaConstants.kButtonSize;
     final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
     final highlightColor = Theme.of(context).colorScheme.surfaceBright;
 
-    return Shimmer(
-        baseColor: baseColor,
-        highlightColor: highlightColor,
-        enabled: !state.isLoading,
-        child: IconButton.filled(
-          onPressed: state.isLoading
-              ? () {
-                  final notifier = ref.read(userFavoritesIdsProvider.notifier);
-                  if (isFavorite) {
-                    notifier.remove(item).catchError((error) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content:
-                              Text('Failed to remove from favorites, $error'),
-                          duration: const Duration(seconds: 3),
-                        ));
-                      }
-                    });
-                  } else {
-                    notifier.add(item).catchError((error) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text('Failed to add to favorites, $error'),
-                          duration: const Duration(seconds: 3),
-                        ));
-                      }
-                    });
-                  }
-                }
-              : null,
-          icon: Icon(
-            isFavorite ? Icons.favorite : Icons.favorite_border,
-            size: size,
-          ),
-          style: IconButton.styleFrom(
-            backgroundColor:
-                colorScheme.secondaryContainer.withValues(alpha: 0.5),
-            foregroundColor: colorScheme.onSecondaryContainer,
-            fixedSize: Size(buttonSize, buttonSize), // Match Play All height
-            minimumSize: Size(buttonSize, buttonSize),
-            padding: const EdgeInsets.all(8.0),
-          ),
-          tooltip: '${isFavorite ? 'Remove from' : 'Add to'} favorites',
-        ));
+    onPressed(bool isFavorite) {
+      final notifier = ref.read(userFavoritesIdsProvider.notifier);
+      if (isFavorite) {
+        notifier.remove(item).catchError((error) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('Failed to remove from favorites, $error'),
+              duration: const Duration(seconds: 3),
+            ));
+            notifier.reset();
+          }
+        });
+      } else {
+        notifier.add(item).catchError((error) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('Failed to add to favorites, $error'),
+              duration: const Duration(seconds: 3),
+            ));
+            notifier.reset();
+          }
+        });
+      }
+    }
+
+    return state.when(data: (data) {
+      return buildHeartIconButton(context, data, onPressed);
+    }, loading: () {
+      return Shimmer(
+          baseColor: baseColor,
+          highlightColor: highlightColor,
+          child: buildHeartIconButton(context, {}, null));
+    }, error: (error, stack) {
+      return const SizedBox.shrink();
+    });
+  }
+
+  Widget buildHeartIconButton(
+      BuildContext context, Set<String> favorites, Function(bool)? onPressed) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final buttonSize = KalinkaConstants.kButtonSize;
+    final isFavorite = favorites.contains(item.id);
+
+    return IconButton.filled(
+      onPressed: () => onPressed?.call(favorites.contains(item.id)),
+      icon: Icon(
+        isFavorite ? Icons.favorite : Icons.favorite_border,
+        size: size,
+      ),
+      style: IconButton.styleFrom(
+        backgroundColor: colorScheme.secondaryContainer.withValues(alpha: 0.5),
+        foregroundColor: colorScheme.onSecondaryContainer,
+        fixedSize: Size(buttonSize, buttonSize), // Match Play All height
+        minimumSize: Size(buttonSize, buttonSize),
+        padding: const EdgeInsets.all(8.0),
+      ),
+      tooltip: '${isFavorite ? 'Remove from' : 'Add to'} favorites',
+    );
   }
 }
