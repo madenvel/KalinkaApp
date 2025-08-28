@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show ConsumerState, ConsumerStatefulWidget;
+    show AsyncValueX, ConsumerState, ConsumerStatefulWidget;
 import 'package:kalinka/add_to_playlist.dart';
 import 'package:kalinka/event_listener.dart';
 import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
 import 'package:kalinka/polka_dot_painter.dart' show PolkaDotPainter;
+import 'package:kalinka/providers/tracklist_provider.dart'
+    show trackListProvider;
 import 'package:kalinka/shimmer_effect.dart' show ShimmerProvider;
 import 'package:provider/provider.dart';
 import 'package:kalinka/bottom_menu.dart';
@@ -175,7 +177,10 @@ class _SwipableTabsState extends ConsumerState<SwipableTabs>
   }
 
   void _buildAddToPlaylist(BuildContext context) {
-    var trackList = context.read<TrackListProvider>().trackList;
+    final trackList = ref.read(trackListProvider).valueOrNull;
+    if (trackList == null || trackList.isEmpty) {
+      return;
+    }
     Navigator.push(
         context,
         MaterialPageRoute(

@@ -2,12 +2,14 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemNavigator;
-import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show AsyncValueX, ConsumerState, ConsumerStatefulWidget, ProviderScope;
 import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart'
     show sharedPrefsProvider;
 import 'package:kalinka/connection_manager.dart';
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/home_screen.dart' show HomeScreen;
+import 'package:kalinka/providers/tracklist_provider.dart';
 import 'package:kalinka/search.dart' show SearchScreen;
 import 'package:kalinka/shimmer_effect.dart' show ShimmerProvider;
 import 'package:provider/provider.dart';
@@ -48,7 +50,6 @@ class KalinkaMusic extends StatelessWidget {
     final darkTheme = FlexThemeData.dark();
     return MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (context) => TrackListProvider()),
           ChangeNotifierProvider(create: (context) => PlayerStateProvider()),
         ],
         child: MaterialApp(
@@ -91,16 +92,17 @@ class KalinkaMusic extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatefulWidget {
+class MyHomePage extends ConsumerStatefulWidget {
   const MyHomePage({
     super.key,
   });
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  ConsumerState<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
+class _MyHomePageState extends ConsumerState<MyHomePage>
+    with TickerProviderStateMixin {
   int currentPageIndex = 0;
   final PageStorageBucket bucket = PageStorageBucket();
 
@@ -168,6 +170,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(trackListProvider);
     return ChangeNotifierProvider(
       create: (context) => ShimmerProvider(this),
       child: ConnectionManager(
@@ -176,21 +179,30 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Consumer<TrackListProvider>(builder: (context, provider, _) {
-                    if (provider.trackList.isNotEmpty) {
-                      return Playbar(onTap: () {
-                        Navigator.push(
+                  state.when(
+                    data: (trackList) {
+                      if (trackList.isNotEmpty) {
+                        return Playbar(onTap: () {
+                          Navigator.push(
                             context,
                             PageRouteBuilder(
-                                opaque: false,
-                                pageBuilder:
-                                    (context, animation, secondaryAnimation) =>
-                                        const SwipableTabs()));
-                      });
-                    } else {
-                      return const SizedBox.shrink();
-                    }
-                  }),
+                              opaque: false,
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) =>
+                                      const SwipableTabs(),
+                            ),
+                          );
+                        });
+                      } else {
+                        return const SizedBox.shrink();
+                      }
+                    },
+                    error: (error, stackTrace) =>
+                        const Text('Error loading current queue'),
+                    loading: () {
+                      return const Center(child: CircularProgressIndicator());
+                    },
+                  ),
                   NavigationBar(
                     onDestinationSelected: _handleTabChange,
                     selectedIndex: currentPageIndex,
