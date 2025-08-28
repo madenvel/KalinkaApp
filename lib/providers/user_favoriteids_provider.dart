@@ -19,7 +19,7 @@ class UserFavoritesIdsProvider extends AsyncNotifier<Set<String>> {
 
   void addIdOnly(String id) {
     final s = state.valueOrNull;
-    if (s == null) return;
+    if (s == null || s.contains(id)) return;
 
     // Optimistically add the ID to the local state
     final updatedSet = Set<String>.from(s);
@@ -28,28 +28,44 @@ class UserFavoritesIdsProvider extends AsyncNotifier<Set<String>> {
   }
 
   Future<void> add(BrowseItem item) async {
-    final s = state.valueOrNull;
-    if (s == null) return;
+    if (state.valueOrNull == null || state.value!.contains(item.id)) return;
 
-    s.add(item.id);
+    state = AsyncValue.loading();
     Future<void> future = _kalinkaApi.addFavorite(item.id);
-    return future.catchError((error) {
+    return future.then((value) {
+      if (state.valueOrNull == null) {
+        state = AsyncValue.error(
+            'State is null after adding favorite', StackTrace.current);
+        return;
+      }
+      final updatedSet = {...state.requireValue, item.id};
+      state = AsyncValue.data(updatedSet);
+    }).catchError((error) {
       logger.e('Error adding favorite: $error');
-      s.remove(item.id);
+      state = AsyncValue.error(error, StackTrace.current);
       throw error;
     });
   }
 
   Future<void> remove(BrowseItem item) async {
-    final s = state.valueOrNull;
-    if (s == null) return;
+    if (state.valueOrNull == null || !state.value!.contains(item.id)) {
+      return;
+    }
 
-    s.remove(item.id);
+    state = AsyncValue.loading();
     Future<void> future = _kalinkaApi.removeFavorite(item.id);
 
-    return future.catchError((error) {
+    return future.then((_) {
+      if (state.valueOrNull == null) {
+        state = AsyncValue.error(
+            'State is null after removing favorite', StackTrace.current);
+        return;
+      }
+      final updatedSet = {...state.requireValue}..remove(item.id);
+      state = AsyncValue.data(updatedSet);
+    }).catchError((error) {
       logger.e('Error removing favorite: $error');
-      s.add(item.id);
+      state = AsyncValue.error(error, StackTrace.current);
       throw error;
     });
   }
@@ -61,26 +77,20 @@ class UserFavoritesIdsProvider extends AsyncNotifier<Set<String>> {
     return s.contains(item.id);
   }
 
+  void reset() {
+    ref.invalidateSelf();
+  }
+
   @override
   FutureOr<Set<String>> build() async {
     _kalinkaApi = ref.watch(kalinkaProxyProvider);
 
     _subscriptionId = EventListener().registerCallback({
-      // EventType.FavoriteAdded: (args) {
-      //   _favorites[SearchType.track]!.ids.addAll(args[0].cast<String>());
-      //   notifyListeners();
-      // },
-      // EventType.FavoriteRemoved: (args) {
-      //   _favorites[SearchType.track]!.ids.removeAll(args[0].cast<String>());
-      //   notifyListeners();
-      // }
-      EventType.NetworkDisconnected: (_) {
-        final s = state.valueOrNull;
-        if (s == null) return;
-        state = AsyncValue.data(<String>{});
+      EventType.FavoriteAdded: (args) {
+        addIdOnly(args[0]);
       },
-      EventType.NetworkConnected: (_) {
-        ref.invalidateSelf();
+      EventType.FavoriteRemoved: (args) {
+        removeIdOnly(args[0]);
       }
     });
 
@@ -96,6 +106,16 @@ class UserFavoritesIdsProvider extends AsyncNotifier<Set<String>> {
       ...ids.artists,
     };
     return allIds;
+  }
+
+  void removeIdOnly(String id) {
+    final s = state.valueOrNull;
+    if (s == null || !s.contains(id)) return;
+
+    // Optimistically remove the ID from the local state
+    final updatedSet = Set<String>.from(s);
+    updatedSet.remove(id);
+    state = AsyncData(updatedSet);
   }
 }
 
