@@ -1,9 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show ConsumerState, ConsumerStatefulWidget;
+    show AsyncValueX, ConsumerState, ConsumerStatefulWidget;
 import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
     show KalinkaPlayerProxy, kalinkaProxyProvider;
+import 'package:kalinka/providers/tracklist_provider.dart';
 import 'package:kalinka/providers/url_resolver.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/fg_service.dart';
@@ -107,10 +108,7 @@ class _PlaybarState extends ConsumerState<Playbar> {
               builder: (context, provider, _) =>
                   _buildImage(context, provider)),
           const SizedBox(width: 8),
-          Expanded(
-              child: Consumer<TrackListProvider>(
-                  builder: (context, provider, _) =>
-                      _buildCarousel(context, provider))),
+          Expanded(child: _buildCarousel(context)),
           _buildPlaybutton(context),
           const SizedBox(width: 8),
         ]));
@@ -170,20 +168,18 @@ class _PlaybarState extends ConsumerState<Playbar> {
     });
   }
 
-  Widget _buildInfoText(BuildContext context, int index) {
-    List<Track> trackList = context.watch<TrackListProvider>().trackList;
-
+  Widget _buildInfoText(BuildContext context, Track track) {
     return Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            trackList[index].title,
+            track.title,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             overflow: TextOverflow.ellipsis,
           ),
           Text(
-            '${trackList[index].performer?.name ?? 'Unknown Artist'} • ${trackList[index].album?.title ?? 'Unknown Album'}',
+            '${track.performer?.name ?? 'Unknown Artist'} • ${track.album?.title ?? 'Unknown Album'}',
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).listTileTheme.subtitleTextStyle,
           )
@@ -223,30 +219,34 @@ class _PlaybarState extends ConsumerState<Playbar> {
         ));
   }
 
-  Widget _buildCarousel(BuildContext context, TrackListProvider provider) {
+  Widget _buildCarousel(BuildContext context) {
+    final trackListState = ref.watch(trackListProvider).valueOrNull;
     final index = context.read<PlayerStateProvider>().state.index;
-    if (provider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+
+    if (trackListState == null || trackListState.isEmpty) {
+      return const SizedBox.shrink();
     }
 
     return CarouselSlider.builder(
-        carouselController: _carouselController,
-        options: CarouselOptions(
-            disableCenter: true,
-            viewportFraction: 1.0,
-            height: 50,
-            enableInfiniteScroll: false,
-            initialPage: index ?? 0,
-            onPageChanged: (index, reason) {
-              if (reason == CarouselPageChangedReason.manual) {
-                _currentPageIndex = index;
-                kalinkaApi.play(index);
-              } else if (reason == CarouselPageChangedReason.controller) {
-                _currentPageIndex = index;
-              }
-            }),
-        itemCount: provider.trackList.length,
-        itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) =>
-            _buildInfoText(context, itemIndex));
+      carouselController: _carouselController,
+      options: CarouselOptions(
+        disableCenter: true,
+        viewportFraction: 1.0,
+        height: 50,
+        enableInfiniteScroll: false,
+        initialPage: index ?? 0,
+        onPageChanged: (index, reason) {
+          if (reason == CarouselPageChangedReason.manual) {
+            _currentPageIndex = index;
+            kalinkaApi.play(index);
+          } else if (reason == CarouselPageChangedReason.controller) {
+            _currentPageIndex = index;
+          }
+        },
+      ),
+      itemCount: trackListState.length,
+      itemBuilder: (BuildContext context, int itemIndex, int pageViewIndex) =>
+          _buildInfoText(context, trackListState[itemIndex]),
+    );
   }
 }

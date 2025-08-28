@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/event_listener.dart' show EventListener, EventType;
 import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
-    show KalinkaPlayerProxy, kalinkaProxyProvider;
+    show kalinkaProxyProvider;
 import 'package:logger/logger.dart';
 
 /// Model class to hold both original and current settings state
@@ -142,15 +142,12 @@ bool _deepEquals(dynamic a, dynamic b) {
 
 /// Riverpod provider for settings management
 class SettingsNotifier extends AsyncNotifier<SettingsState> {
-  late final KalinkaPlayerProxy _proxy;
   final Logger _logger = Logger();
   final EventListener _eventListener = EventListener.instance;
   String eventListenerId = '';
 
   @override
   Future<SettingsState> build() async {
-    _proxy = ref.watch(kalinkaProxyProvider);
-
     final newState = await loadSettings();
 
     eventListenerId = _eventListener.registerCallback({
@@ -177,7 +174,7 @@ class SettingsNotifier extends AsyncNotifier<SettingsState> {
   /// Load settings from the server
   Future<SettingsState> loadSettings() async {
     try {
-      final settings = await _proxy.getSettings();
+      final settings = await ref.read(kalinkaProxyProvider).getSettings();
       final originalCopy = _deepCopy(settings);
       final currentCopy = _deepCopy(settings);
 
@@ -264,7 +261,7 @@ class SettingsNotifier extends AsyncNotifier<SettingsState> {
         for (final path in s.changedPaths.keys)
           path: s.changedPaths[path]['current']
       };
-      await _proxy.saveSettings(changedValues);
+      await ref.read(kalinkaProxyProvider).saveSettings(changedValues);
 
       // Update original settings to match current settings after successful save
       final newOriginal = _deepCopy(s.currentSettings);
@@ -286,7 +283,7 @@ class SettingsNotifier extends AsyncNotifier<SettingsState> {
     if (s == null) return false;
 
     try {
-      await _proxy.restartServer();
+      await ref.read(kalinkaProxyProvider).restartServer();
       _logger.i('Server restart requested successfully');
       return true;
     } catch (e) {

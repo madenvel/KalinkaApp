@@ -15,7 +15,6 @@ import 'package:logger/logger.dart' show Logger;
 class UserFavoritesIdsProvider extends AsyncNotifier<Set<String>> {
   final logger = Logger();
   late String _subscriptionId;
-  late KalinkaPlayerProxy _kalinkaApi;
 
   void addIdOnly(String id) {
     final s = state.valueOrNull;
@@ -31,7 +30,7 @@ class UserFavoritesIdsProvider extends AsyncNotifier<Set<String>> {
     if (state.valueOrNull == null || state.value!.contains(item.id)) return;
 
     state = AsyncValue.loading();
-    Future<void> future = _kalinkaApi.addFavorite(item.id);
+    Future<void> future = ref.read(kalinkaProxyProvider).addFavorite(item.id);
     return future.then((value) {
       if (state.valueOrNull == null) {
         state = AsyncValue.error(
@@ -53,7 +52,8 @@ class UserFavoritesIdsProvider extends AsyncNotifier<Set<String>> {
     }
 
     state = AsyncValue.loading();
-    Future<void> future = _kalinkaApi.removeFavorite(item.id);
+    Future<void> future =
+        ref.read(kalinkaProxyProvider).removeFavorite(item.id);
 
     return future.then((_) {
       if (state.valueOrNull == null) {
@@ -83,8 +83,6 @@ class UserFavoritesIdsProvider extends AsyncNotifier<Set<String>> {
 
   @override
   FutureOr<Set<String>> build() async {
-    _kalinkaApi = ref.watch(kalinkaProxyProvider);
-
     _subscriptionId = EventListener().registerCallback({
       EventType.FavoriteAdded: (args) {
         addIdOnly(args[0]);
@@ -98,7 +96,7 @@ class UserFavoritesIdsProvider extends AsyncNotifier<Set<String>> {
       EventListener().unregisterCallback(_subscriptionId);
     });
 
-    final ids = await _kalinkaApi.getFavoriteIds();
+    final ids = await ref.read(kalinkaProxyProvider).getFavoriteIds();
     final allIds = <String>{
       ...ids.tracks,
       ...ids.albums,

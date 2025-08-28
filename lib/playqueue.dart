@@ -1,9 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show ConsumerStatefulWidget, ConsumerWidget, ConsumerState, WidgetRef;
+    show
+        AsyncValueX,
+        ConsumerState,
+        ConsumerStatefulWidget,
+        ConsumerWidget,
+        WidgetRef;
 import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
     show kalinkaProxyProvider;
+import 'package:kalinka/providers/tracklist_provider.dart';
 import 'package:kalinka/providers/url_resolver.dart' show urlResolverProvider;
 import 'package:provider/provider.dart';
 import 'package:kalinka/data_provider.dart';
@@ -47,7 +53,12 @@ class _PlayQueueState extends ConsumerState<PlayQueue>
   }
 
   Widget _buildList(BuildContext context) {
-    List<Track> tracks = context.watch<TrackListProvider>().trackList;
+    final tracks = ref.watch(trackListProvider).valueOrNull;
+
+    if (tracks == null || tracks.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     int? currentTrackIndex =
         context.select((PlayerStateProvider value) => (value.state.index));
 

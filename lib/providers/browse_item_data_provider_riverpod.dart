@@ -402,7 +402,7 @@ const emptyBrowseItemRepository = EmptyBrowseItemsRepository();
 
 final browseItemRepositoryProvider =
     Provider.family<BrowseItemsRepository, BrowseItemsSourceDesc>((ref, desc) {
-  final kalinkaApi = ref.read(kalinkaProxyProvider);
+  final kalinkaApi = ref.watch(kalinkaProxyProvider);
   final source = switch (desc) {
     DefaultBrowseItemsSourceDesc(:final browseItem) =>
       DefaultBrowseItemsRepository(kalinkaApi, browseItem.id),
