@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncValueX, ConsumerState, ConsumerStatefulWidget;
+    show AsyncData, AsyncValueX, ConsumerState, ConsumerStatefulWidget;
 import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart'
     show browseItemsProvider;
 import 'package:kalinka/connection_settings_provider.dart';
@@ -83,9 +83,8 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
       }
     });
     ref.listenManual(connectionSettingsProvider, (previous, next) {
-      if (previous != next) {
-        Future.microtask(() => onSettingsChanged(next.requireValue));
-      }
+      Future.microtask(() => onSettingsChanged(
+          (next as AsyncData<ConnectionSettings>).requireValue));
     });
   }
 

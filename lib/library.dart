@@ -11,9 +11,9 @@ import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
 import 'package:kalinka/playlist_creation_dialog.dart';
-import 'package:provider/provider.dart';
+import 'package:kalinka/providers/player_state_provider.dart'
+    show playerStateProvider;
 import 'package:kalinka/bottom_menu.dart';
-import 'package:kalinka/data_provider.dart';
 import 'package:kalinka/browse_item_list.dart';
 
 import 'package:kalinka/data_model.dart';
@@ -269,10 +269,10 @@ class _LibraryState extends ConsumerState<Library> {
 
   void _playTrack(BuildContext context, String trackId, int index) async {
     final kalinkaApi = ref.read(kalinkaProxyProvider);
-    PlayerState state = context.read<PlayerStateProvider>().state;
+    final state = ref.read(playerStateProvider).valueOrNull;
 
     bool needToAdd = true;
-    if (state.currentTrack?.id == trackId) {
+    if (state?.currentTrack?.id == trackId) {
       needToAdd = false;
     }
 

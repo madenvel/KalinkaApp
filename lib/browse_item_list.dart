@@ -7,11 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart'
     show BrowseItemsSourceDesc, BrowseItemsState, browseItemsProvider;
 import 'package:kalinka/custom_cache_manager.dart';
-import 'package:kalinka/data_provider.dart';
+import 'package:kalinka/providers/player_state_provider.dart'
+    show playerStateProvider;
 import 'package:kalinka/soundwave.dart';
 import 'package:kalinka/source_attribution.dart' show SourceAttribution;
 import 'package:kalinka/providers/url_resolver.dart';
-import 'package:provider/provider.dart';
 import 'data_model.dart';
 import 'shimmer_effect.dart' show Shimmer;
 
@@ -316,13 +316,13 @@ class _BrowseItemListState extends ConsumerState<BrowseItemList> {
 
   Widget _withPlaybackAnimationOverlay(
       BuildContext context, String trackId, Widget child) {
-    final PlayerStateProvider playerStateProvider =
-        context.watch<PlayerStateProvider>();
-    final bool isPlaying =
-        playerStateProvider.state.currentTrack?.id == trackId;
+    final playerState = ref.watch(playerStateProvider).valueOrNull;
+    final bool isPlaying = playerState?.currentTrack?.id == trackId;
+
     if (!isPlaying) {
       return child;
     }
+
     return Stack(children: [
       child,
       Positioned.fill(

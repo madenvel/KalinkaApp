@@ -5,13 +5,14 @@ import 'package:kalinka/add_to_playlist.dart';
 import 'package:kalinka/event_listener.dart';
 import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
 import 'package:kalinka/polka_dot_painter.dart' show PolkaDotPainter;
+import 'package:kalinka/providers/player_state_provider.dart'
+    show playerStateProvider;
 import 'package:kalinka/providers/tracklist_provider.dart'
     show trackListProvider;
 import 'package:kalinka/shimmer_effect.dart' show ShimmerProvider;
 import 'package:provider/provider.dart';
 import 'package:kalinka/bottom_menu.dart';
 import 'package:kalinka/data_model.dart';
-import 'package:kalinka/data_provider.dart';
 
 import 'nowplaying.dart';
 import 'playqueue.dart';
@@ -84,84 +85,87 @@ class _SwipableTabsState extends ConsumerState<SwipableTabs>
             ]),
             centerTitle: true,
             actions: [
-              [
-                IconButton(
-                    icon: const Icon(Icons.more_vert),
-                    onPressed: () {
-                      if (controller.index == 0) {
-                        PlayerStateProvider provider =
-                            context.read<PlayerStateProvider>();
-                        Track? track = provider.state.currentTrack;
-                        BrowseItem? item = track != null
-                            ? BrowseItem(
-                                id: track.id,
-                                name: track.title,
-                                subname: track.performer?.name,
-                                canAdd: true,
-                                canBrowse: false,
-                                track: track)
-                            : null;
-                        if (item != null) {
-                          final parentContext = context;
-                          showModalBottomSheet(
-                              context: context,
-                              showDragHandle: true,
-                              isScrollControlled: false,
-                              useRootNavigator: true,
-                              scrollControlDisabledMaxHeightRatio: 0.7,
-                              builder: (context) {
-                                return BottomMenu(
-                                  parentContext: parentContext,
-                                  browseItem: item,
-                                  showPlay: false,
-                                  showAddToQueue: false,
-                                );
-                              });
-                        }
-                      }
-                    })
-              ],
-              [
-                IconButton(
-                    icon: const Icon(Icons.more_vert),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: const Text('Actions'),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                ListTile(
-                                  leading: const Icon(Icons.playlist_add),
-                                  title: const Text('Add to playlist'),
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    _buildAddToPlaylist(context);
-                                  },
-                                ),
-                                ListTile(
-                                  leading: const Icon(Icons.clear_all),
-                                  title: const Text('Clear Queue'),
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    ref.read(kalinkaProxyProvider).clear();
-                                  },
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    })
-              ]
+              [_buildNowPlayingActionButton()],
+              [_buildPlayQueueActionButton()]
             ][_index],
           ),
           body: TabBarView(controller: controller, children: widgets),
         )
       ]),
     );
+  }
+
+  Widget _buildPlayQueueActionButton() {
+    return IconButton(
+        icon: const Icon(Icons.more_vert),
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('Actions'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.playlist_add),
+                      title: const Text('Add to playlist'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _buildAddToPlaylist(context);
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.clear_all),
+                      title: const Text('Clear Queue'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        ref.read(kalinkaProxyProvider).clear();
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        });
+  }
+
+  Widget _buildNowPlayingActionButton() {
+    return IconButton(
+        icon: const Icon(Icons.more_vert),
+        onPressed: () {
+          if (controller.index == 0) {
+            Track? track =
+                ref.read(playerStateProvider).valueOrNull?.currentTrack;
+            BrowseItem? item = track != null
+                ? BrowseItem(
+                    id: track.id,
+                    name: track.title,
+                    subname: track.performer?.name,
+                    canAdd: true,
+                    canBrowse: false,
+                    track: track)
+                : null;
+            if (item != null) {
+              final parentContext = context;
+              showModalBottomSheet(
+                  context: context,
+                  showDragHandle: true,
+                  isScrollControlled: false,
+                  useRootNavigator: true,
+                  scrollControlDisabledMaxHeightRatio: 0.7,
+                  builder: (context) {
+                    return BottomMenu(
+                      parentContext: parentContext,
+                      browseItem: item,
+                      showPlay: false,
+                      showAddToQueue: false,
+                    );
+                  });
+            }
+          }
+        });
   }
 
   Widget _buildBackgroundImage(BuildContext context) {

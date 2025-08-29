@@ -1,11 +1,17 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncValueX, ConsumerState, ConsumerStatefulWidget;
+    show
+        AsyncData,
+        AsyncValueX,
+        ConsumerState,
+        ConsumerStatefulWidget,
+        ProviderSubscription;
 import 'package:kalinka/action_button.dart' show ActionButton;
 import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
 import 'package:kalinka/providers/playback_mode_provider.dart'
     show playbackModeProvider;
+import 'package:kalinka/providers/player_state_provider.dart';
 import 'package:kalinka/providers/volume_control_provider.dart';
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
 import 'package:kalinka/providers/url_resolver.dart' show urlResolverProvider;
@@ -43,30 +49,29 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   bool isSeeking = false;
   double seekValue = 0;
   late final KalinkaPlayerProxy kalinkaApi;
+  late final ProviderSubscription playerStateSubscription;
 
   @override
   void initState() {
     super.initState();
     kalinkaApi = ref.read(kalinkaProxyProvider);
     if (mounted) {
-      context.read<PlayerStateProvider>().addListener(streamPositionUpdated);
-    }
-  }
-
-  void streamPositionUpdated() {
-    if (!mounted) return;
-
-    final state = context.read<PlayerStateProvider>().state;
-    if (state.state == PlayerStateType.playing && state.position != null) {
-      setState(() {
-        isSeeking = false;
+      playerStateSubscription =
+          ref.listenManual(playerStateProvider, (previous, next) {
+        final state = (next as AsyncData<PlayerState>).valueOrNull;
+        if (state == null) return;
+        if (state.state == PlayerStateType.playing && state.position != null) {
+          setState(() {
+            isSeeking = false;
+          });
+        }
       });
     }
   }
 
   @override
   void deactivate() {
-    context.read<PlayerStateProvider>().removeListener(streamPositionUpdated);
+    playerStateSubscription.close();
     super.deactivate();
   }
 
@@ -99,9 +104,8 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
     );
   }
 
-  BrowseItem? _getBrowseItem(
-      BuildContext context, PlayerStateProvider playerStateProvider) {
-    final Track? track = playerStateProvider.state.currentTrack;
+  BrowseItem? _getBrowseItem(BuildContext context, PlayerState playerState) {
+    final Track? track = playerState.currentTrack;
     if (track == null) return null;
 
     return BrowseItem(
@@ -114,17 +118,20 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildAudioInfoWidget(BuildContext context) {
-    final playerStateProvider = context.watch<PlayerStateProvider>();
-    final item = _getBrowseItem(context, playerStateProvider);
+    final playerState = ref.watch(playerStateProvider).valueOrNull;
 
-    final audioInfo = playerStateProvider.state.audioInfo;
+    if (playerState == null) {
+      return const SizedBox.shrink();
+    }
+
+    final item = _getBrowseItem(context, playerState);
+
+    final audioInfo = playerState.audioInfo;
     final double sampleRate = (audioInfo?.sampleRate ?? 0) / 1000;
     final int bitDepth = audioInfo?.bitsPerSample ?? 0;
-    final String decoderType =
-        playerStateProvider.state.mimeType?.contains('/') ?? false
-            ? playerStateProvider.state.mimeType?.split('/')[1].toUpperCase() ??
-                'Unknown'
-            : 'Unknown';
+    final String decoderType = playerState.mimeType?.contains('/') ?? false
+        ? playerState.mimeType?.split('/')[1].toUpperCase() ?? 'Unknown'
+        : 'Unknown';
 
     return Row(
       children: [
@@ -169,8 +176,13 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildTrackInfoWidget(BuildContext context) {
-    final state = context.watch<PlayerStateProvider>().state;
-    final track = state.currentTrack;
+    final playerState = ref.watch(playerStateProvider).valueOrNull;
+
+    if (playerState == null) {
+      return const SizedBox.shrink();
+    }
+
+    final track = playerState.currentTrack;
 
     return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
       Text(track?.title ?? 'Unknown',
@@ -198,8 +210,8 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildProgressBarWidget(BuildContext context) {
-    final duration = context.select<PlayerStateProvider, int>(
-        (provider) => provider.state.audioInfo?.durationMs ?? 0);
+    final duration = ref.watch(playerStateProvider
+        .select((state) => state.valueOrNull?.audioInfo?.durationMs ?? 0));
     final position = context.watch<TrackPositionProvider>().position;
 
     return Column(children: [
@@ -307,8 +319,8 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildButtonsBar(BuildContext context) {
-    final state = context.select<PlayerStateProvider, PlayerStateType?>(
-        (provider) => provider.state.state);
+    final state = ref
+        .watch(playerStateProvider.select((state) => state.valueOrNull?.state));
 
     if (state == null) {
       return const SizedBox.shrink();
@@ -438,7 +450,9 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildAlbumArtWidget(BuildContext context) {
-    final currentTrack = context.read<PlayerStateProvider>().state.currentTrack;
+    final currentTrack = ref.watch(
+        playerStateProvider.select((state) => state.valueOrNull?.currentTrack));
+
     String imageUrl = currentTrack?.album?.image?.large ??
         currentTrack?.album?.image?.small ??
         currentTrack?.album?.image?.thumbnail ??
