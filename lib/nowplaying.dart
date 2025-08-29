@@ -12,17 +12,16 @@ import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
 import 'package:kalinka/providers/playback_mode_provider.dart'
     show playbackModeProvider;
 import 'package:kalinka/providers/player_state_provider.dart';
+import 'package:kalinka/providers/playback_time_provider.dart';
 import 'package:kalinka/providers/volume_control_provider.dart';
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
 import 'package:kalinka/providers/url_resolver.dart' show urlResolverProvider;
 import 'package:logger/logger.dart';
-import 'package:provider/provider.dart';
 import 'package:kalinka/favorite_button.dart';
 
 import 'add_to_playlist.dart';
 import 'custom_cache_manager.dart';
 import 'data_model.dart';
-import 'data_provider.dart';
 
 /// Constants for UI elements to avoid magic numbers
 class _NowPlayingConstants {
@@ -97,11 +96,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildTrackProgressSection() {
-    return ChangeNotifierProvider(
-      create: (context) => TrackPositionProvider(),
-      builder: (context, _) =>
-          RepaintBoundary(child: _buildProgressBarWidget(context)),
-    );
+    return RepaintBoundary(child: _buildProgressBarWidget(context));
   }
 
   BrowseItem? _getBrowseItem(BuildContext context, PlayerState playerState) {
@@ -212,7 +207,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   Widget _buildProgressBarWidget(BuildContext context) {
     final duration = ref.watch(playerStateProvider
         .select((state) => state.valueOrNull?.audioInfo?.durationMs ?? 0));
-    final position = context.watch<TrackPositionProvider>().position;
+    final position = ref.watch(playbackTimeMsProvider);
 
     return Column(children: [
       SliderTheme(
