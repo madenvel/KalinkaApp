@@ -11,16 +11,16 @@ import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
     show KalinkaPlayerProxy, kalinkaProxyProvider;
 import 'package:kalinka/providers/player_state_provider.dart'
     show playerStateProvider;
+import 'package:kalinka/providers/playback_time_provider.dart'
+    show playbackTimeMsProvider;
 import 'package:kalinka/providers/tracklist_provider.dart';
 import 'package:kalinka/providers/url_resolver.dart';
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
-import 'package:provider/provider.dart';
 import 'package:kalinka/fg_service.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
 import 'custom_cache_manager.dart';
 import 'data_model.dart';
-import 'data_provider.dart';
 
 class Playbar extends ConsumerStatefulWidget {
   const Playbar({super.key, this.onTap});
@@ -42,7 +42,7 @@ class _PlaybarState extends ConsumerState<Playbar> {
   late final ProviderSubscription subscription;
 
   double? _calculateRelativeProgress(BuildContext context) {
-    final position = context.watch<TrackPositionProvider>().position;
+    final position = ref.watch(playbackTimeMsProvider);
     final duration = ref.watch(playerStateProvider
         .select((state) => state.valueOrNull?.audioInfo?.durationMs ?? 0));
     return duration != 0 ? position / duration : 0.0;
@@ -91,14 +91,12 @@ class _PlaybarState extends ConsumerState<Playbar> {
                 padding: const EdgeInsets.only(top: 8.0, bottom: 6.0),
                 child: _buildTile(context),
               ),
-              ChangeNotifierProvider(
-                  create: (context) => TrackPositionProvider(),
-                  builder: (context, child) => RepaintBoundary(
-                          child: LinearProgressIndicator(
-                        value: _calculateRelativeProgress(context),
-                        // color: highlightColor,
-                        // backgroundColor: Theme.of(context).colorScheme.surface,
-                      ))),
+              RepaintBoundary(
+                  child: LinearProgressIndicator(
+                value: _calculateRelativeProgress(context),
+                // color: highlightColor,
+                // backgroundColor: Theme.of(context).colorScheme.surface,
+              )),
               const Divider(height: 0)
             ])),
         onTap: () {
