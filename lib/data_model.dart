@@ -122,6 +122,7 @@ class PlayerState {
             ? null
             : AudioInfo.fromJson(json["audio_info"]),
         mimeType: json["mime_type"],
+        timestamp: json["timestamp"] ?? 0,
       );
 
   Map<String, dynamic> toJson() => {
