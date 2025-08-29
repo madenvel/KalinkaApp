@@ -9,10 +9,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
         WidgetRef;
 import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
     show kalinkaProxyProvider;
+import 'package:kalinka/providers/player_state_provider.dart'
+    show playerStateProvider;
 import 'package:kalinka/providers/tracklist_provider.dart';
 import 'package:kalinka/providers/url_resolver.dart' show urlResolverProvider;
-import 'package:provider/provider.dart';
-import 'package:kalinka/data_provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import 'custom_cache_manager.dart';
@@ -59,8 +59,8 @@ class _PlayQueueState extends ConsumerState<PlayQueue>
       return const SizedBox.shrink();
     }
 
-    int? currentTrackIndex =
-        context.select((PlayerStateProvider value) => (value.state.index));
+    int? currentTrackIndex = ref
+        .watch(playerStateProvider.select((state) => state.valueOrNull?.index));
 
     // Scroll to current track when it changes
     if (currentTrackIndex != null &&

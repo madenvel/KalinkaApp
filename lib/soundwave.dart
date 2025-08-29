@@ -2,18 +2,20 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:kalinka/data_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show AsyncValueX, ConsumerState, ConsumerStatefulWidget;
+import 'package:kalinka/providers/player_state_provider.dart'
+    show playerStateProvider;
 
 import 'data_model.dart';
 
-class SoundwaveWidget extends StatefulWidget {
+class SoundwaveWidget extends ConsumerStatefulWidget {
   const SoundwaveWidget({super.key});
   @override
-  State<SoundwaveWidget> createState() => _SoundwaveWidgetState();
+  ConsumerState<SoundwaveWidget> createState() => _SoundwaveWidgetState();
 }
 
-class _SoundwaveWidgetState extends State<SoundwaveWidget>
+class _SoundwaveWidgetState extends ConsumerState<SoundwaveWidget>
     with WidgetsBindingObserver {
   late Timer _timer;
   final _counter = ValueNotifier<int>(0);
@@ -30,7 +32,7 @@ class _SoundwaveWidgetState extends State<SoundwaveWidget>
       if (!mounted) {
         return;
       }
-      if (context.read<PlayerStateProvider>().state.state !=
+      if (ref.read(playerStateProvider).valueOrNull?.state !=
           PlayerStateType.playing) {
         return;
       }

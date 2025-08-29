@@ -6,48 +6,6 @@ import 'package:flutter/scheduler.dart';
 import 'data_model.dart';
 import 'event_listener.dart';
 
-class PlayerStateProvider with ChangeNotifier {
-  PlayerState _state = PlayerState(state: PlayerStateType.stopped);
-  bool _isLoading = true;
-  late String subscriptionId;
-
-  final EventListener _eventListener = EventListener();
-
-  PlayerStateProvider() {
-    subscriptionId = _eventListener.registerCallback({
-      EventType.NetworkDisconnected: (_) {
-        _state = PlayerState(state: PlayerStateType.stopped);
-        _isLoading = true;
-        notifyListeners();
-      },
-      EventType.StateChanged: (args) {
-        PlayerState newState = args[0];
-        _state.copyFrom(newState);
-        if (newState.state != null ||
-            newState.currentTrack != null ||
-            newState.index != null) {
-          notifyListeners();
-        }
-      },
-      EventType.StateReplay: (args) {
-        PlayerState newState = args[0];
-        _state.copyFrom(newState);
-        _isLoading = false;
-        notifyListeners();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _eventListener.unregisterCallback(subscriptionId);
-    super.dispose();
-  }
-
-  PlayerState get state => _state;
-  bool get isLoading => _isLoading;
-}
-
 class TrackPositionProvider with ChangeNotifier {
   int _position = 0;
   late String subscriptionId;
