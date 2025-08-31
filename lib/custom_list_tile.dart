@@ -1,8 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncValueX, ConsumerWidget, WidgetRef;
-import 'package:kalinka/providers/player_state_provider.dart'
+    show ConsumerWidget, WidgetRef;
+import 'package:kalinka/providers/app_state_provider.dart'
     show playerStateProvider;
 import 'package:kalinka/providers/url_resolver.dart' show urlResolverProvider;
 import 'package:kalinka/soundwave.dart';
@@ -111,9 +111,9 @@ class CustomListTile extends ConsumerWidget {
   }
 
   Widget _buildLeadingIcon(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(playerStateProvider).valueOrNull;
+    final state = ref.watch(playerStateProvider);
 
-    String playedTrackId = state?.currentTrack?.id ?? '';
+    String playedTrackId = state.currentTrack?.id ?? '';
     String? currentId = browseItem.id;
     bool isCurrent = playedTrackId == currentId;
 

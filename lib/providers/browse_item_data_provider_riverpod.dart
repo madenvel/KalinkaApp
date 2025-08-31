@@ -12,7 +12,7 @@ import 'package:kalinka/data_model.dart'
         PreviewType,
         SearchType;
 import 'package:kalinka/providers/genre_filter_provider.dart';
-import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
+import 'package:kalinka/providers/kalinka_player_api_provider.dart'
     show KalinkaPlayerProxy, kalinkaProxyProvider;
 import 'package:logger/logger.dart' show Logger;
 import 'package:shared_preferences/shared_preferences.dart'

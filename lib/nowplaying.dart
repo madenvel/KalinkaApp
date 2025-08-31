@@ -8,10 +8,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
         ConsumerStatefulWidget,
         ProviderSubscription;
 import 'package:kalinka/action_button.dart' show ActionButton;
-import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
+import 'package:kalinka/providers/app_state_provider.dart'
+    show playerStateProvider;
+import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 import 'package:kalinka/providers/playback_mode_provider.dart'
     show playbackModeProvider;
-import 'package:kalinka/providers/player_state_provider.dart';
 import 'package:kalinka/providers/playback_time_provider.dart';
 import 'package:kalinka/providers/volume_control_provider.dart';
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
@@ -113,11 +114,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildAudioInfoWidget(BuildContext context) {
-    final playerState = ref.watch(playerStateProvider).valueOrNull;
-
-    if (playerState == null) {
-      return const SizedBox.shrink();
-    }
+    final playerState = ref.watch(playerStateProvider);
 
     final item = _getBrowseItem(context, playerState);
 
@@ -171,12 +168,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildTrackInfoWidget(BuildContext context) {
-    final playerState = ref.watch(playerStateProvider).valueOrNull;
-
-    if (playerState == null) {
-      return const SizedBox.shrink();
-    }
-
+    final playerState = ref.watch(playerStateProvider);
     final track = playerState.currentTrack;
 
     return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -206,7 +198,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
 
   Widget _buildProgressBarWidget(BuildContext context) {
     final duration = ref.watch(playerStateProvider
-        .select((state) => state.valueOrNull?.audioInfo?.durationMs ?? 0));
+        .select((state) => state.audioInfo?.durationMs ?? 0));
     final position = ref.watch(playbackTimeMsProvider);
 
     return Column(children: [
@@ -270,8 +262,8 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildVolumeControl(BuildContext context) {
-    final state = ref.watch(volumeControlProvider).valueOrNull;
-    if (state == null) {
+    final state = ref.watch(volumeControlProvider);
+    if (!state.supported) {
       return SizedBox.shrink();
     }
     final notifier = ref.read(volumeControlProvider.notifier);
@@ -314,8 +306,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildButtonsBar(BuildContext context) {
-    final state = ref
-        .watch(playerStateProvider.select((state) => state.valueOrNull?.state));
+    final state = ref.watch(playerStateProvider.select((state) => state.state));
 
     if (state == null) {
       return const SizedBox.shrink();
@@ -334,8 +325,8 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildVolumeControlButton(BuildContext context) {
-    final state = ref.watch(volumeControlProvider).valueOrNull;
-    if (state == null) {
+    final state = ref.watch(volumeControlProvider);
+    if (!state.supported) {
       return const IconButton(
           icon: Icon(Icons.volume_off),
           onPressed: null,
@@ -415,22 +406,11 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   Widget _buildRepeatButton() {
     final playbackModeState = ref.watch(playbackModeProvider);
     final notifier = ref.read(playbackModeProvider.notifier);
-    return playbackModeState.when(
-      data: (playbackModeState) {
-        return IconButton(
-          icon: Icon(_getRepeatIcon(playbackModeState)),
-          iconSize: 28,
-          onPressed: () => notifier.cycleRepeatMode(),
-        );
-      },
-      loading: () => const IconButton(
-          icon: Icon(Icons.loop), iconSize: 28, onPressed: null),
-      error: (error, stack) => IconButton(
-        icon: const Icon(Icons.error, color: Colors.red),
-        iconSize: 28,
-        onPressed: null,
-        tooltip: 'Error loading playback mode',
-      ),
+
+    return IconButton(
+      icon: Icon(_getRepeatIcon(playbackModeState)),
+      iconSize: 28,
+      onPressed: () => notifier.cycleRepeatMode(),
     );
   }
 
@@ -445,8 +425,8 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildAlbumArtWidget(BuildContext context) {
-    final currentTrack = ref.watch(
-        playerStateProvider.select((state) => state.valueOrNull?.currentTrack));
+    final currentTrack =
+        ref.watch(playerStateProvider.select((state) => state.currentTrack));
 
     String imageUrl = currentTrack?.album?.image?.large ??
         currentTrack?.album?.image?.small ??

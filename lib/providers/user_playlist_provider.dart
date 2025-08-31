@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 import 'package:kalinka/data_model.dart';
-import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
+import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 
 class UserPlaylistsState {
   final List<BrowseItem> items;

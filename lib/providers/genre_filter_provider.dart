@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show AsyncData, AsyncNotifier, AsyncNotifierProvider;
 import 'package:kalinka/data_model.dart' show Genre;
-import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
+import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 
 class GenreFilterList {
   final List<Genre> genres;

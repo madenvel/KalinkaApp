@@ -1,103 +1,35 @@
-import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/data_model.dart';
-import 'package:kalinka/event_listener.dart';
-import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
+import 'package:kalinka/providers/app_state_provider.dart';
+import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 
-class VolumeControlState {
-  final int volume;
-  final int maxVolume;
-  final bool supported;
-
-  const VolumeControlState({
-    required this.volume,
-    required this.maxVolume,
-    required this.supported,
-  });
-
-  VolumeControlState copyWith({
-    int? volume,
-    int? maxVolume,
-    bool? supported,
-  }) {
-    return VolumeControlState(
-      volume: volume ?? this.volume,
-      maxVolume: maxVolume ?? this.maxVolume,
-      supported: supported ?? this.supported,
-    );
-  }
-}
-
-class VolumeControlNotifier extends AsyncNotifier<VolumeControlState> {
-  late String _subscriptionId;
-  int _realVolume = 0;
+class VolumeController extends Notifier<DeviceVolumeState> {
   bool _blockNotifications = false;
-  late final KalinkaPlayerProxy _kalinkaApi;
 
   @override
-  Future<VolumeControlState> build() async {
-    _kalinkaApi = ref.watch(kalinkaProxyProvider);
-
-    ref.onDispose(() {
-      EventListener().unregisterCallback(_subscriptionId);
+  DeviceVolumeState build() {
+    state = ref.read(volumeStateProvider);
+    ref.listen(volumeStateProvider, (prev, next) {
+      if (_blockNotifications) return;
+      state = next;
     });
 
-    _setupEventListeners();
-
-    try {
-      final volume = await _getVolume();
-      return VolumeControlState(
-        volume: volume.currentVolume,
-        maxVolume: volume.maxVolume,
-        supported: true,
-      );
-    } catch (e) {
-      return const VolumeControlState(
-        volume: 0,
-        maxVolume: 0,
-        supported: false,
-      );
-    }
-  }
-
-  void _setupEventListeners() {
-    final eventListener = EventListener();
-    _subscriptionId = eventListener.registerCallback({
-      EventType.VolumeChanged: (args) {
-        final s = state.valueOrNull;
-        if (!_blockNotifications && s != null) {
-          final newVolume = args[0] as int;
-          _realVolume = newVolume;
-          if (newVolume != s.volume) {
-            state = AsyncValue.data(s.copyWith(
-              volume: newVolume,
-            ));
-          }
-        }
-      },
-    });
-  }
-
-  Future<Volume> _getVolume() async {
-    return await _kalinkaApi.getVolume();
+    return state;
   }
 
   void setVolume(int value) {
-    if (!state.hasValue) return;
-
-    final currentState = state.value!;
-    if (value < 0 ||
-        value > currentState.maxVolume ||
-        value == currentState.volume) {
+    if (!state.supported ||
+        value < 0 ||
+        value > state.maxVolume ||
+        value == state.volume) {
       return;
     }
 
-    state = AsyncValue.data(currentState.copyWith(volume: value));
-
-    if (value != _realVolume) {
-      _realVolume = value;
-      _kalinkaApi.setVolume(_realVolume);
-    }
+    final currentVolume = state.volume;
+    state = state.copyWith(volume: value);
+    ref.read(kalinkaProxyProvider).setVolume(value).catchError((error) {
+      state = state.copyWith(volume: currentVolume);
+    });
   }
 
   void setBlockNotifications(bool blockNotifications) {
@@ -106,6 +38,4 @@ class VolumeControlNotifier extends AsyncNotifier<VolumeControlState> {
 }
 
 final volumeControlProvider =
-    AsyncNotifierProvider<VolumeControlNotifier, VolumeControlState>(() {
-  return VolumeControlNotifier();
-});
+    NotifierProvider<VolumeController, DeviceVolumeState>(VolumeController.new);

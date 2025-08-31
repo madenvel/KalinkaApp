@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncValueX, ConsumerState, ConsumerStatefulWidget;
+    show ConsumerState, ConsumerStatefulWidget, ProviderSubscription;
 import 'package:kalinka/add_to_playlist.dart';
-import 'package:kalinka/event_listener.dart';
-import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
+import 'package:kalinka/providers/app_state_provider.dart'
+    show isConnectedProvider, playQueueProvider, playerStateProvider;
+import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 import 'package:kalinka/polka_dot_painter.dart' show PolkaDotPainter;
-import 'package:kalinka/providers/player_state_provider.dart'
-    show playerStateProvider;
-import 'package:kalinka/providers/tracklist_provider.dart'
-    show trackListProvider;
 import 'package:kalinka/shimmer_effect.dart' show ShimmerProvider;
 import 'package:provider/provider.dart';
 import 'package:kalinka/bottom_menu.dart';
@@ -27,11 +24,9 @@ class SwipableTabs extends ConsumerStatefulWidget {
 class _SwipableTabsState extends ConsumerState<SwipableTabs>
     with TickerProviderStateMixin {
   late final TabController controller;
+  late final ProviderSubscription<bool> _isConnectedSubscription;
   int _index = 0;
   List<Widget> widgets = const [NowPlaying(), PlayQueue()];
-
-  final _eventListener = EventListener();
-  late String _subscriptionId;
 
   @override
   void initState() {
@@ -40,9 +35,10 @@ class _SwipableTabsState extends ConsumerState<SwipableTabs>
         length: widgets.length, initialIndex: _index, vsync: this);
     controller.addListener(_updateIndex);
 
-    _subscriptionId = _eventListener.registerCallback({
-      EventType.NetworkDisconnected: (args) {
-        Navigator.pop(context);
+    _isConnectedSubscription =
+        ref.listenManual(isConnectedProvider, (previous, next) {
+      if (next == false) {
+        Navigator.of(context).pop();
       }
     });
   }
@@ -61,7 +57,7 @@ class _SwipableTabsState extends ConsumerState<SwipableTabs>
     super.dispose();
     controller.animation?.removeListener(_updateIndex);
     controller.dispose();
-    _eventListener.unregisterCallback(_subscriptionId);
+    _isConnectedSubscription.close();
   }
 
   @override
@@ -136,8 +132,7 @@ class _SwipableTabsState extends ConsumerState<SwipableTabs>
         icon: const Icon(Icons.more_vert),
         onPressed: () {
           if (controller.index == 0) {
-            Track? track =
-                ref.read(playerStateProvider).valueOrNull?.currentTrack;
+            Track? track = ref.read(playerStateProvider).currentTrack;
             BrowseItem? item = track != null
                 ? BrowseItem(
                     id: track.id,
@@ -181,8 +176,8 @@ class _SwipableTabsState extends ConsumerState<SwipableTabs>
   }
 
   void _buildAddToPlaylist(BuildContext context) {
-    final trackList = ref.read(trackListProvider).valueOrNull;
-    if (trackList == null || trackList.isEmpty) {
+    final trackList = ref.read(playQueueProvider);
+    if (trackList.isEmpty) {
       return;
     }
     Navigator.push(

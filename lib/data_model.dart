@@ -75,6 +75,9 @@ class PlaybackMode {
     required this.shuffle,
   });
 
+  static final empty =
+      PlaybackMode(repeatAll: false, repeatSingle: false, shuffle: false);
+
   factory PlaybackMode.fromJson(Map<String, dynamic> json) => PlaybackMode(
         repeatAll: json["repeat_all"],
         repeatSingle: json["repeat_single"],
@@ -107,6 +110,8 @@ class PlayerState {
       this.audioInfo,
       this.mimeType,
       this.timestamp = 0});
+
+  static final PlayerState empty = PlayerState();
 
   factory PlayerState.fromJson(Map<String, dynamic> json) => PlayerState(
         state: json.containsKey('state')
@@ -166,6 +171,46 @@ class PlayerState {
       audioInfo: audioInfo ?? this.audioInfo,
       mimeType: mimeType ?? this.mimeType,
       timestamp: timestamp ?? this.timestamp,
+    );
+  }
+}
+
+class DeviceVolumeState {
+  final int volume;
+  final int maxVolume;
+  final bool supported;
+
+  DeviceVolumeState({
+    required this.volume,
+    required this.maxVolume,
+    required this.supported,
+  });
+
+  factory DeviceVolumeState.fromJson(Map<String, dynamic> json) =>
+      DeviceVolumeState(
+        volume: json["volume"],
+        maxVolume: json["max_volume"],
+        supported: json["supported"],
+      );
+
+  static final empty =
+      DeviceVolumeState(volume: 0, maxVolume: 0, supported: false);
+
+  Map<String, dynamic> toJson() => {
+        "volume": volume,
+        "max_volume": maxVolume,
+        "supported": supported,
+      };
+
+  DeviceVolumeState copyWith({
+    int? volume,
+    int? maxVolume,
+    bool? supported,
+  }) {
+    return DeviceVolumeState(
+      volume: volume ?? this.volume,
+      maxVolume: maxVolume ?? this.maxVolume,
+      supported: supported ?? this.supported,
     );
   }
 }

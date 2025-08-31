@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
     show AsyncValueX, ConsumerState, ConsumerStatefulWidget;
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_model.dart';
-import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
+import 'package:kalinka/providers/kalinka_player_api_provider.dart'
     show kalinkaProxyProvider;
 import 'package:kalinka/playlist_creation_dialog.dart';
 import 'package:kalinka/providers/url_resolver.dart';

@@ -1,42 +1,26 @@
-import 'dart:async' show Completer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncNotifier, AsyncNotifierProvider, AsyncValue, AsyncValueX;
+    show Notifier, NotifierProvider;
 import 'package:kalinka/data_model.dart' show PlaybackMode;
-import 'package:kalinka/event_listener.dart' show EventListener, EventType;
-import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
+import 'package:kalinka/providers/app_state_provider.dart'
+    show playbackModeStateProvider;
+import 'package:kalinka/providers/kalinka_player_api_provider.dart'
+    show kalinkaProxyProvider;
 
-class PlaybackModeNotifier extends AsyncNotifier<PlaybackMode> {
-  final EventListener _eventListener = EventListener.instance;
-  late final String _subscriptionId;
-
+class PlaybackModeController extends Notifier<PlaybackMode> {
   @override
-  Future<PlaybackMode> build() async {
-    final completer = Completer<PlaybackMode>();
-    _subscriptionId = _eventListener.registerCallback({
-      EventType.StateReplay: (args) {
-        if (!completer.isCompleted) {
-          completer.complete(args[2] as PlaybackMode);
-        }
-      },
-      EventType.PlaybackModeChanged: (args) {
-        state = AsyncValue.data(args[0] as PlaybackMode);
-      },
+  PlaybackMode build() {
+    state = ref.read(playbackModeStateProvider);
+
+    ref.listen(playbackModeStateProvider, (previous, next) {
+      state = next;
     });
 
-    ref.onDispose(() {
-      _eventListener.unregisterCallback(_subscriptionId);
-    });
-
-    return await completer.future;
+    return state;
   }
 
   Future<void> cycleRepeatMode() async {
-    final s = state.valueOrNull;
-    if (s == null) return;
-
-    var repeatSingle = s.repeatSingle;
-    var repeatAll = s.repeatAll;
+    var repeatSingle = state.repeatSingle;
+    var repeatAll = state.repeatAll;
 
     if (!repeatSingle && !repeatAll) {
       repeatAll = true;
@@ -48,7 +32,6 @@ class PlaybackModeNotifier extends AsyncNotifier<PlaybackMode> {
       repeatSingle = false;
     }
 
-    state = AsyncValue.loading();
     await ref.read(kalinkaProxyProvider).setPlaybackMode(
           repeatOne: repeatSingle,
           repeatAll: repeatAll,
@@ -57,5 +40,5 @@ class PlaybackModeNotifier extends AsyncNotifier<PlaybackMode> {
 }
 
 final playbackModeProvider =
-    AsyncNotifierProvider<PlaybackModeNotifier, PlaybackMode>(
-        PlaybackModeNotifier.new);
+    NotifierProvider<PlaybackModeController, PlaybackMode>(
+        PlaybackModeController.new);

@@ -9,17 +9,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
         ConsumerState,
         ConsumerStatefulWidget,
         ConsumerWidget,
+        ProviderSubscription,
         WidgetRef;
 import 'package:kalinka/connection_settings_provider.dart';
 import 'package:kalinka/data_model.dart' show ModuleState;
+import 'package:kalinka/providers/app_state_provider.dart'
+    show isConnectedProvider;
 import 'package:kalinka/service_discovery.dart'
     show ServiceDiscoveryDataProvider;
 import 'package:kalinka/providers/settings_provider.dart';
-import 'package:kalinka/modules_provider.dart';
+import 'package:kalinka/providers/modules_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/service_discovery_widget.dart';
-import 'package:kalinka/event_listener.dart';
 import 'package:logger/logger.dart';
 
 final logger = Logger();
@@ -159,10 +161,10 @@ class DynamicSettingsSubsection extends ConsumerWidget {
     if (state == null) {
       return SizedBox.shrink();
     }
-    final modulesState = ref.watch(modulesProvider);
+    final modulesState = ref.watch(modulesProvider).valueOrNull;
     final setting = state.getCurrentValue(path);
     final isChanged = state.isPathChanged(path);
-    ModuleState? moduleStatus = modulesState.getModuleStatus(path);
+    ModuleState? moduleStatus = modulesState?.getModuleStatus(path);
 
     return ListTile(
         titleTextStyle: isChanged
@@ -842,9 +844,10 @@ class RestartingServerDialog extends ConsumerStatefulWidget {
 
 class _RestartingServerDialogState
     extends ConsumerState<RestartingServerDialog> {
-  String? _eventListenerUuid;
   Timer? _timeoutTimer;
   int _secondsRemaining = 30;
+
+  late final ProviderSubscription _isConnectedSubscription;
 
   @override
   void initState() {
@@ -876,21 +879,17 @@ class _RestartingServerDialogState
   }
 
   void _registerEventListener() {
-    _eventListenerUuid = EventListener.instance.registerCallback({
-      EventType.NetworkConnected: (args) {
-        if (mounted) {
-          _timeoutTimer?.cancel();
-          Navigator.of(context).pop();
-        }
-      },
+    _isConnectedSubscription =
+        ref.listenManual(isConnectedProvider, (previous, next) {
+      if (next == true) {
+        _timeoutTimer?.cancel();
+        Navigator.of(context).pop();
+      }
     });
   }
 
   void _unregisterEventListener() {
-    if (_eventListenerUuid != null) {
-      EventListener.instance.unregisterCallback(_eventListenerUuid!);
-      _eventListenerUuid = null;
-    }
+    _isConnectedSubscription.close();
   }
 
   @override

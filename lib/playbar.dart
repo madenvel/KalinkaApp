@@ -7,15 +7,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
         ConsumerState,
         ConsumerStatefulWidget,
         ProviderSubscription;
-import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
+import 'package:kalinka/providers/app_state_provider.dart'
+    show playQueueProvider, playerStateProvider;
+import 'package:kalinka/providers/kalinka_player_api_provider.dart'
     show KalinkaPlayerProxy, kalinkaProxyProvider;
-import 'package:kalinka/providers/player_state_provider.dart'
-    show playerStateProvider;
 import 'package:kalinka/providers/playback_time_provider.dart'
     show playbackTimeMsProvider;
-import 'package:kalinka/providers/tracklist_provider.dart';
 import 'package:kalinka/providers/url_resolver.dart';
-import 'package:kalinka/shimmer_effect.dart' show Shimmer;
 import 'package:kalinka/fg_service.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
@@ -44,7 +42,7 @@ class _PlaybarState extends ConsumerState<Playbar> {
   double? _calculateRelativeProgress(BuildContext context) {
     final position = ref.watch(playbackTimeMsProvider);
     final duration = ref.watch(playerStateProvider
-        .select((state) => state.valueOrNull?.audioInfo?.durationMs ?? 0));
+        .select((state) => state.audioInfo?.durationMs ?? 0));
     return duration != 0 ? position / duration : 0.0;
   }
 
@@ -106,33 +104,15 @@ class _PlaybarState extends ConsumerState<Playbar> {
 
   Widget _buildTile(BuildContext context) {
     final playerState = ref.watch(playerStateProvider);
-    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
-    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
-    return playerState.when(data: (state) {
-      return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-        const SizedBox(width: 8),
-        _buildImage(context, state),
-        const SizedBox(width: 8),
-        Expanded(child: _buildCarousel(context, state)),
-        _buildPlaybutton(context, state),
-        const SizedBox(width: 8),
-      ]);
-    }, loading: () {
-      return Shimmer(
-          baseColor: baseColor,
-          highlightColor: highlightColor,
-          child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-            const SizedBox(width: 8),
-            const SizedBox(
-                width: 48, height: 48, child: Icon(Icons.music_note, size: 48)),
-            const SizedBox(width: 8),
-            Expanded(child: Container(height: 24)),
-            const CircularProgressIndicator(),
-            const SizedBox(width: 8),
-          ]));
-    }, error: (error, stack) {
-      return const SizedBox.shrink();
-    });
+
+    return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+      const SizedBox(width: 8),
+      _buildImage(context, playerState),
+      const SizedBox(width: 8),
+      Expanded(child: _buildCarousel(context, playerState)),
+      _buildPlaybutton(context, playerState),
+      const SizedBox(width: 8),
+    ]);
   }
 
   IconData _getPlaybackIcon(PlayerState state) {
@@ -235,10 +215,10 @@ class _PlaybarState extends ConsumerState<Playbar> {
   }
 
   Widget _buildCarousel(BuildContext context, PlayerState state) {
-    final trackListState = ref.watch(trackListProvider).valueOrNull;
+    final trackListState = ref.watch(playQueueProvider);
     final index = state.index;
 
-    if (trackListState == null || trackListState.isEmpty) {
+    if (trackListState.isEmpty) {
       return const SizedBox.shrink();
     }
 
