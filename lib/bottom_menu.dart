@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/add_to_playlist.dart';
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
-import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
+import 'package:kalinka/providers/kalinka_player_api_provider.dart'
     show kalinkaProxyProvider;
 import 'package:kalinka/providers/user_favoriteids_provider.dart'
     show userFavoritesIdsProvider;

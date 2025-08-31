@@ -1,3 +1,4 @@
+import 'dart:async' show Timer;
 import 'dart:convert' show jsonEncode;
 
 import 'package:dio/dio.dart' show BaseOptions, Dio, Headers, Options, Response;
@@ -447,10 +448,10 @@ final kalinkaProxyProvider = Provider<KalinkaPlayerProxy>((ref) {
   });
 
   // Keep alive if you navigate across screens frequently
-  // final link = ref.keepAlive();
+  final link = ref.keepAlive();
 
   // Optional: release after some idle time
-  // Timer(const Duration(minutes: 10), link.close);
+  Timer(const Duration(minutes: 10), link.close);
 
   return proxy;
 });

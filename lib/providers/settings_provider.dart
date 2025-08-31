@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kalinka/event_listener.dart' show EventListener, EventType;
-import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
+import 'package:kalinka/providers/app_state_provider.dart';
+import 'package:kalinka/providers/kalinka_player_api_provider.dart'
     show kalinkaProxyProvider;
 import 'package:logger/logger.dart';
 
@@ -143,29 +143,22 @@ bool _deepEquals(dynamic a, dynamic b) {
 /// Riverpod provider for settings management
 class SettingsNotifier extends AsyncNotifier<SettingsState> {
   final Logger _logger = Logger();
-  final EventListener _eventListener = EventListener.instance;
-  String eventListenerId = '';
 
   @override
   Future<SettingsState> build() async {
     final newState = await loadSettings();
 
-    eventListenerId = _eventListener.registerCallback({
-      EventType.NetworkConnected: (data) {
+    ref.listen(isConnectedProvider, (previous, next) {
+      if (next == true) {
         loadSettings();
-      },
-      EventType.NetworkDisconnected: (data) {
+      } else {
         state = AsyncData(SettingsState(
           originalSettings: {},
           currentSettings: {},
           changedPaths: {},
           error: 'Network disconnected. Unable to load settings.',
         ));
-      },
-    });
-
-    ref.onDispose(() {
-      _eventListener.unregisterCallback(eventListenerId);
+      }
     });
 
     return newState;

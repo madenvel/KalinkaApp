@@ -8,13 +8,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
         AsyncValue,
         AsyncValueX;
 import 'package:kalinka/data_model.dart' show BrowseItem;
-import 'package:kalinka/event_listener.dart' show EventListener, EventType;
-import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
+import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 import 'package:logger/logger.dart' show Logger;
 
 class UserFavoritesIdsProvider extends AsyncNotifier<Set<String>> {
   final logger = Logger();
-  late String _subscriptionId;
 
   void addIdOnly(String id) {
     final s = state.valueOrNull;
@@ -83,19 +81,6 @@ class UserFavoritesIdsProvider extends AsyncNotifier<Set<String>> {
 
   @override
   FutureOr<Set<String>> build() async {
-    _subscriptionId = EventListener().registerCallback({
-      EventType.FavoriteAdded: (args) {
-        addIdOnly(args[0]);
-      },
-      EventType.FavoriteRemoved: (args) {
-        removeIdOnly(args[0]);
-      }
-    });
-
-    ref.onDispose(() {
-      EventListener().unregisterCallback(_subscriptionId);
-    });
-
     final ids = await ref.read(kalinkaProxyProvider).getFavoriteIds();
     final allIds = <String>{
       ...ids.tracks,

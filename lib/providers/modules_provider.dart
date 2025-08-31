@@ -2,32 +2,24 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/data_model.dart'
     show ModuleInfo, ModuleState, ModulesAndDevices;
-import 'package:kalinka/event_listener.dart' show EventListener, EventType;
-import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
-    show KalinkaPlayerProxy, kalinkaProxyProvider;
+import 'package:kalinka/providers/app_state_provider.dart';
+import 'package:kalinka/providers/kalinka_player_api_provider.dart'
+    show kalinkaProxyProvider;
 import 'package:logger/logger.dart';
 
 /// State class for modules and devices
 class ModulesState {
   final ModulesAndDevices? modules;
-  final bool isLoading;
-  final String? error;
 
   const ModulesState({
     this.modules,
-    this.isLoading = false,
-    this.error,
   });
 
   ModulesState copyWith({
     ModulesAndDevices? modules,
-    bool? isLoading,
-    String? error,
   }) {
     return ModulesState(
       modules: modules ?? this.modules,
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
     );
   }
 
@@ -101,60 +93,30 @@ class ModulesState {
 }
 
 /// Riverpod provider for modules and devices management
-class ModulesNotifier extends StateNotifier<ModulesState> {
-  final KalinkaPlayerProxy _proxy;
+class ModulesNotifier extends AsyncNotifier<ModulesState> {
   final Logger _logger = Logger();
-  final EventListener _eventListener = EventListener.instance;
-  String eventListenerId = '';
-
-  ModulesNotifier(this._proxy)
-      : super(const ModulesState(
-          modules: null,
-          isLoading: true,
-        )) {
-    loadModules();
-
-    eventListenerId = _eventListener.registerCallback({
-      EventType.NetworkConnected: (data) {
-        loadModules();
-      },
-      EventType.NetworkDisconnected: (data) {
-        state = state.copyWith(
-          error: 'Network disconnected. Unable to load modules.',
-          isLoading: false,
-        );
-      },
-    });
-  }
 
   @override
-  void dispose() {
-    _eventListener.unregisterCallback(eventListenerId);
-    super.dispose();
+  Future<ModulesState> build() async {
+    final connected = ref.watch(isConnectedProvider);
+
+    if (connected) {
+      return ModulesState(modules: await loadModules());
+    }
+
+    return ModulesState();
   }
 
   /// Load modules and devices from the server
-  Future<void> loadModules() async {
-    state = state.copyWith(
-      isLoading: true,
-      error: null,
-    );
-
+  Future<ModulesAndDevices> loadModules() async {
     try {
-      final modules = await _proxy.listModules();
-
-      state = ModulesState(
-        modules: modules,
-        isLoading: false,
-      );
+      final modules = await ref.read(kalinkaProxyProvider).listModules();
 
       _logger.i('Modules and devices loaded successfully');
+      return modules;
     } catch (e) {
       _logger.e('Failed to load modules and devices: $e');
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      return Future.error(e);
     }
   }
 
@@ -166,32 +128,4 @@ class ModulesNotifier extends StateNotifier<ModulesState> {
 
 /// Provider for the ModulesNotifier
 final modulesProvider =
-    StateNotifierProvider<ModulesNotifier, ModulesState>((ref) {
-  final kalinkaApi = ref.watch(kalinkaProxyProvider);
-  return ModulesNotifier(kalinkaApi);
-});
-
-/// Convenience providers for commonly used values
-final isModulesLoadingProvider = Provider<bool>((ref) {
-  return ref.watch(modulesProvider).isLoading;
-});
-
-final modulesErrorProvider = Provider<String?>((ref) {
-  return ref.watch(modulesProvider).error;
-});
-
-final modulesDataProvider = Provider<ModulesAndDevices?>((ref) {
-  return ref.watch(modulesProvider).modules;
-});
-
-/// Provider to get input modules list
-final inputModulesProvider = Provider<List<dynamic>>((ref) {
-  final modules = ref.watch(modulesProvider).modules;
-  return modules?.inputModules ?? [];
-});
-
-/// Provider to get devices list
-final devicesProvider = Provider<List<dynamic>>((ref) {
-  final modules = ref.watch(modulesProvider).modules;
-  return modules?.devices ?? [];
-});
+    AsyncNotifierProvider<ModulesNotifier, ModulesState>(ModulesNotifier.new);

@@ -2,16 +2,19 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncData, AsyncValueX, ConsumerState, ConsumerStatefulWidget;
-import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart'
-    show browseItemsProvider;
+    show
+        AsyncData,
+        AsyncValueX,
+        ConsumerState,
+        ConsumerStatefulWidget,
+        ProviderSubscription;
+import 'package:kalinka/providers/app_state_provider.dart';
 import 'package:kalinka/connection_settings_provider.dart';
 import 'package:kalinka/service_discovery.dart';
 import 'package:kalinka/service_discovery_widget.dart'
     show ServiceDiscoveryWidget;
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
-import 'package:kalinka/event_listener.dart';
 import 'package:kalinka/fg_service.dart';
 
 class ConnectionManager extends ConsumerStatefulWidget {
@@ -24,68 +27,35 @@ class ConnectionManager extends ConsumerStatefulWidget {
 }
 
 class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
-  bool _connected = false;
-
-  int _connectionAttemptsInRound = 0;
-  int _waitTime = 1;
-  final int _maxConnectionAttemptsInRound = 3;
-  int _totalConnectionAttempts = 0;
-
-  late final String subscriptionId;
-
-  final EventListener _eventListener = EventListener();
   final AudioPlayerService _audioPlayerService = AudioPlayerService();
   final logger = Logger();
-
-  static const int _totalConnectionAttemptsToShowSpinner = 3;
+  late final ProviderSubscription _isConnectedSubscription;
+  late final ProviderSubscription _connectionSettingsSubscription;
 
   @override
   void initState() {
     super.initState();
-    subscriptionId = EventListener().registerCallback({
-      EventType.NetworkDisconnected: (args) {
-        logger.d('Disconnected!!!');
 
-        setState(() {
-          _connected = false;
-        });
-        if (_connectionAttemptsInRound >= _maxConnectionAttemptsInRound) {
-          _waitTime = (_waitTime * 2).clamp(1, 8);
-          _connectionAttemptsInRound = 0;
-        }
-        final settings = ref.read(connectionSettingsProvider);
-        if (settings.requireValue.isSet) {
-          Timer(Duration(seconds: _waitTime), () {
-            if (!_connected) {
-              logger.i('Attempting to reconnect, $_connectionAttemptsInRound');
-              _connectionAttemptsInRound++;
-              setState(() {
-                _totalConnectionAttempts++;
-              });
-
-              final host = settings.requireValue.host;
-              final port = settings.requireValue.port;
-              _eventListener.startListening(host, port);
-              logger.i("Attempting to listen to $host:$port");
-            }
-          });
-        }
-      },
-      EventType.NetworkConnected: (args) {
-        setState(() {
-          _connected = true;
-          _connectionAttemptsInRound = 0;
-          _totalConnectionAttempts =
-              0; // Reset total attempts on successful connection
-          final settings = ref.read(connectionSettingsProvider).requireValue;
-          _audioPlayerService.init(settings.host, settings.port);
-        });
+    _isConnectedSubscription =
+        ref.listenManual(isConnectedProvider, (previous, next) {
+      if (next == true) {
+        _audioPlayerService.showNotificationControls();
+      } else {
+        _audioPlayerService.hideNotificationControls();
       }
     });
-    ref.listenManual(connectionSettingsProvider, (previous, next) {
+    _connectionSettingsSubscription =
+        ref.listenManual(connectionSettingsProvider, (previous, next) {
       Future.microtask(() => onSettingsChanged(
           (next as AsyncData<ConnectionSettings>).requireValue));
     });
+  }
+
+  @override
+  void dispose() {
+    _isConnectedSubscription.close();
+    _connectionSettingsSubscription.close();
+    super.dispose();
   }
 
   Future<void> onSettingsChanged(ConnectionSettings settings) async {
@@ -93,28 +63,7 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
       return;
     }
 
-    if (_connected) {
-      _audioPlayerService.hideNotificationControls();
-      _eventListener.stopListening();
-      ref.invalidate(browseItemsProvider);
-    }
-
-    _connected = false;
-    _connectionAttemptsInRound = 0;
-    _totalConnectionAttempts = 0; // Reset total attempts when settings change
-    _waitTime = 1; // Reset wait time to initial value
-    final host = settings.host;
-    final port = settings.port;
-    if (host.isNotEmpty && port != 0) {
-      _eventListener.startListening(host, port);
-    }
-    setState(() {});
-  }
-
-  @override
-  void dispose() {
-    _eventListener.unregisterCallback(subscriptionId);
-    super.dispose();
+    _audioPlayerService.init(settings.host, settings.port);
   }
 
   @override
@@ -124,10 +73,11 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
 
   Widget _buildBody(BuildContext context) {
     final settings = ref.watch(connectionSettingsProvider);
+    final isConnected = ref.watch(isConnectedProvider);
 
     return settings.when(data: (data) {
       final isHostPortSet = data.isSet;
-      if (!isHostPortSet || !_connected) {
+      if (!isHostPortSet || !isConnected) {
         return buildConnectingScreen(context, data);
       } else {
         return widget.child;
@@ -152,20 +102,18 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
           ),
         ),
         const SizedBox(height: 16),
-        if (settings.isSet &&
-            _totalConnectionAttempts <= _totalConnectionAttemptsToShowSpinner)
-          const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2.0))
-        else
-          ElevatedButton(
-              child: Text(settings.isSet
-                  ? 'Connect To New Streamer'
-                  : 'Connect To Streamer'),
-              onPressed: () {
-                _showDiscoveryScreen(context);
-              })
+        const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2.0)),
+        const SizedBox(height: 4),
+        ElevatedButton(
+            child: Text(settings.isSet
+                ? 'Connect To New Streamer'
+                : 'Connect To Streamer'),
+            onPressed: () {
+              _showDiscoveryScreen(context);
+            })
       ]),
     );
   }

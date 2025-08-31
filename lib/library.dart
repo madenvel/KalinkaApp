@@ -6,13 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
         ConsumerStatefulWidget,
         Notifier,
         NotifierProvider;
+import 'package:kalinka/providers/app_state_provider.dart'
+    show playerStateProvider;
 import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
 import 'package:kalinka/constants.dart';
-import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart';
+import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 import 'package:kalinka/playlist_creation_dialog.dart';
-import 'package:kalinka/providers/player_state_provider.dart'
-    show playerStateProvider;
 import 'package:kalinka/bottom_menu.dart';
 import 'package:kalinka/browse_item_list.dart';
 
@@ -269,10 +269,10 @@ class _LibraryState extends ConsumerState<Library> {
 
   void _playTrack(BuildContext context, String trackId, int index) async {
     final kalinkaApi = ref.read(kalinkaProxyProvider);
-    final state = ref.read(playerStateProvider).valueOrNull;
+    final state = ref.read(playerStateProvider);
 
     bool needToAdd = true;
-    if (state?.currentTrack?.id == trackId) {
+    if (state.currentTrack?.id == trackId) {
       needToAdd = false;
     }
 

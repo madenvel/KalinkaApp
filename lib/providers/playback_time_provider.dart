@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/data_model.dart' show PlayerState, PlayerStateType;
-import 'package:kalinka/providers/player_state_provider.dart'
+import 'package:kalinka/providers/app_state_provider.dart'
     show playerStateProvider;
 
 /// Expose app lifecycle as a provider.
@@ -70,18 +70,15 @@ class PlaybackTimeMsNotifier extends Notifier<int> {
   @override
   int build() {
     _sw = Stopwatch();
-    final playerState = ref.read(playerStateProvider).valueOrNull;
-    _baseAccurateMs = playerState?.position ?? 0;
+    final playerState = ref.read(playerStateProvider);
+    _baseAccurateMs = playerState.position ?? 0;
     state = _baseAccurateMs; // initial emit
-    _updateStopwatchState(playerState?.state);
+    _updateStopwatchState(playerState.state);
 
     // Re-sync whenever the accurate source updates.
-    ref.listen<AsyncValue<PlayerState>>(playerStateProvider, (prev, next) {
-      final s = next.valueOrNull;
-      if (s == null) {
-        return;
-      }
-      _resyncToAccurate(s.state ?? PlayerStateType.stopped, s.position ?? 0);
+    ref.listen<PlayerState>(playerStateProvider, (prev, next) {
+      _resyncToAccurate(
+          next.state ?? PlayerStateType.stopped, next.position ?? 0);
       // Emit immediately so UI catches up even if we’re paused/resumed.
       state = _baseAccurateMs + _sw.elapsedMilliseconds;
     });

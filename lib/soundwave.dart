@@ -3,8 +3,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncValueX, ConsumerState, ConsumerStatefulWidget;
-import 'package:kalinka/providers/player_state_provider.dart'
+    show ConsumerState, ConsumerStatefulWidget;
+import 'package:kalinka/providers/app_state_provider.dart'
     show playerStateProvider;
 
 import 'data_model.dart';
@@ -32,8 +32,7 @@ class _SoundwaveWidgetState extends ConsumerState<SoundwaveWidget>
       if (!mounted) {
         return;
       }
-      if (ref.read(playerStateProvider).valueOrNull?.state !=
-          PlayerStateType.playing) {
+      if (ref.read(playerStateProvider).state != PlayerStateType.playing) {
         return;
       }
       _counter.value++;

@@ -1,17 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show
-        AsyncValueX,
-        ConsumerState,
-        ConsumerStatefulWidget,
-        ConsumerWidget,
-        WidgetRef;
-import 'package:kalinka/providers/kalinkaplayer_proxy_new.dart'
+    show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
+import 'package:kalinka/providers/app_state_provider.dart';
+import 'package:kalinka/providers/kalinka_player_api_provider.dart'
     show kalinkaProxyProvider;
-import 'package:kalinka/providers/player_state_provider.dart'
-    show playerStateProvider;
-import 'package:kalinka/providers/tracklist_provider.dart';
 import 'package:kalinka/providers/url_resolver.dart' show urlResolverProvider;
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
@@ -53,14 +46,14 @@ class _PlayQueueState extends ConsumerState<PlayQueue>
   }
 
   Widget _buildList(BuildContext context) {
-    final tracks = ref.watch(trackListProvider).valueOrNull;
+    final tracks = ref.watch(playQueueProvider);
 
-    if (tracks == null || tracks.isEmpty) {
+    if (tracks.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    int? currentTrackIndex = ref
-        .watch(playerStateProvider.select((state) => state.valueOrNull?.index));
+    int? currentTrackIndex =
+        ref.watch(playerStateProvider.select((state) => state.index));
 
     // Scroll to current track when it changes
     if (currentTrackIndex != null &&

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/data_model.dart' show EntityId;
-import 'package:kalinka/modules_provider.dart' show modulesProvider;
+import 'package:kalinka/providers/modules_provider.dart' show modulesProvider;
 import 'package:kalinka/text_card_colors.dart' show TextCardColors;
 
 class SourceAttribution extends ConsumerWidget {
@@ -22,7 +22,7 @@ class SourceAttribution extends ConsumerWidget {
           })())
         : null;
 
-    final provider = ref.watch(modulesProvider);
+    final modulesState = ref.watch(modulesProvider).valueOrNull;
 
     if (entityId == null) {
       final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
@@ -33,7 +33,7 @@ class SourceAttribution extends ConsumerWidget {
     }
 
     final sourceExists =
-        provider.getInputModule(entityId.source)?.enabled ?? false;
+        modulesState?.getInputModule(entityId.source)?.enabled ?? false;
     final source = entityId.source;
     final color = sourceExists
         ? TextCardColors.generateColor(source,
