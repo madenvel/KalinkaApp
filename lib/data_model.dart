@@ -141,36 +141,16 @@ class PlayerState {
         "timestamp": timestamp,
       };
 
-  void copyFrom(PlayerState other) {
-    currentTrack = other.currentTrack ?? currentTrack;
-    index = other.index ?? index;
-    state = other.state ?? state;
-    position = other.position ?? position;
-    message = other.message ?? message;
-    audioInfo = other.audioInfo ?? audioInfo;
-    mimeType = other.mimeType ?? mimeType;
-    timestamp = other.timestamp;
-  }
-
-  PlayerState copyWith({
-    PlayerStateType? state,
-    Track? currentTrack,
-    int? index,
-    int? position,
-    String? message,
-    AudioInfo? audioInfo,
-    String? mimeType,
-    int? timestamp,
-  }) {
+  PlayerState copyWith(PlayerState other) {
     return PlayerState(
-      state: state ?? this.state,
-      currentTrack: currentTrack ?? this.currentTrack,
-      index: index ?? this.index,
-      position: position ?? this.position,
-      message: message ?? this.message,
-      audioInfo: audioInfo ?? this.audioInfo,
-      mimeType: mimeType ?? this.mimeType,
-      timestamp: timestamp ?? this.timestamp,
+      state: other.state ?? state,
+      currentTrack: other.currentTrack ?? currentTrack,
+      index: other.index ?? index,
+      position: other.position ?? position,
+      message: other.message ?? message,
+      audioInfo: other.audioInfo ?? audioInfo,
+      mimeType: other.mimeType ?? mimeType,
+      timestamp: other.timestamp,
     );
   }
 }
