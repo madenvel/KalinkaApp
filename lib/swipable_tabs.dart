@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, ProviderSubscription;
 import 'package:kalinka/add_to_playlist.dart';
 import 'package:kalinka/providers/app_state_provider.dart'
-    show isConnectedProvider, playQueueProvider, playerStateProvider;
+    show playQueueProvider, playerStateProvider;
+import 'package:kalinka/providers/connection_state_provider.dart';
 import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 import 'package:kalinka/polka_dot_painter.dart' show PolkaDotPainter;
 import 'package:kalinka/shimmer_effect.dart' show ShimmerProvider;
@@ -24,7 +25,7 @@ class SwipableTabs extends ConsumerStatefulWidget {
 class _SwipableTabsState extends ConsumerState<SwipableTabs>
     with TickerProviderStateMixin {
   late final TabController controller;
-  late final ProviderSubscription<bool> _isConnectedSubscription;
+  late final ProviderSubscription _isConnectedSubscription;
   int _index = 0;
   List<Widget> widgets = const [NowPlaying(), PlayQueue()];
 
@@ -36,8 +37,8 @@ class _SwipableTabsState extends ConsumerState<SwipableTabs>
     controller.addListener(_updateIndex);
 
     _isConnectedSubscription =
-        ref.listenManual(isConnectedProvider, (previous, next) {
-      if (next == false) {
+        ref.listenManual(connectionStateProvider, (previous, next) {
+      if (next == ConnectionStatus.disconnected) {
         Navigator.of(context).pop();
       }
     });

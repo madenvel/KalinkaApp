@@ -13,8 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
         WidgetRef;
 import 'package:kalinka/connection_settings_provider.dart';
 import 'package:kalinka/data_model.dart' show ModuleState;
-import 'package:kalinka/providers/app_state_provider.dart'
-    show isConnectedProvider;
+import 'package:kalinka/providers/connection_state_provider.dart';
 import 'package:kalinka/service_discovery.dart'
     show ServiceDiscoveryDataProvider;
 import 'package:kalinka/providers/settings_provider.dart';
@@ -880,8 +879,8 @@ class _RestartingServerDialogState
 
   void _registerEventListener() {
     _isConnectedSubscription =
-        ref.listenManual(isConnectedProvider, (previous, next) {
-      if (next == true) {
+        ref.listenManual(connectionStateProvider, (previous, next) {
+      if (next == ConnectionStatus.connected) {
         _timeoutTimer?.cancel();
         Navigator.of(context).pop();
       }

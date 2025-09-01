@@ -11,6 +11,7 @@ import 'package:kalinka/data_model.dart'
         PreviewContentTypeExtension,
         PreviewType,
         SearchType;
+import 'package:kalinka/providers/connection_state_provider.dart';
 import 'package:kalinka/providers/genre_filter_provider.dart';
 import 'package:kalinka/providers/kalinka_player_api_provider.dart'
     show KalinkaPlayerProxy, kalinkaProxyProvider;
@@ -402,7 +403,8 @@ const emptyBrowseItemRepository = EmptyBrowseItemsRepository();
 
 final browseItemRepositoryProvider =
     Provider.family<BrowseItemsRepository, BrowseItemsSourceDesc>((ref, desc) {
-  final kalinkaApi = ref.watch(kalinkaProxyProvider);
+  ref.watch(connectionStateProvider);
+  final kalinkaApi = ref.read(kalinkaProxyProvider);
   final source = switch (desc) {
     DefaultBrowseItemsSourceDesc(:final browseItem) =>
       DefaultBrowseItemsRepository(kalinkaApi, browseItem.id),

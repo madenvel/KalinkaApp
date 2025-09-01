@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/data_model.dart'
     show PlaybackMode, PlayerState, Track, TrackList;
+import 'package:kalinka/providers/connection_state_provider.dart';
 import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 import 'package:logger/logger.dart' show Logger;
 
@@ -53,9 +54,9 @@ class PlaybackModeChangedEvent extends WireEvent {
 }
 
 class VolumeChangedEvent extends WireEvent {
-  final int volume;
+  final int currentVolume;
 
-  VolumeChangedEvent(this.volume);
+  VolumeChangedEvent(this.currentVolume);
 }
 
 class FavoriteAddedEvent extends WireEvent {
@@ -70,17 +71,12 @@ class FavoriteRemovedEvent extends WireEvent {
   FavoriteRemovedEvent(this.entityId);
 }
 
-class NetworkConnectionChangeEvent extends WireEvent {
-  final bool connected;
-
-  NetworkConnectionChangeEvent(this.connected);
-}
-
 /// Single source-of-truth HTTP connection producing parsed WireEvent objects.
 /// All other providers depend on this.
 final wireEventsProvider = StreamProvider.autoDispose<WireEvent>((ref) async* {
   final dio = ref.watch(httpClientProvider);
   final cancel = CancelToken();
+  final conn = ref.read(connectionStateProvider.notifier);
   final logger = Logger();
 
   // Keep the connection while there are listeners
@@ -99,7 +95,7 @@ final wireEventsProvider = StreamProvider.autoDispose<WireEvent>((ref) async* {
       );
 
       if (!cancel.isCancelled) {
-        yield NetworkConnectionChangeEvent(true);
+        conn.connected();
       }
 
       StreamTransformer<Uint8List, List<int>> unit8Transformer =
@@ -161,11 +157,11 @@ final wireEventsProvider = StreamProvider.autoDispose<WireEvent>((ref) async* {
         }
       }
     } catch (e) {
-      logger.e('Stream connection failure: $e');
+      logger.w('Stream connection failure: $e');
     }
 
+    conn.disconnected();
     if (cancel.isCancelled) break;
-    yield NetworkConnectionChangeEvent(false);
     await Future.delayed(backoff);
     if (backoff < const Duration(seconds: 30)) backoff *= 2;
   }

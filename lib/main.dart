@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, ProviderScope;
-import 'package:kalinka/providers/app_state_provider.dart'
-    show playQueueProvider;
 import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart'
     show sharedPrefsProvider;
 import 'package:kalinka/connection_manager.dart';
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/home_screen.dart' show HomeScreen;
+import 'package:kalinka/providers/notification_service_provider.dart'
+    show notificationServiceProvider;
 import 'package:kalinka/search.dart' show SearchScreen;
 import 'package:kalinka/shimmer_effect.dart' show ShimmerProvider;
 import 'package:provider/provider.dart';
@@ -166,7 +166,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage>
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(playQueueProvider);
+    ref.watch(notificationServiceProvider);
     return ChangeNotifierProvider(
       create: (context) => ShimmerProvider(this),
       child: ConnectionManager(
@@ -175,20 +175,16 @@ class _MyHomePageState extends ConsumerState<MyHomePage>
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (state.isNotEmpty)
-                    Playbar(onTap: () {
-                      Navigator.push(
-                        context,
-                        PageRouteBuilder(
-                          opaque: false,
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) =>
-                                  const SwipableTabs(),
-                        ),
-                      );
-                    })
-                  else
-                    const SizedBox.shrink(),
+                  Playbar(onTap: () {
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        opaque: false,
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            const SwipableTabs(),
+                      ),
+                    );
+                  }),
                   NavigationBar(
                     onDestinationSelected: _handleTabChange,
                     selectedIndex: currentPageIndex,

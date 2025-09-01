@@ -1,20 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show
-        AsyncData,
-        AsyncValueX,
-        ConsumerState,
-        ConsumerStatefulWidget,
-        ProviderSubscription;
+    show ConsumerState, ConsumerStatefulWidget, ProviderSubscription;
 import 'package:kalinka/providers/app_state_provider.dart'
     show playQueueProvider, playerStateProvider;
 import 'package:kalinka/providers/kalinka_player_api_provider.dart'
-    show KalinkaPlayerProxy, kalinkaProxyProvider;
+    show kalinkaProxyProvider;
 import 'package:kalinka/providers/playback_time_provider.dart'
     show playbackTimeMsProvider;
 import 'package:kalinka/providers/url_resolver.dart';
-import 'package:kalinka/fg_service.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
 import 'custom_cache_manager.dart';
@@ -36,7 +30,6 @@ class _PlaybarState extends ConsumerState<Playbar> {
       CarouselSliderController();
 
   int _currentPageIndex = 0;
-  late final KalinkaPlayerProxy kalinkaApi;
   late final ProviderSubscription subscription;
 
   double? _calculateRelativeProgress(BuildContext context) {
@@ -50,13 +43,9 @@ class _PlaybarState extends ConsumerState<Playbar> {
   void initState() {
     super.initState();
     if (mounted) {
-      kalinkaApi = ref.read(kalinkaProxyProvider);
-      AudioPlayerService().showNotificationControls();
       subscription = ref.listenManual(playerStateProvider, (previous, next) {
-        final prevOrNull = (previous as AsyncData<PlayerState>?)?.valueOrNull;
-        final nextOrNull = (next as AsyncData<PlayerState>).valueOrNull;
-        if (nextOrNull != prevOrNull) {
-          playerStateChanged(nextOrNull?.index ?? 0);
+        if (previous == null || previous.index != next.index) {
+          playerStateChanged(next.index ?? 0);
         }
       });
     }
@@ -79,6 +68,14 @@ class _PlaybarState extends ConsumerState<Playbar> {
   @override
   Widget build(BuildContext context) {
     // final highlightColor = Theme.of(context).colorScheme.primaryContainer;
+
+    final hasTracks =
+        ref.watch(playQueueProvider.select((data) => data.isNotEmpty));
+
+    if (!hasTracks) {
+      return const SizedBox.shrink();
+    }
+
     return InkWell(
         child: Container(
             width: double.infinity,
@@ -138,6 +135,7 @@ class _PlaybarState extends ConsumerState<Playbar> {
   }
 
   Widget _buildPlaybutton(BuildContext context, PlayerState state) {
+    final kalinkaApi = ref.read(kalinkaProxyProvider);
     return IconButton(
         icon: Icon(_getPlaybackIcon(state),
             size: 36, color: Theme.of(context).colorScheme.surface),
@@ -217,6 +215,7 @@ class _PlaybarState extends ConsumerState<Playbar> {
   Widget _buildCarousel(BuildContext context, PlayerState state) {
     final trackListState = ref.watch(playQueueProvider);
     final index = state.index;
+    final kalinkaApi = ref.read(kalinkaProxyProvider);
 
     if (trackListState.isEmpty) {
       return const SizedBox.shrink();

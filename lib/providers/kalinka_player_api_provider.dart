@@ -9,6 +9,7 @@ import 'package:kalinka/data_model.dart'
     show
         BrowseItem,
         BrowseItemsList,
+        DeviceVolume,
         FavoriteIds,
         GenreList,
         ModulesAndDevices,
@@ -18,8 +19,7 @@ import 'package:kalinka/data_model.dart'
         SearchTypeExtension,
         SeekStatusMessage,
         StatusMessage,
-        TrackList,
-        Volume;
+        TrackList;
 
 abstract class KalinkaPlayerProxy {
   Future<StatusMessage> play([int? index]);
@@ -47,7 +47,7 @@ abstract class KalinkaPlayerProxy {
   Future<FavoriteIds> getFavoriteIds();
   Future<void> clear();
   Future<void> setVolume(int volume);
-  Future<Volume> getVolume();
+  Future<DeviceVolume> getVolume();
   Future<GenreList> getGenres();
   Future<SeekStatusMessage> seek(int positionMs);
   Future<Playlist> playlistCreate(String name, String? description);
@@ -64,16 +64,6 @@ abstract class KalinkaPlayerProxy {
 class KalinkaPlayerProxyImpl implements KalinkaPlayerProxy {
   KalinkaPlayerProxyImpl({required this.client});
   final Dio client;
-
-  // Uri _buildUri(String endpoint, [Map<String, dynamic>? queryParameters]) {
-  //   return Uri(
-  //     scheme: 'http',
-  //     host: host,
-  //     port: port,
-  //     path: endpoint,
-  //     queryParameters: queryParameters,
-  //   );
-  // }
 
   @override
   Future<StatusMessage> play([int? index]) async {
@@ -292,13 +282,12 @@ class KalinkaPlayerProxyImpl implements KalinkaPlayerProxy {
   }
 
   @override
-  Future<Volume> getVolume() async {
-    return client.get('/device/get_volume',
-        queryParameters: {'device_id': 'musiccast'}).then((response) {
+  Future<DeviceVolume> getVolume() async {
+    return client.get('/device/get_volume').then((response) {
       if (response.statusCode != 200) {
         throw Exception('Failed to get volume, url=${response.realUri}');
       }
-      return Volume.fromJson(response.data);
+      return DeviceVolume.fromJson(response.data);
     });
   }
 
@@ -432,8 +421,7 @@ class KalinkaPlayerProxyImpl implements KalinkaPlayerProxy {
 }
 
 final httpClientProvider = Provider<Dio>((ref) {
-  final baseUrl = ref
-      .watch(connectionSettingsProvider.select((a) => a.requireValue.baseUrl));
+  final baseUrl = ref.watch(connectionSettingsProvider).requireValue.baseUrl;
   final dio = Dio(BaseOptions(baseUrl: baseUrl.toString()));
   return dio;
 });

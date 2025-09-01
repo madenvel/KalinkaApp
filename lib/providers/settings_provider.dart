@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kalinka/providers/app_state_provider.dart';
+import 'package:kalinka/providers/connection_state_provider.dart'
+    show ConnectionStatus, connectionStateProvider;
 import 'package:kalinka/providers/kalinka_player_api_provider.dart'
     show kalinkaProxyProvider;
 import 'package:logger/logger.dart';
@@ -148,9 +149,9 @@ class SettingsNotifier extends AsyncNotifier<SettingsState> {
   Future<SettingsState> build() async {
     final newState = await loadSettings();
 
-    ref.listen(isConnectedProvider, (previous, next) {
-      if (next == true) {
-        loadSettings();
+    ref.listen(connectionStateProvider, (previous, next) async {
+      if (next == ConnectionStatus.connected) {
+        state = AsyncValue.data(await loadSettings());
       } else {
         state = AsyncData(SettingsState(
           originalSettings: {},

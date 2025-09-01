@@ -1,12 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show AsyncValue, AsyncValueX, Notifier, NotifierProvider, Provider;
 import 'package:kalinka/data_model.dart'
-    show DeviceVolumeState, PlaybackMode, PlayerState, Track;
+    show DeviceVolume, PlaybackMode, PlayerState, Track;
 import 'package:kalinka/providers/wire_event_provider.dart'
     show
         FavoriteAddedEvent,
         FavoriteRemovedEvent,
-        NetworkConnectionChangeEvent,
         PlaybackModeChangedEvent,
         StateChangedEvent,
         StateReplayEvent,
@@ -20,16 +19,13 @@ class AppState {
   final PlayerState playerState;
   final List<Track> playQueue;
   final PlaybackMode playbackMode;
-  final DeviceVolumeState deviceVolume;
-
-  final bool isConnected;
+  final DeviceVolume deviceVolume;
 
   const AppState({
     required this.playerState,
     required this.playQueue,
     required this.playbackMode,
     required this.deviceVolume,
-    required this.isConnected,
   });
 
   AppState copyWith({
@@ -37,23 +33,20 @@ class AppState {
     List<Track>? playQueue,
     Set<String>? favourites,
     PlaybackMode? playbackMode,
-    DeviceVolumeState? deviceVolume,
-    bool? isConnected,
+    DeviceVolume? deviceVolume,
   }) =>
       AppState(
         playerState: playerState ?? this.playerState,
         playQueue: playQueue ?? this.playQueue,
         playbackMode: playbackMode ?? this.playbackMode,
         deviceVolume: deviceVolume ?? this.deviceVolume,
-        isConnected: isConnected ?? this.isConnected,
       );
 
   static final empty = AppState(
     playerState: PlayerState.empty,
     playQueue: <Track>[],
     playbackMode: PlaybackMode.empty,
-    deviceVolume: DeviceVolumeState.empty,
-    isConnected: false,
+    deviceVolume: DeviceVolume.empty,
   );
 }
 
@@ -77,8 +70,7 @@ class AppStateStore extends Notifier<AppState> {
                   playerState: event.playerState,
                   playQueue: List.unmodifiable(event.playQueue),
                   playbackMode: event.playbackMode,
-                  deviceVolume: DeviceVolumeState.empty,
-                  isConnected: true);
+                  deviceVolume: DeviceVolume.empty);
               break;
 
             case StateChangedEvent event:
@@ -107,7 +99,7 @@ class AppStateStore extends Notifier<AppState> {
             case VolumeChangedEvent event:
               state = state.copyWith(
                   deviceVolume: state.deviceVolume.copyWith(
-                volume: event.volume,
+                currentVolume: event.currentVolume,
               ));
               break;
 
@@ -127,15 +119,20 @@ class AppStateStore extends Notifier<AppState> {
             case PlaybackModeChangedEvent event:
               state = state.copyWith(playbackMode: event.playbackMode);
               break;
-            case NetworkConnectionChangeEvent event:
-              state = AppState.empty.copyWith(isConnected: event.connected);
-              break;
           }
         });
       },
     );
 
+    _loadDeviceVolumeState();
+
     return state;
+  }
+
+  Future<void> _loadDeviceVolumeState() async {
+    // return ref.watch(kalinkaProxyProvider).getVolume().then((volume) {
+    //   state = state.copyWith(deviceVolume: volume);
+    // });
   }
 }
 
@@ -147,9 +144,6 @@ final playQueueProvider = Provider(
 
 final volumeStateProvider = Provider(
     (ref) => ref.watch(appStateStoreProvider.select((s) => s.deviceVolume)));
-
-final isConnectedProvider = Provider(
-    (ref) => ref.watch(appStateStoreProvider.select((s) => s.isConnected)));
 
 final playbackModeStateProvider = Provider(
     (ref) => ref.watch(appStateStoreProvider.select((s) => s.playbackMode)));

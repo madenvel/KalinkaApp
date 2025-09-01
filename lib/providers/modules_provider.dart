@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/data_model.dart'
     show ModuleInfo, ModuleState, ModulesAndDevices;
-import 'package:kalinka/providers/app_state_provider.dart';
+import 'package:kalinka/providers/connection_state_provider.dart';
 import 'package:kalinka/providers/kalinka_player_api_provider.dart'
     show kalinkaProxyProvider;
 import 'package:logger/logger.dart';
@@ -98,9 +98,19 @@ class ModulesNotifier extends AsyncNotifier<ModulesState> {
 
   @override
   Future<ModulesState> build() async {
-    final connected = ref.watch(isConnectedProvider);
+    final isConnected =
+        ref.read(connectionStateProvider) == ConnectionStatus.connected;
 
-    if (connected) {
+    ref.listen<ConnectionStatus>(connectionStateProvider,
+        (previous, next) async {
+      if (previous != null &&
+          previous != next &&
+          next == ConnectionStatus.connected) {
+        state = AsyncValue.data(ModulesState(modules: await loadModules()));
+      }
+    });
+
+    if (isConnected) {
       return ModulesState(modules: await loadModules());
     }
 
@@ -111,8 +121,6 @@ class ModulesNotifier extends AsyncNotifier<ModulesState> {
   Future<ModulesAndDevices> loadModules() async {
     try {
       final modules = await ref.read(kalinkaProxyProvider).listModules();
-
-      _logger.i('Modules and devices loaded successfully');
       return modules;
     } catch (e) {
       _logger.e('Failed to load modules and devices: $e');
