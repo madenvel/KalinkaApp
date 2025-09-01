@@ -4,10 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
     show ConsumerState, ConsumerStatefulWidget, ProviderSubscription;
 import 'package:kalinka/action_button.dart' show ActionButton;
 import 'package:kalinka/providers/app_state_provider.dart'
-    show playerStateProvider;
+    show playbackModeProvider, playerStateProvider;
 import 'package:kalinka/providers/kalinka_player_api_provider.dart';
-import 'package:kalinka/providers/playback_mode_provider.dart'
-    show playbackModeProvider;
 import 'package:kalinka/providers/playback_time_provider.dart';
 import 'package:kalinka/providers/volume_control_provider.dart';
 import 'package:kalinka/shimmer_effect.dart' show Shimmer;
@@ -190,9 +188,6 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildProgressBarWidget(BuildContext context) {
-    // TODO:
-    // The duration gets updated to null whenever BUFFERING state is received during seek.
-    // It should not update to null but instead gets reset whenever needed
     final duration = ref.watch(playerStateProvider
         .select((state) => state.audioInfo?.durationMs ?? 0));
     final position = ref.watch(playbackTimeMsProvider);
@@ -401,13 +396,32 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
 
   Widget _buildRepeatButton() {
     final playbackModeState = ref.watch(playbackModeProvider);
-    final notifier = ref.read(playbackModeProvider.notifier);
 
     return IconButton(
       icon: Icon(_getRepeatIcon(playbackModeState)),
       iconSize: 28,
-      onPressed: () => notifier.cycleRepeatMode(),
+      onPressed: () => cycleRepeatMode(playbackModeState),
     );
+  }
+
+  Future<void> cycleRepeatMode(PlaybackMode state) async {
+    var repeatSingle = state.repeatSingle;
+    var repeatAll = state.repeatAll;
+
+    if (!repeatSingle && !repeatAll) {
+      repeatAll = true;
+    } else if (repeatAll && !repeatSingle) {
+      repeatAll = false;
+      repeatSingle = true;
+    } else {
+      repeatAll = false;
+      repeatSingle = false;
+    }
+
+    await ref.read(kalinkaProxyProvider).setPlaybackMode(
+          repeatOne: repeatSingle,
+          repeatAll: repeatAll,
+        );
   }
 
   IconData _getRepeatIcon(PlaybackMode state) {

@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
     show AsyncValue, AsyncValueX, Notifier, NotifierProvider, Provider;
 import 'package:kalinka/data_model.dart'
     show DeviceVolume, PlaybackMode, PlayerState, Track;
+import 'package:kalinka/providers/kalinka_player_api_provider.dart'
+    show kalinkaProxyProvider;
 import 'package:kalinka/providers/wire_event_provider.dart'
     show
         FavoriteAddedEvent,
@@ -14,6 +16,7 @@ import 'package:kalinka/providers/wire_event_provider.dart'
         VolumeChangedEvent,
         WireEvent,
         wireEventsProvider;
+import 'package:kalinka/settings_screen.dart';
 
 class AppState {
   final PlayerState playerState;
@@ -60,69 +63,71 @@ class AppStateStore extends Notifier<AppState> {
     state = AppState.empty;
 
     // Listen once to the unified wire
-    ref.listen<AsyncValue<WireEvent>>(
-      wireEventsProvider,
-      (prev, next) {
-        next.whenData((ev) {
-          switch (ev) {
-            case StateReplayEvent event:
-              state = AppState(
-                  playerState: event.playerState,
-                  playQueue: List.unmodifiable(event.playQueue),
-                  playbackMode: event.playbackMode,
-                  deviceVolume: DeviceVolume.empty);
-              break;
-
-            case StateChangedEvent event:
-              state = state.copyWith(
+    ref.listen<AsyncValue<WireEvent>>(wireEventsProvider, (prev, next) {
+      next.when(data: (ev) {
+        switch (ev) {
+          case StateReplayEvent event:
+            state = AppState(
                 playerState: event.playerState,
-              );
-              break;
+                playQueue: List.unmodifiable(event.playQueue),
+                playbackMode: event.playbackMode,
+                deviceVolume: DeviceVolume.empty);
+            _loadDeviceVolumeState();
+            break;
 
-            case TracksAddedEvent event:
-              final q = List<Track>.from(state.playQueue);
-              q.addAll(event.tracks);
-              state = state.copyWith(playQueue: List.unmodifiable(q));
-              break;
+          case StateChangedEvent event:
+            final newState = state.playerState.copyWith(event.playerState);
+            state = state.copyWith(playerState: newState);
+            break;
 
-            case TracksRemovedEvent event:
-              final trackList = List<Track>.from(state.playQueue);
-              int len = event.trackIndexes.length;
-              for (var i = 0; i < len; ++i) {
-                trackList.removeAt(event.trackIndexes[i]);
-              }
-              state = state.copyWith(
-                playQueue: List.unmodifiable(trackList),
-              );
-              break;
+          case TracksAddedEvent event:
+            final q = List<Track>.from(state.playQueue);
+            q.addAll(event.tracks);
+            state = state.copyWith(playQueue: List.unmodifiable(q));
+            break;
 
-            case VolumeChangedEvent event:
-              state = state.copyWith(
-                  deviceVolume: state.deviceVolume.copyWith(
-                currentVolume: event.currentVolume,
-              ));
-              break;
+          case TracksRemovedEvent event:
+            final trackList = List<Track>.from(state.playQueue);
+            int len = event.trackIndexes.length;
+            for (var i = 0; i < len; ++i) {
+              trackList.removeAt(event.trackIndexes[i]);
+            }
+            state = state.copyWith(
+              playQueue: List.unmodifiable(trackList),
+            );
+            break;
 
-            // ignore: unused_local_variable
-            case FavoriteAddedEvent event:
-              // state = state.copyWith(
-              //     favourites:
-              //         Set.unmodifiable({...state.favourites, event.entityId}));
-              break;
+          case VolumeChangedEvent event:
+            state = state.copyWith(
+                deviceVolume: state.deviceVolume.copyWith(
+              currentVolume: event.currentVolume,
+            ));
+            break;
 
-            // ignore: unused_local_variable
-            case FavoriteRemovedEvent event:
-              // final f = Set<String>.from(state.favourites)
-              //   ..remove(event.entityId);
-              // state = state.copyWith(favourites: Set.unmodifiable(f));
-              break;
-            case PlaybackModeChangedEvent event:
-              state = state.copyWith(playbackMode: event.playbackMode);
-              break;
-          }
-        });
-      },
-    );
+          // ignore: unused_local_variable
+          case FavoriteAddedEvent event:
+            // state = state.copyWith(
+            //     favourites:
+            //         Set.unmodifiable({...state.favourites, event.entityId}));
+            break;
+
+          // ignore: unused_local_variable
+          case FavoriteRemovedEvent event:
+            // final f = Set<String>.from(state.favourites)
+            //   ..remove(event.entityId);
+            // state = state.copyWith(favourites: Set.unmodifiable(f));
+            break;
+          case PlaybackModeChangedEvent event:
+            state = state.copyWith(playbackMode: event.playbackMode);
+            break;
+        }
+      }, loading: () {
+        state = AppState.empty;
+      }, error: (Object error, StackTrace stackTrace) {
+        state = AppState.empty;
+        logger.e('Error occurred: $error', stackTrace: stackTrace);
+      });
+    });
 
     _loadDeviceVolumeState();
 
@@ -130,9 +135,9 @@ class AppStateStore extends Notifier<AppState> {
   }
 
   Future<void> _loadDeviceVolumeState() async {
-    // return ref.watch(kalinkaProxyProvider).getVolume().then((volume) {
-    //   state = state.copyWith(deviceVolume: volume);
-    // });
+    return ref.read(kalinkaProxyProvider).getVolume().then((volume) {
+      state = state.copyWith(deviceVolume: volume);
+    });
   }
 }
 
@@ -145,5 +150,5 @@ final playQueueProvider = Provider(
 final volumeStateProvider = Provider(
     (ref) => ref.watch(appStateStoreProvider.select((s) => s.deviceVolume)));
 
-final playbackModeStateProvider = Provider(
+final playbackModeProvider = Provider(
     (ref) => ref.watch(appStateStoreProvider.select((s) => s.playbackMode)));
