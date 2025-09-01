@@ -175,41 +175,46 @@ class PlayerState {
   }
 }
 
-class DeviceVolumeState {
-  final int volume;
+class DeviceVolume {
+  final int currentVolume;
   final int maxVolume;
+  final int volumeGain;
   final bool supported;
 
-  DeviceVolumeState({
-    required this.volume,
+  DeviceVolume({
+    required this.currentVolume,
     required this.maxVolume,
+    required this.volumeGain,
     required this.supported,
   });
 
-  factory DeviceVolumeState.fromJson(Map<String, dynamic> json) =>
-      DeviceVolumeState(
-        volume: json["volume"],
+  factory DeviceVolume.fromJson(Map<String, dynamic> json) => DeviceVolume(
+        currentVolume: json["current_volume"],
         maxVolume: json["max_volume"],
+        volumeGain: json["volume_gain"],
         supported: json["supported"],
       );
 
-  static final empty =
-      DeviceVolumeState(volume: 0, maxVolume: 0, supported: false);
+  static final empty = DeviceVolume(
+      currentVolume: 0, maxVolume: 0, volumeGain: 0, supported: false);
 
   Map<String, dynamic> toJson() => {
-        "volume": volume,
+        "volume": currentVolume,
         "max_volume": maxVolume,
+        "volume_gain": volumeGain,
         "supported": supported,
       };
 
-  DeviceVolumeState copyWith({
-    int? volume,
+  DeviceVolume copyWith({
+    int? currentVolume,
     int? maxVolume,
+    int? volumeGain,
     bool? supported,
   }) {
-    return DeviceVolumeState(
-      volume: volume ?? this.volume,
+    return DeviceVolume(
+      currentVolume: currentVolume ?? this.currentVolume,
       maxVolume: maxVolume ?? this.maxVolume,
+      volumeGain: volumeGain ?? this.volumeGain,
       supported: supported ?? this.supported,
     );
   }

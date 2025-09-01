@@ -58,9 +58,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
     if (mounted) {
       playerStateSubscription =
           ref.listenManual(playerStateProvider, (previous, next) {
-        final state = (next as AsyncData<PlayerState>).valueOrNull;
-        if (state == null) return;
-        if (state.state == PlayerStateType.playing && state.position != null) {
+        if (next.state == PlayerStateType.playing) {
           setState(() {
             isSeeking = false;
           });
@@ -197,6 +195,9 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildProgressBarWidget(BuildContext context) {
+    // TODO:
+    // The duration gets updated to null whenever BUFFERING state is received during seek.
+    // It should not update to null but instead gets reset whenever needed
     final duration = ref.watch(playerStateProvider
         .select((state) => state.audioInfo?.durationMs ?? 0));
     final position = ref.watch(playbackTimeMsProvider);
@@ -282,7 +283,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
             ),
             child: Slider(
-              value: state.volume.toDouble(),
+              value: state.currentVolume.toDouble(),
               min: 0,
               max: state.maxVolume.toDouble(),
               onChangeStart: supported
@@ -333,9 +334,9 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
           tooltip: "No volume control available");
     }
 
-    final IconData iconData = state.volume > state.maxVolume / 2
+    final IconData iconData = state.currentVolume > state.maxVolume / 2
         ? Icons.volume_up
-        : state.volume == 0
+        : state.currentVolume == 0
             ? Icons.volume_off
             : Icons.volume_down;
     return IconButton(

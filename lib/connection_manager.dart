@@ -1,86 +1,36 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show
-        AsyncData,
-        AsyncValueX,
-        ConsumerState,
-        ConsumerStatefulWidget,
-        ProviderSubscription;
-import 'package:kalinka/providers/app_state_provider.dart';
+    show AsyncValueX, ConsumerWidget, WidgetRef;
 import 'package:kalinka/connection_settings_provider.dart';
+import 'package:kalinka/providers/connection_state_provider.dart';
 import 'package:kalinka/service_discovery.dart';
 import 'package:kalinka/service_discovery_widget.dart'
     show ServiceDiscoveryWidget;
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
-import 'package:kalinka/fg_service.dart';
 
-class ConnectionManager extends ConsumerStatefulWidget {
+class ConnectionManager extends ConsumerWidget {
   final Widget child;
+  final Logger logger = Logger();
 
-  const ConnectionManager({super.key, required this.child});
-
-  @override
-  ConsumerState<ConnectionManager> createState() => _ConnectionManagerState();
-}
-
-class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
-  final AudioPlayerService _audioPlayerService = AudioPlayerService();
-  final logger = Logger();
-  late final ProviderSubscription _isConnectedSubscription;
-  late final ProviderSubscription _connectionSettingsSubscription;
+  ConnectionManager({super.key, required this.child});
 
   @override
-  void initState() {
-    super.initState();
-
-    _isConnectedSubscription =
-        ref.listenManual(isConnectedProvider, (previous, next) {
-      if (next == true) {
-        _audioPlayerService.showNotificationControls();
-      } else {
-        _audioPlayerService.hideNotificationControls();
-      }
-    });
-    _connectionSettingsSubscription =
-        ref.listenManual(connectionSettingsProvider, (previous, next) {
-      Future.microtask(() => onSettingsChanged(
-          (next as AsyncData<ConnectionSettings>).requireValue));
-    });
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(body: _buildBody(context, ref));
   }
 
-  @override
-  void dispose() {
-    _isConnectedSubscription.close();
-    _connectionSettingsSubscription.close();
-    super.dispose();
-  }
-
-  Future<void> onSettingsChanged(ConnectionSettings settings) async {
-    if (!mounted) {
-      return;
-    }
-
-    _audioPlayerService.init(settings.host, settings.port);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(body: _buildBody(context));
-  }
-
-  Widget _buildBody(BuildContext context) {
+  Widget _buildBody(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(connectionSettingsProvider);
-    final isConnected = ref.watch(isConnectedProvider);
+    final isConnected =
+        ref.watch(connectionStateProvider) == ConnectionStatus.connected;
 
     return settings.when(data: (data) {
       final isHostPortSet = data.isSet;
       if (!isHostPortSet || !isConnected) {
-        return buildConnectingScreen(context, data);
+        return buildConnectingScreen(context, ref, data);
       } else {
-        return widget.child;
+        return child;
       }
     }, error: (error, stackTrace) {
       return Center(child: Text('Error: $error'));
@@ -90,7 +40,7 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
   }
 
   Widget buildConnectingScreen(
-      BuildContext context, ConnectionSettings settings) {
+      BuildContext context, WidgetRef ref, ConnectionSettings settings) {
     return Center(
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         CircleAvatar(
@@ -112,13 +62,13 @@ class _ConnectionManagerState extends ConsumerState<ConnectionManager> {
                 ? 'Connect To New Streamer'
                 : 'Connect To Streamer'),
             onPressed: () {
-              _showDiscoveryScreen(context);
+              _showDiscoveryScreen(context, ref);
             })
       ]),
     );
   }
 
-  void _showDiscoveryScreen(BuildContext context) {
+  void _showDiscoveryScreen(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(connectionSettingsProvider.notifier);
     Navigator.of(context, rootNavigator: true)
         .push(MaterialPageRoute(

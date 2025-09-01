@@ -3,11 +3,11 @@ import 'package:kalinka/data_model.dart';
 import 'package:kalinka/providers/app_state_provider.dart';
 import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 
-class VolumeController extends Notifier<DeviceVolumeState> {
+class VolumeController extends Notifier<DeviceVolume> {
   bool _blockNotifications = false;
 
   @override
-  DeviceVolumeState build() {
+  DeviceVolume build() {
     state = ref.read(volumeStateProvider);
     ref.listen(volumeStateProvider, (prev, next) {
       if (_blockNotifications) return;
@@ -21,14 +21,14 @@ class VolumeController extends Notifier<DeviceVolumeState> {
     if (!state.supported ||
         value < 0 ||
         value > state.maxVolume ||
-        value == state.volume) {
+        value == state.currentVolume) {
       return;
     }
 
-    final currentVolume = state.volume;
-    state = state.copyWith(volume: value);
+    final currentVolume = state.currentVolume;
+    state = state.copyWith(currentVolume: value);
     ref.read(kalinkaProxyProvider).setVolume(value).catchError((error) {
-      state = state.copyWith(volume: currentVolume);
+      state = state.copyWith(currentVolume: currentVolume);
     });
   }
 
@@ -38,4 +38,4 @@ class VolumeController extends Notifier<DeviceVolumeState> {
 }
 
 final volumeControlProvider =
-    NotifierProvider<VolumeController, DeviceVolumeState>(VolumeController.new);
+    NotifierProvider<VolumeController, DeviceVolume>(VolumeController.new);
