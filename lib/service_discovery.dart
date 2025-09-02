@@ -1,109 +1,207 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:bonsoir/bonsoir.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show
+        AsyncNotifierProvider,
+        AsyncValue,
+        AsyncValueX,
+        AutoDisposeAsyncNotifier,
+        AutoDisposeNotifier,
+        NotifierProvider;
 import 'package:logger/logger.dart' show Logger;
+import 'package:uuid/v1.dart';
 
-class ServiceDiscoveryDataProvider with ChangeNotifier {
-  final String type = '_kalinkaplayer._tcp';
+class DiscoverySessionState {
+  final bool inProgress;
+  final String sessionId;
+
+  DiscoverySessionState({
+    this.inProgress = false,
+    this.sessionId = '',
+  });
+
+  DiscoverySessionState copyWith({
+    bool? inProgress,
+    String? sessionId,
+  }) {
+    return DiscoverySessionState(
+      inProgress: inProgress ?? this.inProgress,
+      sessionId: sessionId ?? this.sessionId,
+    );
+  }
+}
+
+class DiscoverySession extends AutoDisposeNotifier<DiscoverySessionState> {
+  final logger = Logger();
+  Timer? _discoveryTimer;
+
+  static const Duration defaultTimeout = Duration(seconds: 15);
+
+  @override
+  DiscoverySessionState build() {
+    ref.onDispose(() {
+      _stop();
+    });
+    return _startNewSession(defaultTimeout);
+  }
+
+  DiscoverySessionState _startNewSession(final Duration timeout) {
+    final sessionId = UuidV1().generate();
+    _discoveryTimer = Timer(timeout, () {
+      logger.i('Discovery session timed out: $sessionId');
+      _stop();
+    });
+    logger.i('Starting discovery session: $sessionId');
+
+    return DiscoverySessionState(inProgress: true, sessionId: sessionId);
+  }
+
+  void _stop() {
+    logger.i('Stopping discovery session: ${state.sessionId}');
+    _discoveryTimer?.cancel();
+    state = state.copyWith(inProgress: false);
+  }
+
+  void restart() {
+    _stop();
+    state = _startNewSession(defaultTimeout);
+  }
+}
+
+class DiscoveredServiceList {
+  final List<BonsoirService> unresolvedServices;
+
+  DiscoveredServiceList({
+    required this.unresolvedServices,
+  });
+
+  DiscoveredServiceList copyWith({
+    List<BonsoirService>? unresolvedServices,
+  }) {
+    return DiscoveredServiceList(
+      unresolvedServices: unresolvedServices ?? this.unresolvedServices,
+    );
+  }
+}
+
+class ResolvedServiceList {
+  final List<ResolvedBonsoirService> services;
+
+  ResolvedServiceList({
+    required this.services,
+  });
+
+  ResolvedServiceList copyWith({
+    List<ResolvedBonsoirService>? services,
+  }) {
+    return ResolvedServiceList(
+      services: services ?? this.services,
+    );
+  }
+}
+
+class ResolvedServiceListNotifier
+    extends AutoDisposeNotifier<ResolvedServiceList> {
+  @override
+  ResolvedServiceList build() {
+    ref.watch(discoverySession.select((value) => value.sessionId));
+
+    return ResolvedServiceList(
+      services: [],
+    );
+  }
+
+  void addResolvedService(ResolvedBonsoirService service) {
+    state = state.copyWith(services: [...state.services, service]);
+  }
+
+  void removeService(BonsoirService service) {
+    state = state.copyWith(
+        services: state.services
+            .where((s) => s.name != service.name || s.type != service.type)
+            .toList());
+  }
+}
+
+class ServiceDiscovery extends AutoDisposeAsyncNotifier<DiscoveredServiceList> {
+  StreamSubscription<BonsoirDiscoveryEvent>? _discoverySubscription;
+  static const String type = '_kalinkaplayer._tcp';
   final logger = Logger();
 
-  BonsoirDiscovery? _discovery;
-  StreamSubscription<BonsoirDiscoveryEvent>? _discoverySubscription;
-  bool _isLoading = false;
-  Timer? _discoveryTimer;
-  bool _disposed = false;
+  @override
+  Future<DiscoveredServiceList> build() async {
+    final session = ref.watch(discoverySession);
+    if (session.inProgress) {
+      final discovery = BonsoirDiscovery(type: ServiceDiscovery.type);
+      await discovery.ready;
 
-  final List<ResolvedBonsoirService> _services = [];
-  final List<BonsoirService> _unresolvedServices = [];
+      _discoverySubscription = discovery.eventStream?.listen((event) {
+        if (event.service == null) return;
+        final s = state.valueOrNull;
 
-  List<ResolvedBonsoirService> get services => _services;
-  bool get isLoading => _isLoading;
-
-  Completer<void>? _startCompleter;
-
-  Future<void> start({Duration timeout = const Duration(minutes: 2)}) async {
-    if (_startCompleter != null) {
-      await _startCompleter!.future;
-      return;
-    }
-    logger.i(
-        'Starting discovery for type: $type with ${timeout.inSeconds}s timeout');
-
-    _startCompleter = Completer<void>();
-    try {
-      _discovery = BonsoirDiscovery(type: type);
-      _services.clear();
-      await _discovery!.ready;
-      _isLoading = true;
-      notifyListeners();
-
-      _discoverySubscription = _discovery!.eventStream!.listen((event) {
         if (event.type == BonsoirDiscoveryEventType.discoveryServiceFound) {
-          event.service!.resolve(_discovery!.serviceResolver);
-          _unresolvedServices.add(event.service!);
+          event.service!.resolve(discovery.serviceResolver);
+          if (s == null) {
+            state = AsyncValue.data(DiscoveredServiceList(
+              unresolvedServices: [event.service!],
+            ));
+          } else {
+            state = AsyncValue.data(s.copyWith(
+              unresolvedServices: List.from(s.unresolvedServices)
+                ..add(event.service!),
+            ));
+          }
         } else if (event.type ==
             BonsoirDiscoveryEventType.discoveryServiceResolved) {
-          var index = _unresolvedServices.indexWhere((element) =>
+          if (s == null) return;
+
+          final index = s.unresolvedServices.indexWhere((element) =>
               element.name == event.service!.name &&
               element.type == event.service!.type);
           if (index != -1) {
-            _unresolvedServices.removeAt(index);
-            _services.add(event.service! as ResolvedBonsoirService);
-            notifyListeners();
+            state = AsyncValue.data(s.copyWith(
+              unresolvedServices: List.from(s.unresolvedServices)
+                ..removeAt(index),
+            ));
+            ref
+                .read(resolvedServicesListProvider.notifier)
+                .addResolvedService(event.service! as ResolvedBonsoirService);
           }
         } else if (event.type ==
             BonsoirDiscoveryEventType.discoveryServiceLost) {
-          _unresolvedServices.remove(event.service!);
-          _services.removeWhere((element) =>
-              element.name == event.service!.name &&
-              element.type == event.service!.type);
-          notifyListeners();
+          state = AsyncValue.data(s!.copyWith(
+            unresolvedServices: List.from(s.unresolvedServices)
+              ..remove(event.service!),
+          ));
+          ref
+              .read(resolvedServicesListProvider.notifier)
+              .removeService(event.service!);
         }
       });
 
-      await _discovery!.start();
-
-      // Set up timer to automatically stop discovery after timeout
-      _discoveryTimer?.cancel();
-      _discoveryTimer = Timer(timeout, () {
-        logger.i('Discovery timeout reached after ${timeout.inSeconds}s');
-        stop();
+      ref.onDispose(() async {
+        await discovery.stop();
+        _discoverySubscription?.cancel();
       });
 
-      _startCompleter!.complete();
-    } catch (e) {
-      _startCompleter!.completeError(e);
-    } finally {
-      _startCompleter = null;
-    }
-  }
-
-  @override
-  void dispose() {
-    _disposed = true;
-    _discoveryTimer?.cancel();
-    stop();
-    super.dispose();
-  }
-
-  Future<void> stop() async {
-    if (_startCompleter != null) {
-      await _startCompleter!.future;
+      await discovery.start();
     }
 
-    _discoveryTimer?.cancel();
-    _discoveryTimer = null;
-
-    logger.i('Stopping discovery for type: $type');
-    await _discovery?.stop();
-    await _discoverySubscription?.cancel();
-    _isLoading = false;
-    _discoverySubscription = null;
-    _discovery = null;
-    _unresolvedServices.clear();
-    if (!_disposed) {
-      notifyListeners();
-    }
+    return DiscoveredServiceList(
+      unresolvedServices: [],
+    );
   }
 }
+
+final discoverySession =
+    NotifierProvider.autoDispose<DiscoverySession, DiscoverySessionState>(
+        DiscoverySession.new);
+
+final discoveredServiceListProvider =
+    AsyncNotifierProvider.autoDispose<ServiceDiscovery, DiscoveredServiceList>(
+        ServiceDiscovery.new);
+
+final resolvedServicesListProvider = NotifierProvider.autoDispose<
+    ResolvedServiceListNotifier,
+    ResolvedServiceList>(ResolvedServiceListNotifier.new);

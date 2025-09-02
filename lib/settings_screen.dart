@@ -14,11 +14,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
 import 'package:kalinka/connection_settings_provider.dart';
 import 'package:kalinka/data_model.dart' show ModuleState;
 import 'package:kalinka/providers/connection_state_provider.dart';
-import 'package:kalinka/service_discovery.dart'
-    show ServiceDiscoveryDataProvider;
 import 'package:kalinka/providers/settings_provider.dart';
 import 'package:kalinka/providers/modules_provider.dart';
-import 'package:provider/provider.dart';
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/service_discovery_widget.dart';
 import 'package:logger/logger.dart';
@@ -87,10 +84,7 @@ class SettingsScreen extends ConsumerWidget {
                 Navigator.of(context, rootNavigator: true)
                     .push(
                   MaterialPageRoute(
-                    builder: (context) => ChangeNotifierProvider(
-                      create: (context) => ServiceDiscoveryDataProvider(),
-                      child: ServiceDiscoveryWidget(),
-                    ),
+                    builder: (context) => ServiceDiscoveryWidget(),
                   ),
                 )
                     .then((item) {

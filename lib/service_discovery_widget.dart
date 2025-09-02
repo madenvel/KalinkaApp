@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/constants.dart';
-import 'package:provider/provider.dart';
 import 'service_discovery.dart';
 import 'package:bonsoir/bonsoir.dart';
 
@@ -44,25 +44,15 @@ class ServerItem {
   }
 }
 
-class ServiceDiscoveryWidget extends StatelessWidget {
+class ServiceDiscoveryWidget extends ConsumerWidget {
   const ServiceDiscoveryWidget({super.key});
 
   // Helper method to convert BonsoirServices to ServerItems
   List<ServerItem> _getServersFromProvider(
-      ServiceDiscoveryDataProvider provider) {
-    return provider.services
+      List<ResolvedBonsoirService> services) {
+    return services
         .map((service) => ServerItem.fromBonsoirService(service))
         .toList();
-  }
-
-  void _refreshSearch(BuildContext context) {
-    final provider = context.read<ServiceDiscoveryDataProvider>();
-    if (provider.isLoading) {
-      return;
-    }
-    provider
-        .stop()
-        .then((_) => provider.start(timeout: const Duration(seconds: 15)));
   }
 
   void _showServerDetails(ServerItem server, BuildContext context) {
@@ -296,59 +286,51 @@ class ServiceDiscoveryWidget extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider<ServiceDiscoveryDataProvider>(
-        create: (context) {
-      final provider = ServiceDiscoveryDataProvider();
-      // Start discovery with a timeout when the provider is created
-      provider.start(timeout: const Duration(seconds: 15));
-      return provider;
-    }, builder: (context, _) {
-      return Scaffold(
-        appBar: AppBar(),
-        body: SafeArea(
-          child: CustomScrollView(
-            slivers: [
-              SliverPadding(
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(discoveredServiceListProvider);
+
+    return Scaffold(
+      appBar: AppBar(),
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: KalinkaConstants.kScreenContentHorizontalPadding),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildHeader(context),
+                  const SizedBox(
+                      height: KalinkaConstants.kContentVerticalPadding),
+                  _buildTitleSection(context, ref),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: KalinkaConstants.kSpaceBetweenTiles),
+                    child: _buildInfoCard(context),
+                  ),
+                ]),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: KalinkaConstants.kScreenContentHorizontalPadding),
+              sliver: _buildServerListSliver(context, ref),
+            ),
+            SliverPadding(
                 padding: const EdgeInsets.symmetric(
                     horizontal:
-                        KalinkaConstants.kScreenContentHorizontalPadding),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    _buildHeader(context),
-                    const SizedBox(
-                        height: KalinkaConstants.kContentVerticalPadding),
-                    _buildTitleSection(context),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: KalinkaConstants.kSpaceBetweenTiles),
-                      child: _buildInfoCard(context),
-                    ),
-                  ]),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal:
-                        KalinkaConstants.kScreenContentHorizontalPadding),
-                sliver: _buildServerListSliver(context),
-              ),
-              SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal:
-                          KalinkaConstants.kScreenContentHorizontalPadding,
-                      vertical: 24),
-                  sliver: SliverToBoxAdapter(
-                      child: Column(children: [
-                    TextButton(
-                        child: const Text("Add Device Manually"),
-                        onPressed: () => _showAddCustomServerDialog(context)),
-                  ]))),
-            ],
-          ),
+                        KalinkaConstants.kScreenContentHorizontalPadding,
+                    vertical: 24),
+                sliver: SliverToBoxAdapter(
+                    child: Column(children: [
+                  TextButton(
+                      child: const Text("Add Device Manually"),
+                      onPressed: () => _showAddCustomServerDialog(context)),
+                ]))),
+          ],
         ),
-      );
-    });
+      ),
+    );
   }
 
   Widget _buildHeader(BuildContext context) {
@@ -359,16 +341,16 @@ class ServiceDiscoveryWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildTitleSection(BuildContext context) {
+  Widget _buildTitleSection(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
-    final provider = context.watch<ServiceDiscoveryDataProvider>();
-    final bool isLoading = provider.isLoading;
-    final int deviceCount = provider.services.length;
+    final bool inProgress = ref.watch(discoverySession).inProgress;
 
+    final session = ref.read(discoverySession.notifier);
+    final deviceCount = ref.watch(resolvedServicesListProvider).services.length;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        isLoading
+        inProgress
             ? SizedBox(
                 height: 36,
                 child: Row(children: [
@@ -392,7 +374,7 @@ class ServiceDiscoveryWidget extends StatelessWidget {
                   ),
                   const Spacer(),
                   ElevatedButton(
-                      onPressed: () => _refreshSearch(context),
+                      onPressed: () => session.restart(),
                       child: const Text("Retry"))
                 ]),
               ),
@@ -400,17 +382,17 @@ class ServiceDiscoveryWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildServerListSliver(BuildContext context) {
-    final provider = context.watch<ServiceDiscoveryDataProvider>();
-    final servers = _getServersFromProvider(provider);
+  Widget _buildServerListSliver(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(discoverySession);
+    final services = ref.watch(resolvedServicesListProvider).services;
 
-    if (provider.services.isEmpty && provider.isLoading) {
+    if (services.isEmpty != false && session.inProgress) {
       return const SliverToBoxAdapter(
         child: Center(
           child: Icon(Icons.search, size: 56),
         ),
       );
-    } else if (provider.services.isEmpty) {
+    } else if (services.isEmpty != false) {
       return SliverToBoxAdapter(
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           const Icon(Icons.sentiment_very_dissatisfied, size: 56),
@@ -422,6 +404,8 @@ class ServiceDiscoveryWidget extends StatelessWidget {
         ]),
       );
     }
+
+    final servers = _getServersFromProvider(services);
 
     return SliverList(
       delegate: SliverChildBuilderDelegate(
