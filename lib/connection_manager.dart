@@ -3,11 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
     show AsyncValueX, ConsumerWidget, WidgetRef;
 import 'package:kalinka/connection_settings_provider.dart';
 import 'package:kalinka/providers/connection_state_provider.dart';
-import 'package:kalinka/service_discovery.dart';
 import 'package:kalinka/service_discovery_widget.dart'
     show ServiceDiscoveryWidget;
 import 'package:logger/logger.dart';
-import 'package:provider/provider.dart';
 
 class ConnectionManager extends ConsumerWidget {
   final Widget child;
@@ -71,10 +69,7 @@ class ConnectionManager extends ConsumerWidget {
   void _showDiscoveryScreen(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(connectionSettingsProvider.notifier);
     Navigator.of(context, rootNavigator: true)
-        .push(MaterialPageRoute(
-            builder: (context) => ChangeNotifierProvider(
-                create: (context) => ServiceDiscoveryDataProvider(),
-                child: ServiceDiscoveryWidget())))
+        .push(MaterialPageRoute(builder: (context) => ServiceDiscoveryWidget()))
         .then((item) {
       if (item != null) {
         notifier.setDevice(item.name, item.ipAddress, item.port);
