@@ -1,5 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncValueX, Provider;
+import 'package:flutter_riverpod/flutter_riverpod.dart' show Provider;
 import 'package:kalinka/connection_settings_provider.dart'
     show connectionSettingsProvider;
 
@@ -20,7 +19,6 @@ class UrlResolver {
 // 2) Provider wired to your settings
 final urlResolverProvider = Provider<UrlResolver>((ref) {
   // only rebuild resolver when the *base* actually changes
-  final base = ref
-      .watch(connectionSettingsProvider.select((s) => s.requireValue.baseUrl));
+  final base = ref.watch(connectionSettingsProvider.select((s) => s.baseUrl));
   return UrlResolver(base.toString());
 });

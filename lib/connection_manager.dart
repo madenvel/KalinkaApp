@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncValueX, ConsumerWidget, WidgetRef;
+    show ConsumerWidget, WidgetRef;
 import 'package:kalinka/connection_settings_provider.dart';
 import 'package:kalinka/providers/connection_state_provider.dart';
 import 'package:kalinka/service_discovery_widget.dart'
@@ -23,18 +23,12 @@ class ConnectionManager extends ConsumerWidget {
     final isConnected =
         ref.watch(connectionStateProvider) == ConnectionStatus.connected;
 
-    return settings.when(data: (data) {
-      final isHostPortSet = data.isSet;
-      if (!isHostPortSet || !isConnected) {
-        return buildConnectingScreen(context, ref, data);
-      } else {
-        return child;
-      }
-    }, error: (error, stackTrace) {
-      return Center(child: Text('Error: $error'));
-    }, loading: () {
-      return Center(child: CircularProgressIndicator());
-    });
+    final isHostPortSet = settings.isSet;
+    if (!isHostPortSet || !isConnected) {
+      return buildConnectingScreen(context, ref, settings);
+    } else {
+      return child;
+    }
   }
 
   Widget buildConnectingScreen(

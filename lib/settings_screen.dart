@@ -36,8 +36,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildBody(BuildContext context, WidgetRef ref) {
-    final connectionSettings =
-        ref.read(connectionSettingsProvider).requireValue;
+    final connectionSettings = ref.read(connectionSettingsProvider);
     if (!connectionSettings.isSet) {
       return Center(
         child: Text('No connection settings available.'),
@@ -63,8 +62,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildConnectionInformation(BuildContext context, WidgetRef ref) {
-    final connectionSettings =
-        ref.read(connectionSettingsProvider).requireValue;
+    final connectionSettings = ref.read(connectionSettingsProvider);
 
     return Card(
       margin: EdgeInsets.zero,
