@@ -52,7 +52,7 @@ class ConnectionSettings {
 }
 
 /// StateNotifier for managing connection settings
-class ConnectionSettingsNotifier extends AsyncNotifier<ConnectionSettings> {
+class ConnectionSettingsNotifier extends Notifier<ConnectionSettings> {
   static const String sharedPrefName = 'Kalinka.name';
   static const String sharedPrefHost = 'Kalinka.host';
   static const String sharedPrefPort = 'Kalinka.port';
@@ -60,7 +60,7 @@ class ConnectionSettingsNotifier extends AsyncNotifier<ConnectionSettings> {
   late SharedPreferences _sharedPrefs;
 
   /// Initialize settings from SharedPreferences
-  Future<ConnectionSettings> _load() async {
+  ConnectionSettings _load() {
     final name = _sharedPrefs.getString(sharedPrefName) ?? 'Unknown';
     final host = _sharedPrefs.getString(sharedPrefHost) ?? '';
     final port = _sharedPrefs.getInt(sharedPrefPort) ?? 0;
@@ -78,24 +78,24 @@ class ConnectionSettingsNotifier extends AsyncNotifier<ConnectionSettings> {
     await _sharedPrefs.setString(sharedPrefHost, host);
     await _sharedPrefs.setInt(sharedPrefPort, port);
 
-    state = AsyncData(ConnectionSettings(
+    state = ConnectionSettings(
       name: name,
       host: host,
       port: port,
-    ));
+    );
   }
 
   /// Reset connection settings
   void reset() {
-    state = AsyncData(ConnectionSettings(
+    state = ConnectionSettings(
       name: '',
       host: '',
       port: 0,
-    ));
+    );
   }
 
   @override
-  Future<ConnectionSettings> build() async {
+  ConnectionSettings build() {
     // Get SharedPreferences from the provider
     _sharedPrefs = ref.read(sharedPrefsProvider);
     return _load();
@@ -104,5 +104,5 @@ class ConnectionSettingsNotifier extends AsyncNotifier<ConnectionSettings> {
 
 /// Provider for connection settings
 final connectionSettingsProvider =
-    AsyncNotifierProvider<ConnectionSettingsNotifier, ConnectionSettings>(
+    NotifierProvider<ConnectionSettingsNotifier, ConnectionSettings>(
         ConnectionSettingsNotifier.new);

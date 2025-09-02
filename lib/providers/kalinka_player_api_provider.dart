@@ -421,7 +421,7 @@ class KalinkaPlayerProxyImpl implements KalinkaPlayerProxy {
 }
 
 final httpClientProvider = Provider<Dio>((ref) {
-  final baseUrl = ref.watch(connectionSettingsProvider).requireValue.baseUrl;
+  final baseUrl = ref.watch(connectionSettingsProvider).baseUrl;
   final dio = Dio(BaseOptions(baseUrl: baseUrl.toString()));
   return dio;
 });

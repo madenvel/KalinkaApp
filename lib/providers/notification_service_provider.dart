@@ -1,6 +1,5 @@
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncValueX, Provider;
+import 'package:flutter_riverpod/flutter_riverpod.dart' show Provider;
 import 'package:kalinka/connection_settings_provider.dart'
     show connectionSettingsProvider;
 import 'package:kalinka/providers/app_state_provider.dart';
@@ -70,10 +69,8 @@ final notificationServiceProvider = Provider<AudioPlayerService>((ref) {
     if (next.isEmpty) {
       service.hideNotificationControls();
     } else {
-      final connectionSettings =
-          ref.read(connectionSettingsProvider).valueOrNull;
-      service.connect(
-          connectionSettings?.host ?? '', connectionSettings?.port ?? 0);
+      final connectionSettings = ref.read(connectionSettingsProvider);
+      service.connect(connectionSettings.host, connectionSettings.port);
       service.showNotificationControls();
     }
   });
