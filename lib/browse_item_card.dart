@@ -17,7 +17,7 @@ import 'package:kalinka/image_card_tile_placeholder.dart'
 import 'package:kalinka/source_attribution.dart' show SourceAttribution;
 import 'package:kalinka/text_card_colors.dart' show TextCardColors;
 import 'package:kalinka/providers/url_resolver.dart';
-import 'package:kalinka/shimmer_effect.dart' show Shimmer;
+import 'package:kalinka/shimmer.dart' show Shimmer;
 
 class BrowseItemCard extends ConsumerWidget {
   final BrowseItem? item;

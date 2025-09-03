@@ -9,7 +9,7 @@ import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart'
 import 'package:kalinka/constants.dart' show KalinkaConstants;
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_model.dart';
-import 'package:kalinka/shimmer_effect.dart' show Shimmer;
+import 'package:kalinka/shimmer.dart' show Shimmer;
 import 'package:kalinka/providers/url_resolver.dart';
 
 class HeroTile extends ConsumerStatefulWidget {
