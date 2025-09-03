@@ -386,13 +386,13 @@ class ServiceDiscoveryWidget extends ConsumerWidget {
     final session = ref.watch(discoverySession);
     final services = ref.watch(resolvedServicesListProvider).services;
 
-    if (services.isEmpty != false && session.inProgress) {
+    if (services.isEmpty && session.inProgress) {
       return const SliverToBoxAdapter(
         child: Center(
           child: Icon(Icons.search, size: 56),
         ),
       );
-    } else if (services.isEmpty != false) {
+    } else if (services.isEmpty) {
       return SliverToBoxAdapter(
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           const Icon(Icons.sentiment_very_dissatisfied, size: 56),
