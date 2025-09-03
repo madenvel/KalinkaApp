@@ -12,8 +12,6 @@ import 'package:kalinka/home_screen.dart' show HomeScreen;
 import 'package:kalinka/providers/notification_service_provider.dart'
     show notificationServiceProvider;
 import 'package:kalinka/search.dart' show SearchScreen;
-import 'package:kalinka/shimmer_effect.dart' show ShimmerProvider;
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart'
     show SharedPreferences;
 import 'home_screen.dart';
@@ -167,47 +165,44 @@ class _MyHomePageState extends ConsumerState<MyHomePage>
   @override
   Widget build(BuildContext context) {
     ref.watch(notificationServiceProvider);
-    return ChangeNotifierProvider(
-      create: (context) => ShimmerProvider(this),
-      child: ConnectionManager(
-        child: _withPopScope(Scaffold(
-            bottomNavigationBar: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Playbar(onTap: () {
-                    Navigator.push(
-                      context,
-                      PageRouteBuilder(
-                        opaque: false,
-                        pageBuilder: (context, animation, secondaryAnimation) =>
-                            const SwipableTabs(),
-                      ),
-                    );
-                  }),
-                  NavigationBar(
-                    onDestinationSelected: _handleTabChange,
-                    selectedIndex: currentPageIndex,
-                    destinations: const <Widget>[
-                      NavigationDestination(
-                        selectedIcon: Icon(Icons.explore),
-                        icon: Icon(Icons.explore_outlined),
-                        label: 'Discover',
-                      ),
-                      NavigationDestination(
-                        selectedIcon: Icon(Icons.library_music),
-                        icon: Icon(Icons.library_music_outlined),
-                        label: 'My Library',
-                      ),
-                      NavigationDestination(
-                          icon: Icon(Icons.search),
-                          selectedIcon: Icon(Icons.search_outlined),
-                          label: 'Search'),
-                    ],
-                  )
-                ]),
-            body: _buildNavigator(currentPageIndex))),
-      ),
+    return ConnectionManager(
+      child: _withPopScope(Scaffold(
+          bottomNavigationBar: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Playbar(onTap: () {
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      opaque: false,
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          const SwipableTabs(),
+                    ),
+                  );
+                }),
+                NavigationBar(
+                  onDestinationSelected: _handleTabChange,
+                  selectedIndex: currentPageIndex,
+                  destinations: const <Widget>[
+                    NavigationDestination(
+                      selectedIcon: Icon(Icons.explore),
+                      icon: Icon(Icons.explore_outlined),
+                      label: 'Discover',
+                    ),
+                    NavigationDestination(
+                      selectedIcon: Icon(Icons.library_music),
+                      icon: Icon(Icons.library_music_outlined),
+                      label: 'My Library',
+                    ),
+                    NavigationDestination(
+                        icon: Icon(Icons.search),
+                        selectedIcon: Icon(Icons.search_outlined),
+                        label: 'Search'),
+                  ],
+                )
+              ]),
+          body: _buildNavigator(currentPageIndex))),
     );
   }
 }

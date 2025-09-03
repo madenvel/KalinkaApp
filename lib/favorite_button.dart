@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/constants.dart' show KalinkaConstants;
 import 'package:kalinka/providers/user_favoriteids_provider.dart';
-import 'package:kalinka/shimmer_effect.dart' show Shimmer;
+import 'package:kalinka/shimmer.dart' show Shimmer;
 import 'package:kalinka/data_model.dart';
 
 class FavoriteButton extends ConsumerWidget {

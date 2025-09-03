@@ -8,7 +8,7 @@ import 'package:kalinka/providers/app_state_provider.dart'
 import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 import 'package:kalinka/providers/playback_time_provider.dart';
 import 'package:kalinka/providers/volume_control_provider.dart';
-import 'package:kalinka/shimmer_effect.dart' show Shimmer;
+import 'package:kalinka/shimmer.dart' show Shimmer;
 import 'package:kalinka/providers/url_resolver.dart' show urlResolverProvider;
 import 'package:logger/logger.dart';
 import 'package:kalinka/favorite_button.dart';

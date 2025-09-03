@@ -5,7 +5,7 @@ import 'package:kalinka/browse_item_list.dart'
     show BrowseItemList, BrowseItemListPlaceholder;
 import 'package:kalinka/constants.dart' show KalinkaConstants;
 import 'package:kalinka/data_model.dart' show BrowseItem;
-import 'package:kalinka/shimmer_effect.dart' show Shimmer;
+import 'package:kalinka/shimmer.dart' show Shimmer;
 
 class BrowseItemTilePreview extends ConsumerWidget {
   final BrowseItemsSourceDesc sourceDesc;

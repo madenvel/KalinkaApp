@@ -11,7 +11,7 @@ import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/favorite_button.dart';
 import 'package:kalinka/polka_dot_painter.dart';
 import 'package:kalinka/preview_section.dart' show PreviewSection;
-import 'package:kalinka/shimmer_effect.dart' show Shimmer;
+import 'package:kalinka/shimmer.dart' show Shimmer;
 import 'package:kalinka/providers/url_resolver.dart';
 import 'data_model.dart';
 

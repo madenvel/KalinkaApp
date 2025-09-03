@@ -11,7 +11,7 @@ import 'package:kalinka/large_image_preview_card.dart'
 import 'package:kalinka/browse_item_grid.dart'
     show BrowseItemGrid, BrowseItemGridPlaceHolder;
 import 'package:kalinka/browse_item_view.dart';
-import 'package:kalinka/shimmer_effect.dart' show Shimmer;
+import 'package:kalinka/shimmer.dart' show Shimmer;
 
 class BrowseItemGridPreview extends ConsumerWidget {
   final BrowseItemsSourceDesc sourceDesc;

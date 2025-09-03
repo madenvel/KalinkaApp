@@ -7,8 +7,6 @@ import 'package:kalinka/providers/app_state_provider.dart'
 import 'package:kalinka/providers/connection_state_provider.dart';
 import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 import 'package:kalinka/polka_dot_painter.dart' show PolkaDotPainter;
-import 'package:kalinka/shimmer_effect.dart' show ShimmerProvider;
-import 'package:provider/provider.dart';
 import 'package:kalinka/bottom_menu.dart';
 import 'package:kalinka/data_model.dart';
 
@@ -63,33 +61,30 @@ class _SwipableTabsState extends ConsumerState<SwipableTabs>
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => ShimmerProvider(this),
-      child: Stack(children: [
-        Container(color: Theme.of(context).scaffoldBackgroundColor),
-        _buildBackgroundImage(context),
-        Scaffold(
+    return Stack(children: [
+      Container(color: Theme.of(context).scaffoldBackgroundColor),
+      _buildBackgroundImage(context),
+      Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
           backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            title: Column(children: [
-              Text(_index == 0 ? 'Now Playing' : 'Play Queue',
-                  style: const TextStyle(fontSize: 16)),
-              TabPageSelector(
-                controller: controller,
-                indicatorSize: 8,
-              ),
-            ]),
-            centerTitle: true,
-            actions: [
-              [_buildNowPlayingActionButton()],
-              [_buildPlayQueueActionButton()]
-            ][_index],
-          ),
-          body: TabBarView(controller: controller, children: widgets),
-        )
-      ]),
-    );
+          title: Column(children: [
+            Text(_index == 0 ? 'Now Playing' : 'Play Queue',
+                style: const TextStyle(fontSize: 16)),
+            TabPageSelector(
+              controller: controller,
+              indicatorSize: 8,
+            ),
+          ]),
+          centerTitle: true,
+          actions: [
+            [_buildNowPlayingActionButton()],
+            [_buildPlayQueueActionButton()]
+          ][_index],
+        ),
+        body: TabBarView(controller: controller, children: widgets),
+      )
+    ]);
   }
 
   Widget _buildPlayQueueActionButton() {

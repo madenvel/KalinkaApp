@@ -9,11 +9,11 @@ import 'package:kalinka/providers/app_state_provider.dart'
 import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart'
     show BrowseItemsSourceDesc, BrowseItemsState, browseItemsProvider;
 import 'package:kalinka/custom_cache_manager.dart';
+import 'package:kalinka/shimmer.dart' show Shimmer;
 import 'package:kalinka/soundwave.dart';
 import 'package:kalinka/source_attribution.dart' show SourceAttribution;
 import 'package:kalinka/providers/url_resolver.dart';
 import 'data_model.dart';
-import 'shimmer_effect.dart' show Shimmer;
 
 const double leadingIconSize = 40.0;
 
