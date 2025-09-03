@@ -63,9 +63,6 @@ final notificationServiceProvider = Provider<AudioPlayerService>((ref) {
   final service = AudioPlayerService('', 0);
 
   ref.listen(playQueueProvider, (previous, next) {
-    if (previous != null || previous!.isEmpty == next.isEmpty) {
-      return;
-    }
     if (next.isEmpty) {
       service.hideNotificationControls();
     } else {
