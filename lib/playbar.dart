@@ -67,8 +67,6 @@ class _PlaybarState extends ConsumerState<Playbar> {
 
   @override
   Widget build(BuildContext context) {
-    // final highlightColor = Theme.of(context).colorScheme.primaryContainer;
-
     final hasTracks =
         ref.watch(playQueueProvider.select((data) => data.isNotEmpty));
 
@@ -89,8 +87,6 @@ class _PlaybarState extends ConsumerState<Playbar> {
               RepaintBoundary(
                   child: LinearProgressIndicator(
                 value: _calculateRelativeProgress(context),
-                // color: highlightColor,
-                // backgroundColor: Theme.of(context).colorScheme.surface,
               )),
               const Divider(height: 0)
             ])),
@@ -180,10 +176,6 @@ class _PlaybarState extends ConsumerState<Playbar> {
   }
 
   Widget _buildImage(BuildContext context, PlayerState playerState) {
-    // if (provider.isLoading) {
-    //   return const SizedBox(
-    //       width: 48, height: 48, child: Icon(Icons.music_note, size: 48));
-    // }
     String? imgSource = playerState.currentTrack?.album?.image?.small ??
         playerState.currentTrack?.album?.image?.thumbnail ??
         playerState.currentTrack?.album?.image?.large;
