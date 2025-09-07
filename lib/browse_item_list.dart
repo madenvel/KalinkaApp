@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart'
     show CachedNetworkImage;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kalinka/constants.dart' show KalinkaConstants;
 import 'package:kalinka/providers/app_state_provider.dart'
     show playerStateProvider;
 import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart'
@@ -102,6 +103,8 @@ class _BrowseItemListState extends ConsumerState<BrowseItemList> {
       return SizedBox.shrink();
     }
 
+    final itemCountToShow = _getItemCount(state);
+
     final listView = ListView.separated(
       shrinkWrap: widget.shrinkWrap,
       physics: widget.shrinkWrap
@@ -109,7 +112,7 @@ class _BrowseItemListState extends ConsumerState<BrowseItemList> {
           : const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
       separatorBuilder: (context, index) => const Divider(height: 1),
-      itemCount: _getItemCount(state),
+      itemCount: itemCountToShow,
       itemBuilder: (context, index) {
         final item = state.getItem(index);
         if (item == null) {
@@ -131,7 +134,7 @@ class _BrowseItemListState extends ConsumerState<BrowseItemList> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         listView,
-        if (_shouldShowMoreButton(state))
+        if (itemCountToShow < state.totalCount && _shouldShowMoreButton(state))
           Padding(
             padding: const EdgeInsets.only(top: 8.0),
             child: Center(
@@ -142,6 +145,19 @@ class _BrowseItemListState extends ConsumerState<BrowseItemList> {
                 onPressed: _showMoreTracks,
               ),
             ),
+          )
+        else if (itemCountToShow == state.totalCount)
+          Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal:
+                    KalinkaConstants.kScreenContentHorizontalPadding + 8.0,
+                vertical: 8.0),
+            child: Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  "${state.totalCount} item(s)",
+                  style: Theme.of(context).listTileTheme.subtitleTextStyle,
+                )),
           ),
       ],
     );
