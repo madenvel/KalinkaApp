@@ -1,172 +1,81 @@
 package com.example.kalinka
 
-import org.json.JSONObject
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
+@Serializable
 data class PlayerState(
-    var state: String? = null,
-    var currentTrack: CurrentTrack? = null,
-    var index: Int? = null,
-    var position: Long? = null
-) {
-    companion object Factory {
-        fun fromJson(jsonObj: JSONObject?): PlayerState? {
-            if (jsonObj == null) {
-                return null
-            }
-            val obj = PlayerState()
-            obj.state = "state".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
-            obj.currentTrack = CurrentTrack.fromJson(jsonObj.optJSONObject("current_track"))
-            obj.index = "index".let { if (!jsonObj.isNull(it)) jsonObj.getInt(it) else null }
-            obj.position = "position".let {
-                if (!jsonObj.isNull(it)) jsonObj.getLong(it) else null
-            }
+    val state: PlayerStateType,
+    @SerialName("current_track") val currentTrack: Track? = null,
+    val index: Int,
+    /** Playback position in milliseconds */
+    val position: Long,
+    @SerialName("audio_info") val audioInfo: AudioInfo? = null,
+    @SerialName("mime_type") val mimeType: String? = null,
+    val timestamp: Long? = null
+)
 
-            return obj
-        }
-    }
+@Serializable
+enum class PlayerStateType {
+    @SerialName("PLAYING") PLAYING,
+    @SerialName("PAUSED") PAUSED,
+    @SerialName("STOPPED") STOPPED,
+    @SerialName("BUFFERING") BUFFERING,
+    @SerialName("ERROR") ERROR,
+    @SerialName("SKIP_TO_NEXT") SKIP_TO_NEXT,
+    @SerialName("SKIP_TO_PREV") SKIP_TO_PREV,
+    @SerialName("SEEK_IN_PROGRESS") SEEK_IN_PROGRESS
+    // If the server may send other states, consider making this a String instead.
 }
 
-class Performer(
-    var id: String? = null,
-    var name: String? = null,
-    var image: Image? = null,
-    var albumCount: Int? = null
-) {
-    companion object Factory {
-        fun fromJson(jsonObj: JSONObject?): Performer? {
-            if (jsonObj == null) {
-                return null
-            }
-            val obj = Performer()
-            obj.id = "id".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
-            obj.name = "name".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
-            obj.image = Image.fromJson(jsonObj.optJSONObject("image"))
-            obj.albumCount = "album_count".let {
-                if (!jsonObj.isNull(it)) jsonObj.getInt(it) else null
-            }
+@Serializable
+data class Track(
+    val id: String,
+    val title: String,
+    /** Track duration in seconds (if present) */
+    val duration: Int? = null,
+    val performer: Artist? = null,
+    val album: Album? = null
+)
 
-            return obj
-        }
-    }
-}
+@Serializable
+data class Artist(
+    val id: String,
+    val name: String
+)
 
-data class Image(
-    var small: String? = null,
-    var thumbnail: String? = null,
-    var large: String? = null
-) {
-    companion object Factory {
-        fun fromJson(jsonObj: JSONObject?): Image? {
-            if (jsonObj == null) {
-                return null
-            }
-            val obj = Image()
-            obj.small = "small".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
-            obj.thumbnail = "thumbnail".let {
-                if (!jsonObj.isNull(it)) jsonObj.getString(it) else null
-            }
-            obj.large = "large".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
-
-            return obj
-        }
-    }
-
-}
-
-data class Label(
-    var id: String? = null,
-    var name: String? = null
-) {
-    companion object Factory {
-        fun fromJson(jsonObj: JSONObject?): Label? {
-            if (jsonObj == null) {
-                return null
-            }
-            val obj = Label()
-            obj.id = "id".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
-            obj.name = "name".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
-
-            return obj
-        }
-    }
-
-}
-
-data class Genre(
-    var id: String? = null,
-    var name: String? = null
-) {
-    companion object Factory {
-        fun fromJson(jsonObj: JSONObject?): Genre? {
-            if (jsonObj == null) {
-                return null
-            }
-            val obj = Genre()
-            obj.id = "id".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
-            obj.name = "name".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
-
-            return obj
-        }
-    }
-}
-
+@Serializable
 data class Album(
-    var id: String? = null,
-    var title: String? = null,
-    var duration: String? = null,
-    var trackCount: String? = null,
-    var image: Image? = null,
-    var label: Label? = null,
-    var genre: Genre? = null,
-    var artist: String? = null
-) {
-    companion object Factory {
-        fun fromJson(jsonObj: JSONObject?): Album? {
-            if (jsonObj == null) {
-                return null
-            }
-            val obj = Album()
+    val id: String,
+    val title: String,
+    val artist: Artist? = null,
+    val image: AlbumImage? = null   // <-- new optional field
+)
 
-            obj.id = "id".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
-            obj.title = "title".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
-            obj.duration = "duration".let {
-                if (!jsonObj.isNull(it)) jsonObj.getString(it) else null
-            }
-            obj.trackCount = "track_count".let {
-                if (!jsonObj.isNull(it)) jsonObj.getString(it) else null
-            }
-            obj.image = Image.fromJson(jsonObj.optJSONObject("image"))
-            obj.label = Label.fromJson(jsonObj.optJSONObject("label"))
-            obj.genre = Genre.fromJson(jsonObj.optJSONObject("genre"))
-            obj.artist = "artist".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
+@Serializable
+data class AlbumImage(
+    val small: String? = null,
+    val thumbnail: String? = null,
+    val large: String? = null
+)
 
-            return obj
-        }
+@Serializable
+data class AudioInfo(
+    @SerialName("sample_rate") val sampleRate: Int,
+    @SerialName("bits_per_sample") val bitsPerSample: Int,
+    val channels: Int,
+    @SerialName("duration_ms") val durationMs: Long
+)
+
+object PlayerJson {
+    @OptIn(ExperimentalSerializationApi::class)
+    private val json = Json {
+        ignoreUnknownKeys = true   // forwards/backwards compat
+        explicitNulls = false
     }
-}
 
-data class CurrentTrack(
-    var id: String? = null,
-    var title: String? = null,
-    var duration: Int? = null,
-    var performer: Performer? = null,
-    var album: Album? = null
-) {
-    companion object Factory {
-        fun fromJson(jsonObj: JSONObject?): CurrentTrack? {
-            if (jsonObj == null) {
-                return null
-            }
-            val obj = CurrentTrack()
-            obj.id = "id".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
-            obj.title = "title".let { if (!jsonObj.isNull(it)) jsonObj.getString(it) else null }
-            obj.duration = "duration".let {
-                if (!jsonObj.isNull(it)) jsonObj.getInt(it) else null
-            }
-            obj.performer = Performer.fromJson(jsonObj.optJSONObject("performer"))
-            obj.album = Album.fromJson(jsonObj.optJSONObject("album"))
-
-            return obj
-        }
-    }
+    fun parse(input: String): PlayerState =
+        json.decodeFromString(input)
 }

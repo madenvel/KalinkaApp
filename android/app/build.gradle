@@ -1,6 +1,7 @@
 plugins {
     id "com.android.application"
     id "kotlin-android"
+    id "kotlinx-serialization"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -65,4 +66,5 @@ flutter {
 
 dependencies {
     implementation 'com.google.code.gson:gson:2.8.8'
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0'
 }

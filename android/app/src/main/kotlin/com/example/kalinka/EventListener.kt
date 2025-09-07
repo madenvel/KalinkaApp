@@ -27,23 +27,14 @@ class EventListener(private val baseUrl: String, private val eventCallback: Even
                     try {
                         val jsonObject = JSONObject(line)
                         val eventType = jsonObject.getString("event_type")
-                        if (eventType == "state_changed") {
-                            val state = PlayerState.fromJson(
-                                jsonObject.getJSONArray("args").getJSONObject(0)
-                            )
-                            if (state != null) {
-                                eventCallback?.onStateChanged(state)
-                            }
-                        } else if (eventType == "state_replay") {
-                            val state = PlayerState.fromJson(
-                                jsonObject.getJSONArray("args").getJSONObject(0)
-                            )
-                            if (state != null) {
-                                eventCallback?.onStateChanged(state)
-                            }
+                        if (eventType == "state_changed" || eventType == "state_replay") {
+                            val argsArray = jsonObject.getJSONArray("args")
+                            val stateJsonString = argsArray.getJSONObject(0).toString()
+                            val state = PlayerJson.parse(stateJsonString)
+                            eventCallback?.onStateChanged(state)
                         }
                     } catch (e: Exception) {
-                        Log.w(LOGTAG, "Error parsing JSON: $e, $line")
+                        Log.w(LOGTAG, "Error parsing JSON: $e, $line", e)
                     }
                 }
                 reader.close()
@@ -52,6 +43,6 @@ class EventListener(private val baseUrl: String, private val eventCallback: Even
             Log.w(LOGTAG, "Error: $e")
             eventCallback?.onDisconnected()
         }
-        Log.i(LOGTAG, "Thread interrupted");
+        Log.i(LOGTAG, "Thread interrupted")
     }
 }

@@ -20,6 +20,8 @@ import io.flutter.Log
 import java.net.URL
 
 
+
+
 class KalinkaMusicService : Service(), EventCallback {
 
     private val LOGTAG: String = "KalinkaMusicService"
@@ -29,6 +31,7 @@ class KalinkaMusicService : Service(), EventCallback {
     private lateinit var mNM: NotificationManager
     private lateinit var eventListener: EventListener
     private lateinit var kalinkaPlayerProxy: KalinkaPlayerProxy
+    private lateinit var urlResolver: UrlResolver
 
     private var mediaSession: MediaSession? = null
     private var isRunning = false
@@ -60,6 +63,7 @@ class KalinkaMusicService : Service(), EventCallback {
         val host = intent.getStringExtra("host") ?: ""
         val port = intent.getIntExtra("port", 0)
         val baseUrl = "http://$host:$port"
+        urlResolver = UrlResolver(baseUrl)
         eventListener = EventListener(baseUrl, this);
         kalinkaPlayerProxy = KalinkaPlayerProxy(baseUrl, onError = {
             this.onDisconnected()
@@ -90,13 +94,13 @@ class KalinkaMusicService : Service(), EventCallback {
             override fun onSkipToNext() {
                 Log.i(LOGTAG, "onSkipToNext called")
                 kalinkaPlayerProxy.skipToNext {}
-                updatePlaybackState(PlaybackInfo("SKIP_TO_NEXT", 0))
+                updatePlaybackState(PlaybackInfo(PlayerStateType.SKIP_TO_NEXT, 0))
             }
 
             override fun onSkipToPrevious() {
                 Log.i(LOGTAG, "onSkipToPrevious called")
                 kalinkaPlayerProxy.skipToPrev {}
-                updatePlaybackState(PlaybackInfo("SKIP_TO_PREV", 0))
+                updatePlaybackState(PlaybackInfo(PlayerStateType.SKIP_TO_PREV, 0))
             }
 
             override fun onSeekTo(pos: Long) {
@@ -104,7 +108,7 @@ class KalinkaMusicService : Service(), EventCallback {
                 isSeekInProgress = true
                 kalinkaPlayerProxy.seekTo(pos) { response ->
                     if (response.positionMs != null && response.positionMs!! > 0) {
-                        updatePlaybackState(PlaybackInfo("SEEK_IN_PROGRESS", pos))
+                        updatePlaybackState(PlaybackInfo(PlayerStateType.SEEK_IN_PROGRESS, pos))
                     }
                     else {
                         isSeekInProgress = false
@@ -155,35 +159,29 @@ class KalinkaMusicService : Service(), EventCallback {
     @RequiresApi(Build.VERSION_CODES.O)
     fun onStateChangedImpl(newState: PlayerState, doNotRemoveNotification: Boolean) {
         Log.i(LOGTAG, "onStateChanged called, $newState")
-        var dirty = false
-        if (newState.currentTrack != null) {
+        newState.currentTrack?.let {
             val metadata = Metadata(
-                newState.currentTrack!!.duration!!.toLong() * 1000L,
-                newState.currentTrack!!.album!!.image!!.large!!,
-                newState.currentTrack!!.title!!,
-                newState.currentTrack!!.performer!!.name!!,
-                newState.currentTrack!!.album!!.title!!
+                it.duration!!.toLong() * 1000L,
+                it.album?.image?.let { image -> image.large ?: image.thumbnail ?: image.small },
+                it.title,
+                it.performer?.name ?: "Unknown Artist",
+                it.album?.title ?: "Unknown Album"
             )
             updateMetadata(metadata)
-            dirty = true
         }
-        if (newState.state != null) {
-            if (newState.state!! == "PLAYING") {
-                isSeekInProgress = false
-            }
-            val progressMs =
-                if (newState.position != null && !isSeekInProgress) newState.position!! else mediaSession!!.controller.playbackState?.position
-                    ?: 0L
-            val playbackInfo = PlaybackInfo(
-                newState.state!!,
-                progressMs
-            )
-            updatePlaybackState(playbackInfo)
-            dirty = true
+
+        if (newState.state == PlayerStateType.PLAYING) {
+            isSeekInProgress = false
         }
-        if (dirty) {
-            updateNotification(doNotRemoveNotification)
-        }
+        val progressMs =
+            if (!isSeekInProgress) newState.position else mediaSession!!.controller.playbackState?.position
+                ?: 0L
+        val playbackInfo = PlaybackInfo(
+            newState.state,
+            progressMs
+        )
+        updatePlaybackState(playbackInfo)
+        updateNotification(doNotRemoveNotification)
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
@@ -209,19 +207,16 @@ class KalinkaMusicService : Service(), EventCallback {
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    private fun convertToPlaybackState(playerStateType: String): Int {
+    private fun convertToPlaybackState(playerStateType: PlayerStateType): Int {
         return when (playerStateType) {
-            "IDLE" -> PlaybackState.STATE_NONE
-            "PLAYING" -> PlaybackState.STATE_PLAYING
-            "PAUSED" -> PlaybackState.STATE_PAUSED
-            "BUFFERING" -> PlaybackState.STATE_BUFFERING
-            "READY" -> PlaybackState.STATE_BUFFERING
-            "ERROR" -> PlaybackState.STATE_ERROR
-            "STOPPED" -> PlaybackState.STATE_STOPPED
-            "SKIP_TO_NEXT" -> PlaybackState.STATE_SKIPPING_TO_NEXT
-            "SKIP_TO_PREV" -> PlaybackState.STATE_SKIPPING_TO_PREVIOUS
-            "SEEK_IN_PROGRESS" -> PlaybackState.STATE_REWINDING
-            else -> PlaybackState.STATE_NONE
+            PlayerStateType.PLAYING -> PlaybackState.STATE_PLAYING
+            PlayerStateType.PAUSED -> PlaybackState.STATE_PAUSED
+            PlayerStateType.BUFFERING -> PlaybackState.STATE_BUFFERING
+            PlayerStateType.ERROR -> PlaybackState.STATE_ERROR
+            PlayerStateType.STOPPED -> PlaybackState.STATE_STOPPED
+            PlayerStateType.SKIP_TO_NEXT -> PlaybackState.STATE_SKIPPING_TO_NEXT
+            PlayerStateType.SKIP_TO_PREV -> PlaybackState.STATE_SKIPPING_TO_PREVIOUS
+            PlayerStateType.SEEK_IN_PROGRESS -> PlaybackState.STATE_REWINDING
         }
     }
 
@@ -259,7 +254,10 @@ class KalinkaMusicService : Service(), EventCallback {
 
         Log.i(LOGTAG, "updateMetadata called, $metadata")
         val bitmap: Bitmap = try {
-            loadBitmap(metadata.albumArtworkUri)
+            metadata.albumArtworkUri?.let { loadBitmap(it) } ?: BitmapFactory.decodeResource(
+                resources,
+                R.mipmap.redberry_icon
+            )
         } catch (e: Exception) {
             Log.e(LOGTAG, "Failed to load album artwork", e)
             BitmapFactory.decodeResource(resources, R.mipmap.redberry_icon)
@@ -285,7 +283,7 @@ class KalinkaMusicService : Service(), EventCallback {
     }
 
     private fun loadBitmap(uri: String): Bitmap {
-        val url = URL(uri)
+        val url = URL(urlResolver.abs(uri))
         val connection = url.openConnection()
         connection.connect()
         val input = connection.inputStream
