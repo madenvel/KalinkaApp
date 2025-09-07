@@ -116,44 +116,52 @@ final wireEventsProvider = StreamProvider.autoDispose<WireEvent>((ref) async* {
         final type = obj['event_type'] as String;
         final args = obj['args'];
 
-        switch (type) {
-          case 'state_replay':
-            yield StateReplayEvent(
-              playerState: PlayerState.fromJson(args[0]),
-              playQueue: TrackList.fromJson(args[1]).items,
-              playbackMode: PlaybackMode.fromJson(args[2]),
-            );
-            break;
+        try {
+          switch (type) {
+            case 'state_replay':
+              yield StateReplayEvent(
+                playerState: PlayerState.fromJson(args[0]),
+                playQueue: TrackList.fromJson(args[1]).items,
+                playbackMode: PlaybackMode.fromJson(args[2]),
+              );
+              break;
 
-          case 'state_changed':
-            yield StateChangedEvent(playerState: PlayerState.fromJson(args[0]));
-            break;
+            case 'state_changed':
+              yield StateChangedEvent(
+                  playerState: PlayerState.fromJson(args[0]));
+              break;
 
-          case 'track_added':
-            final List<Track> addedTracks =
-                args[0].map((e) => Track.fromJson(e)).toList().cast<Track>();
-            yield TracksAddedEvent(tracks: addedTracks);
-            break;
+            case 'track_added':
+              final List<Track> addedTracks =
+                  args[0].map((e) => Track.fromJson(e)).toList().cast<Track>();
+              yield TracksAddedEvent(tracks: addedTracks);
+              break;
 
-          case 'track_removed':
-            yield TracksRemovedEvent(List<int>.from(args[0]));
-            break;
+            case 'track_removed':
+              yield TracksRemovedEvent(List<int>.from(args[0]));
+              break;
 
-          case 'playback_mode_changed':
-            yield PlaybackModeChangedEvent(PlaybackMode.fromJson(args[0]));
-            break;
+            case 'playback_mode_changed':
+              yield PlaybackModeChangedEvent(PlaybackMode.fromJson(args[0]));
+              break;
 
-          case 'volume_changed':
-            yield VolumeChangedEvent(args[0] as int);
-            break;
+            case 'volume_changed':
+              yield VolumeChangedEvent(args[0] as int);
+              break;
 
-          case 'favorite_added':
-            yield FavoriteAddedEvent(args[0] as String);
-            break;
+            case 'favorite_added':
+              yield FavoriteAddedEvent(args[0] as String);
+              break;
 
-          case 'favorite_removed':
-            yield FavoriteRemovedEvent(args[0] as String);
-            break;
+            case 'favorite_removed':
+              yield FavoriteRemovedEvent(args[0] as String);
+              break;
+          }
+        } catch (e, stack) {
+          logger.e('Failed to parse wire event: $e',
+              error: e, stackTrace: stack);
+          // Optionally: yield a special error event or just skip
+          continue;
         }
       }
     } catch (e) {
