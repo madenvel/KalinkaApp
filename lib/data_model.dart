@@ -569,6 +569,26 @@ class Preview {
       cardSize: cardSize ?? this.cardSize,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Preview &&
+        other.itemsCount == itemsCount &&
+        other.type == type &&
+        other.contentType == contentType &&
+        other.rowsCount == rowsCount &&
+        other.cardSize == cardSize;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        itemsCount,
+        type,
+        contentType,
+        rowsCount,
+        cardSize,
+      );
 }
 
 class Catalog {

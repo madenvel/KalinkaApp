@@ -35,7 +35,7 @@ class DefaultBrowseItemsSourceDesc extends BrowseItemsSourceDesc {
 
   @override
   int get hashCode =>
-      Object.hash(browseItem.id, browseItem.browseType, browseItem.catalog);
+      Object.hash(browseItem.id, browseItem.catalog?.previewConfig);
 
   @override
   BrowseItem get sourceItem => browseItem;
@@ -44,7 +44,9 @@ class DefaultBrowseItemsSourceDesc extends BrowseItemsSourceDesc {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is DefaultBrowseItemsSourceDesc &&
-        other.browseItem == browseItem;
+        other.browseItem.id == browseItem.id &&
+        other.browseItem.catalog?.previewConfig ==
+            browseItem.catalog?.previewConfig;
   }
 
   @override
@@ -194,6 +196,9 @@ class BrowseItemsController
 
   @override
   Future<BrowseItemsState> build(BrowseItemsSourceDesc desc) async {
+    // Keep the provider alive to prevent reloading when switching tabs or folding/unfolding
+    ref.keepAlive();
+
     _desc = desc;
     _repository = ref.read(browseItemRepositoryProvider(_desc));
 
@@ -417,6 +422,7 @@ final browseItemRepositoryProvider =
       SharedPrefsBrowseItemsRepository(
           prefs: ref.read(sharedPrefsProvider), key: prefsKey),
   };
+
   ref.onDispose(source.dispose);
   return source;
 });

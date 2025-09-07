@@ -17,10 +17,10 @@ import 'data_model.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
-  final BrowseItem browseItem =
-      const BrowseItem(id: '', canBrowse: true, canAdd: false);
+  static const BrowseItem browseItem =
+      BrowseItem(id: '', canBrowse: true, canAdd: false);
 
-  BrowseItemsSourceDesc get sourceDesc =>
+  static const BrowseItemsSourceDesc sourceDesc =
       DefaultBrowseItemsSourceDesc(browseItem);
 
   static const double textLabelHeight = 52;
