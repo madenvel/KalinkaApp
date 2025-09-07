@@ -11,13 +11,13 @@ import java.net.URL
 import kotlinx.coroutines.*
 
 data class PlaybackInfo(
-    val playerStateType: String,
+    val playerStateType: PlayerStateType,
     val progressMs: Long
 )
 
 data class Metadata(
     val durationMs: Long,
-    val albumArtworkUri: String,
+    val albumArtworkUri: String?,
     val title: String,
     val artist: String,
     val album: String
