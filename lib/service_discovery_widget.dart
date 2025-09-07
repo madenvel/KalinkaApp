@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/constants.dart';
 import 'service_discovery.dart';
 import 'package:bonsoir/bonsoir.dart';
+import 'package:kalinka/network_utils.dart';
+import 'package:logger/logger.dart';
 
 class ServerItem {
   final String name;
@@ -10,22 +12,54 @@ class ServerItem {
   final int port;
   final String version;
   final String apiVersion;
+  final bool isLocalNetwork;
 
   ServerItem(
       {required this.name,
       required this.ipAddress,
       required this.port,
       required this.version,
-      required this.apiVersion});
+      required this.apiVersion,
+      this.isLocalNetwork = false});
 
   // Factory to create ServerItem from a ResolvedBonsoirService
-  factory ServerItem.fromBonsoirService(ResolvedBonsoirService service) {
+  static Future<ServerItem> fromBonsoirService(
+      ResolvedBonsoirService service) async {
+    final logger = Logger();
+
+    // Get the best IP address for this service
+    String ipAddress = service.host ?? 'Unknown IP';
+    bool isLocalNetwork = false;
+
+    if (ipAddress != 'Unknown IP') {
+      try {
+        final bestAddress =
+            await NetworkUtils.findBestServiceAddress(ipAddress);
+        if (bestAddress != null) {
+          ipAddress = bestAddress;
+
+          // Check if this address is in the same network as local interfaces
+          final localAddresses = await NetworkUtils.getLocalNetworkAddresses();
+          for (final localAddr in localAddresses) {
+            if (NetworkUtils.areInSameSubnet(ipAddress, localAddr.address)) {
+              isLocalNetwork = true;
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        logger.w(
+            'Error determining best address for service ${service.name}: $e');
+      }
+    }
+
     return ServerItem(
         name: service.name,
-        ipAddress: service.host ?? 'Unknown IP',
+        ipAddress: ipAddress,
         port: service.port,
         version: service.attributes['server_version'] ?? 'Unknown',
-        apiVersion: service.attributes['kalinka_api_version'] ?? 'Unknown');
+        apiVersion: service.attributes['kalinka_api_version'] ?? 'Unknown',
+        isLocalNetwork: isLocalNetwork);
   }
 
   // Factory to create a custom ServerItem
@@ -40,6 +74,7 @@ class ServerItem {
       port: port,
       version: 'Custom',
       apiVersion: 'Custom',
+      isLocalNetwork: false, // We don't know for custom entries
     );
   }
 }
@@ -48,11 +83,16 @@ class ServiceDiscoveryWidget extends ConsumerWidget {
   const ServiceDiscoveryWidget({super.key});
 
   // Helper method to convert BonsoirServices to ServerItems
-  List<ServerItem> _getServersFromProvider(
-      List<ResolvedBonsoirService> services) {
-    return services
-        .map((service) => ServerItem.fromBonsoirService(service))
-        .toList();
+  Future<List<ServerItem>> _getServersFromProvider(
+      List<ResolvedBonsoirService> services) async {
+    final List<ServerItem> serverItems = [];
+
+    for (final service in services) {
+      final serverItem = await ServerItem.fromBonsoirService(service);
+      serverItems.add(serverItem);
+    }
+
+    return serverItems;
   }
 
   void _showServerDetails(ServerItem server, BuildContext context) {
@@ -115,6 +155,13 @@ class ServiceDiscoveryWidget extends ConsumerWidget {
                   _buildDetailRow(context, "Server Version", server.version),
                   const SizedBox(height: 12),
                   _buildDetailRow(context, "API Version", server.apiVersion),
+                  const SizedBox(height: 12),
+                  _buildDetailRow(
+                      context,
+                      "Network",
+                      server.isLocalNetwork
+                          ? "Local Network"
+                          : "External/Unknown"),
                 ],
               ),
             ),
@@ -269,16 +316,26 @@ class ServiceDiscoveryWidget extends ConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w500,
+        Flexible(
+          flex: 2,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+        const SizedBox(width: 8),
+        Flexible(
+          flex: 3,
+          child: Text(
+            value,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
           ),
         ),
       ],
@@ -405,12 +462,38 @@ class ServiceDiscoveryWidget extends ConsumerWidget {
       );
     }
 
-    final servers = _getServersFromProvider(services);
+    return SliverToBoxAdapter(
+      child: FutureBuilder<List<ServerItem>>(
+        future: _getServersFromProvider(services),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
 
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) => _buildServerItem(servers[index], context),
-        childCount: servers.length,
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text('Error loading servers: ${snapshot.error}'),
+              ),
+            );
+          }
+
+          final servers = snapshot.data ?? [];
+
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: servers.length,
+            itemBuilder: (context, index) =>
+                _buildServerItem(servers[index], context),
+          );
+        },
       ),
     );
   }
@@ -435,11 +518,46 @@ class ServiceDiscoveryWidget extends ConsumerWidget {
             height: 24,
           ),
         ),
-        title: Text(
-          server.name,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w500,
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                server.name,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
               ),
+            ),
+            if (server.isLocalNetwork)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border:
+                      Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.wifi,
+                      size: 12,
+                      color: Colors.green.shade700,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      'Local',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.green.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
         subtitle: Text(
           server.ipAddress,
@@ -482,7 +600,7 @@ class ServiceDiscoveryWidget extends ConsumerWidget {
                   children: [
                     TextSpan(
                       text:
-                          "Make sure your server is running and connected to the same network as your device.",
+                          "Make sure your server is running and connected to the same network as your device. Devices marked as 'Local' are in the same network subnet.",
                     ),
                   ],
                 ),
