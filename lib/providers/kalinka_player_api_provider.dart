@@ -340,10 +340,14 @@ class KalinkaPlayerProxyImpl implements KalinkaPlayerProxy {
   @override
   Future<Playlist> playlistAddTracks(
       String playlistId, List<String> trackIds) async {
-    return client.post('/playlist/add_tracks', queryParameters: {
-      'playlist_id': playlistId,
-      'track_ids': trackIds
-    }).then((response) {
+    return client
+        .post('/playlist/add_tracks',
+            queryParameters: {
+              'playlist_id': playlistId,
+            },
+            data: trackIds,
+            options: Options(contentType: Headers.jsonContentType))
+        .then((response) {
       if (response.statusCode != 200) {
         throw Exception(
             'Failed to add tracks to playlist, url=${response.realUri}');
