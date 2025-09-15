@@ -10,7 +10,7 @@ Purpose: Make AI coding agents productive quickly in this Flutter + Riverpod app
   - Event wire (`wire_event_provider.dart`): Long-lived HTTP stream (`/queue/events`) parsed into typed WireEvents to update central AppState.
   - Connection (`connection_settings_provider.dart` + `connection_manager.dart`): Persists host/port in SharedPreferences, gates UI until connected, and launches discovery.
   - Utilities: `url_resolver.dart` for absolute URLs, `network_utils.dart` and mDNS discovery (`bonsoir`).
-- Navigation: `main.dart` builds 3-tab scaffold (Discover, Library, Search) with independent `Navigator` stacks and a persistent bottom `Playbar` that opens `SwipableTabs`.
+- Navigation: `main.dart` builds 4-tab scaffold (Discover, Library, Search, Settings) with independent `Navigator` stacks and a persistent bottom `Playbar` that opens `SwipableTabs`.
 
 ## Source of truth and data flow
 - All realtime state comes from `wire_events_provider.dart` streaming `/queue/events` via Dio ResponseBody -> lines -> JSON -> typed events.
