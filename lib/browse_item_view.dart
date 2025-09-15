@@ -167,8 +167,8 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
 
   Widget _buildHeader(BuildContext context, String? albumImage) {
     return Padding(
-      padding:
-          const EdgeInsets.only(bottom: KalinkaConstants.kSpaceBetweenSections),
+      padding: const EdgeInsets.only(
+          bottom: KalinkaConstants.kContentVerticalPadding),
       child: SizedBox(
         width: double.infinity,
         child: Stack(
