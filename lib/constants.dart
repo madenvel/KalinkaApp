@@ -18,4 +18,5 @@ class KalinkaConstants {
   static const kSpaceBetweenTiles = 20.0;
   static const double kButtonSize = 48.0;
   static const kDefaultBorderRadius = BorderRadius.all(Radius.circular(12.0));
+  static const kSectionTitleFontSize = 16.0;
 }

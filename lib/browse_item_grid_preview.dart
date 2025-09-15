@@ -91,7 +91,7 @@ class BrowseItemGridPreview extends ConsumerWidget {
         title: Text(
           browseItem.name ?? 'Unknown Section',
           style: const TextStyle(
-            fontSize: 18,
+            fontSize: KalinkaConstants.kSectionTitleFontSize,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -103,7 +103,7 @@ class BrowseItemGridPreview extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     textStyle: TextStyle(
-                        fontSize: 18,
+                        fontSize: KalinkaConstants.kSectionTitleFontSize,
                         color: Theme.of(context).colorScheme.primary)),
                 onPressed: onSeeAll ??
                     () {
@@ -116,7 +116,7 @@ class BrowseItemGridPreview extends ConsumerWidget {
                                 )));
                       }
                     },
-                child: Text('See More', style: TextStyle(fontSize: 16)))
+                child: Text('See More'))
             : null,
         subtitle: (browseItem.description?.isNotEmpty ?? false)
             ? Text(browseItem.description!)
