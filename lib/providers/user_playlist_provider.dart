@@ -23,14 +23,13 @@ class UserPlaylistsState {
 
 class UserPlaylistNotifier extends AsyncNotifier<UserPlaylistsState> {
   final logger = Logger();
-  late final KalinkaPlayerProxy _kalinkaApi;
 
   @override
   Future<UserPlaylistsState> build() async {
-    _kalinkaApi = ref.watch(kalinkaProxyProvider);
+    final kalinkaApi = ref.watch(kalinkaProxyProvider);
 
     try {
-      final playlists = await _kalinkaApi.playlistUserList(0, 500);
+      final playlists = await kalinkaApi.playlistUserList(0, 500);
       return UserPlaylistsState(items: playlists.items);
     } catch (e) {
       logger.e('Error loading playlists: $e');
@@ -40,7 +39,9 @@ class UserPlaylistNotifier extends AsyncNotifier<UserPlaylistsState> {
 
   Future<Playlist> addPlaylist(String name, String description) async {
     try {
-      final playlist = await _kalinkaApi.playlistCreate(name, description);
+      final playlist = await ref
+          .read(kalinkaProxyProvider)
+          .playlistCreate(name, description);
 
       final s = state.valueOrNull;
 
@@ -79,7 +80,7 @@ class UserPlaylistNotifier extends AsyncNotifier<UserPlaylistsState> {
         return;
       }
 
-      await _kalinkaApi.playlistDelete(playlist.id);
+      await ref.read(kalinkaProxyProvider).playlistDelete(playlist.id);
 
       final updatedPlaylists =
           currentPlaylists.where((p) => p.id != playlist.id).toList();

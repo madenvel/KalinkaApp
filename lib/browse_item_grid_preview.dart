@@ -85,58 +85,45 @@ class BrowseItemGridPreview extends ConsumerWidget {
   Widget _buildSectionPreview(BuildContext context, Widget child,
       {bool seeAll = true}) {
     final browseItem = sourceDesc.sourceItem;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.only(
-              left: KalinkaConstants.kScreenContentHorizontalPadding,
-              right: KalinkaConstants.kScreenContentHorizontalPadding,
-              bottom: KalinkaConstants.kTitleContentVerticalSpace),
-          child: Row(children: [
-            Text(
-              browseItem.name ?? 'Unknown Section',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const Spacer(),
-            if (seeAll)
-              TextButton(
-                  style: TextButton.styleFrom(
-                      padding: KalinkaConstants.kElevatedButtonPadding,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      textStyle: TextStyle(
-                          fontSize: 18,
-                          color: Theme.of(context).colorScheme.primary)),
-                  onPressed: onSeeAll ??
-                      () {
-                        if (browseItem.canBrowse) {
-                          Navigator.of(context).push(MaterialPageRoute(
-                              builder: (context) => CatalogBrowseItemView(
-                                    sourceDesc: DefaultBrowseItemsSourceDesc(
-                                        browseItem),
-                                    onTap: (item) => _onTap(context, item),
-                                  )));
-                        }
-                      },
-                  child: Text('See More', style: TextStyle(fontSize: 16))),
-          ]),
-        ),
-        if (browseItem.description?.isNotEmpty ?? false)
-          Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: KalinkaConstants.kScreenContentHorizontalPadding,
-                vertical: KalinkaConstants.kContentVerticalPadding),
-            child: Text(browseItem.description!),
+    return Column(children: [
+      ListTile(
+        visualDensity: VisualDensity.standard,
+        title: Text(
+          browseItem.name ?? 'Unknown Section',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
-        child
-      ],
-    );
+        ),
+        trailing: seeAll
+            ? TextButton(
+                style: TextButton.styleFrom(
+                    padding: KalinkaConstants.kElevatedButtonPadding,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    textStyle: TextStyle(
+                        fontSize: 18,
+                        color: Theme.of(context).colorScheme.primary)),
+                onPressed: onSeeAll ??
+                    () {
+                      if (browseItem.canBrowse) {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => CatalogBrowseItemView(
+                                  sourceDesc:
+                                      DefaultBrowseItemsSourceDesc(browseItem),
+                                  onTap: (item) => _onTap(context, item),
+                                )));
+                      }
+                    },
+                child: Text('See More', style: TextStyle(fontSize: 16)))
+            : null,
+        subtitle: (browseItem.description?.isNotEmpty ?? false)
+            ? Text(browseItem.description!)
+            : null,
+      ),
+      child
+    ]);
   }
 }
 

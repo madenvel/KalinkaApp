@@ -20,8 +20,6 @@ class BrowseItemTilePreview extends ConsumerWidget {
   final bool showSourceAttribution;
   final bool showImage;
 
-  static const double _kFontSizeSectionHeader = 18.0;
-
   const BrowseItemTilePreview({
     super.key,
     required this.sourceDesc,
@@ -73,18 +71,18 @@ class BrowseItemTilePreview extends ConsumerWidget {
   }
 
   Widget _buildSectionHeader(BuildContext context, BrowseItem browseItem) {
-    return Padding(
-      padding: const EdgeInsets.only(
-          bottom: KalinkaConstants.kContentVerticalPadding,
-          left: KalinkaConstants.kScreenContentHorizontalPadding,
-          right: KalinkaConstants.kScreenContentHorizontalPadding),
-      child: Text(
+    return ListTile(
+      visualDensity: VisualDensity.standard,
+      title: Text(
         browseItem.name ?? 'Unknown Section',
         style: const TextStyle(
-          fontSize: _kFontSizeSectionHeader,
+          fontSize: 18,
           fontWeight: FontWeight.bold,
         ),
       ),
+      subtitle: (browseItem.description?.isNotEmpty ?? false)
+          ? Text(browseItem.description!)
+          : null,
     );
   }
 }

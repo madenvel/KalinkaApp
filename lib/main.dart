@@ -12,6 +12,7 @@ import 'package:kalinka/home_screen.dart' show HomeScreen;
 import 'package:kalinka/providers/notification_service_provider.dart'
     show notificationServiceProvider;
 import 'package:kalinka/search.dart' show SearchScreen;
+import 'package:kalinka/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart'
     show SharedPreferences;
 import 'home_screen.dart';
@@ -105,6 +106,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage>
     GlobalKey<NavigatorState>(),
     GlobalKey<NavigatorState>(),
     GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
   ];
 
   _MyHomePageState();
@@ -136,6 +138,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage>
                     HomeScreen(),
                     Library(),
                     SearchScreen(),
+                    SettingsScreen()
                   ][index]);
         });
   }
@@ -199,6 +202,10 @@ class _MyHomePageState extends ConsumerState<MyHomePage>
                         icon: Icon(Icons.search),
                         selectedIcon: Icon(Icons.search_outlined),
                         label: 'Search'),
+                    NavigationDestination(
+                        icon: Icon(Icons.settings),
+                        selectedIcon: Icon(Icons.settings_outlined),
+                        label: 'Settings')
                   ],
                 )
               ]),

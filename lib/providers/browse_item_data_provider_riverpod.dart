@@ -198,6 +198,7 @@ class BrowseItemsController
   Future<BrowseItemsState> build(BrowseItemsSourceDesc desc) async {
     // Keep the provider alive to prevent reloading when switching tabs or folding/unfolding
     ref.keepAlive();
+    ref.watch(connectionStateProvider);
 
     _desc = desc;
     _repository = ref.read(browseItemRepositoryProvider(_desc));

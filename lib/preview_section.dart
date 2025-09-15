@@ -45,7 +45,7 @@ class PreviewSection extends ConsumerWidget {
         return BrowseItemGridPreview(
           sourceDesc: sourceDesc,
           padding: const EdgeInsets.only(
-              bottom: KalinkaConstants.kSpaceBetweenSections),
+              bottom: KalinkaConstants.kContentVerticalPadding),
           onItemSelected: onItemSelected,
           onSeeAll: onSeeMore,
           seeAll: seeMore,
@@ -57,7 +57,7 @@ class PreviewSection extends ConsumerWidget {
         return BrowseItemTilePreview(
           sourceDesc: sourceDesc,
           padding: const EdgeInsets.only(
-              bottom: KalinkaConstants.kSpaceBetweenSections),
+              bottom: KalinkaConstants.kContentVerticalPadding),
           showImage: previewType == PreviewType.tile,
           onTap: (context, index, browseItem) =>
               _onListItemTapAction(context, ref, index, browseItem),
@@ -136,10 +136,13 @@ class PreviewSectionPlaceholder extends StatelessWidget {
       case PreviewType.carousel:
         return HeroTilePlaceholder(browseItem: browseItem);
       case PreviewType.none:
-        return Container(
-            width: double.infinity, height: 200, color: Colors.grey);
       default:
-        return SizedBox.shrink(); // Skip unsupported types
+        return Column(
+          children: [
+            Container(width: double.infinity, height: 40, color: Colors.grey),
+            const SizedBox(height: 10)
+          ],
+        );
     }
   }
 }
