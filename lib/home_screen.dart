@@ -22,8 +22,6 @@ class HomeScreen extends ConsumerWidget {
   static const BrowseItemsSourceDesc sourceDesc =
       DefaultBrowseItemsSourceDesc(browseItem);
 
-  static const double textLabelHeight = 52;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(

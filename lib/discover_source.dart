@@ -18,7 +18,6 @@ class DiscoverSource extends ConsumerWidget {
 
   const DiscoverSource({super.key, required this.sourceDesc});
 
-  static const double textLabelHeight = 52;
   static final emptyPlaceholder = BrowseItem.empty.copyWith(
       catalog: Catalog.empty
           .copyWith(previewConfig: Preview(type: PreviewType.imageText)));
