@@ -1,160 +1,220 @@
 import 'package:flutter/gestures.dart' show TapGestureRecognizer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncValueX, ConsumerWidget, WidgetRef;
+    show AsyncValueX, ConsumerStatefulWidget, ConsumerState;
 
 import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart';
 
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/discover_source.dart';
-import 'package:kalinka/source_module_preview_card.dart' show SourceModule;
-
-import 'package:kalinka/genre_filter_chips.dart';
+import 'package:kalinka/source_attribution.dart';
 import 'package:kalinka/custom_cache_manager.dart';
+import 'package:kalinka/providers/genre_filter_provider.dart';
+import 'package:kalinka/genre_selector.dart';
 
 import 'data_model.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  int _selectedIndex = 0;
+
   static const BrowseItem browseItem =
       BrowseItem(id: '', canBrowse: true, canAdd: false);
 
   static const BrowseItemsSourceDesc sourceDesc =
       DefaultBrowseItemsSourceDesc(browseItem);
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Row(children: [
-          Icon(Icons.explore),
-          SizedBox(width: KalinkaConstants.kContentHorizontalPadding),
-          Text('Discover')
-        ]),
-      ),
-      body: _buildBody(context, ref),
-    );
+  bool _hasActiveFilters() {
+    final genreState = ref.watch(genreFilterProvider).valueOrNull;
+    return genreState?.selectedGenres.isNotEmpty ?? false;
   }
 
-  Widget _buildBody(BuildContext context, WidgetRef ref) {
-    final ThemeData theme = Theme.of(context);
-    return RefreshIndicator(
-      onRefresh: () async {
-        // Clear image cache
-        await KalinkaMusicCacheManager.instance.emptyCache();
-
-        // Refresh the main provider
-        ref.invalidate(browseItemsProvider);
-      },
-      // Color the background with the primary color
-      backgroundColor: theme.colorScheme.primary,
-      // Make the arrow/indicator use a contrasting color
-      color: theme.colorScheme.onPrimary,
-      // Ensure the indicator displays properly above content
-      displacement: 20.0,
-      // Place the indicator above the content
-      edgeOffset: 0.0,
-      strokeWidth: 3.0,
-      child: SingleChildScrollView(
-        // Use AlwaysScrollableScrollPhysics to ensure scrolling works even when content is small
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Add GenreFilterChips at the top
-            const GenreFilterChips(),
-            _buildSections(context, ref),
-            const SizedBox(
-              height: KalinkaConstants.kContentVerticalPadding * 2,
-            ),
-          ],
+  void _showFilterBottomSheet(BrowseItem currentSource) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        minChildSize: 0.3,
+        expand: false,
+        builder: (context, scrollController) => Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Text(
+                'Filter ${currentSource.name ?? 'Source'}',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: GenreSelector(),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildSections(BuildContext context, WidgetRef ref) {
+  @override
+  Widget build(BuildContext context) {
     final asyncState = ref.watch(browseItemsProvider(sourceDesc));
-    final notifier = ref.read(browseItemsProvider(sourceDesc).notifier);
+    final ThemeData theme = Theme.of(context);
 
     return asyncState.when(
-        data: (state) {
-          if (state.totalCount == 0) {
-            return Center(
-              child: Padding(
-                padding:
-                    EdgeInsets.all(KalinkaConstants.kContentVerticalPadding),
-                child: RichText(
-                  text: TextSpan(
-                    style: DefaultTextStyle.of(context).style,
-                    children: [
-                      const TextSpan(
-                          text:
-                              'No input sources available. Please enable modules in the '),
-                      TextSpan(
-                        text: 'settings',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          decoration: TextDecoration.underline,
-                        ),
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = () {
-                            // Switch to the last bottom bar tab (e.g., Settings)
-                            DefaultTabController.of(context).animateTo(3);
-                          },
-                      ),
-                      const TextSpan(text: '.'),
-                    ],
-                  ),
-                ),
-              ),
-            );
+      data: (state) {
+        final sources = <BrowseItem>[];
+        for (int i = 0; i < state.totalCount; i++) {
+          final item = state.getItem(i);
+          if (item != null) {
+            sources.add(item);
+          } else {
+            // If any item is null, ensure it's loaded
+            final notifier = ref.read(browseItemsProvider(sourceDesc).notifier);
+            Future.microtask(() => notifier.ensureIndexLoaded(i));
           }
-          return ListView.separated(
-              // Use NeverScrollableScrollPhysics for inner ListView to prevent scroll conflicts
-              physics: const NeverScrollableScrollPhysics(),
-              hitTestBehavior: HitTestBehavior.deferToChild,
-              shrinkWrap: true,
-              separatorBuilder: (context, index) => const SizedBox(
-                  height: KalinkaConstants.kContentVerticalPadding),
-              itemCount: state.totalCount,
-              itemBuilder: (context, index) {
-                final item = state.getItem(index);
-                if (item == null) {
-                  Future.microtask(() => notifier.ensureIndexLoaded(index));
-                  return SizedBox(
-                      height: 40,
-                      child: Center(child: CircularProgressIndicator()));
-                }
+        }
 
-                return _buildSection(context, item);
-              });
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-                child: Text(
-              "Error: ${e.toString()}",
-              maxLines: 10,
-            )));
-  }
-
-  Widget _buildSection(BuildContext context, BrowseItem section) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: KalinkaConstants.kScreenContentHorizontalPadding),
-      child: SourceModule(
-          source: section,
-          onShowMoreClicked: () {
-            // Handle show more action
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => DiscoverSource(
-                  sourceDesc: DefaultBrowseItemsSourceDesc(section),
+        return Scaffold(
+          appBar: sources.isNotEmpty
+              ? AppBar(
+                  toolbarHeight: 60,
+                  title: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (int index = 0; index < sources.length; index++)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: ChoiceChip(
+                              selected: _selectedIndex == index,
+                              onSelected: (selected) {
+                                if (selected) {
+                                  setState(() {
+                                    _selectedIndex = index;
+                                  });
+                                }
+                              },
+                              showCheckmark: false,
+                              avatar: Stack(
+                                children: [
+                                  SourceAttribution(
+                                    id: sources[index].id,
+                                    size: 24,
+                                  ),
+                                  if (_hasActiveFilters())
+                                    Positioned(
+                                      right: 0,
+                                      top: 0,
+                                      child: Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              label: Text(sources[index].name ?? 'Unknown'),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    IconButton(
+                      icon: Badge(
+                        isLabelVisible: _hasActiveFilters(),
+                        child: const Icon(Icons.tune),
+                      ),
+                      onPressed: sources.isNotEmpty
+                          ? () =>
+                              _showFilterBottomSheet(sources[_selectedIndex])
+                          : null,
+                      tooltip:
+                          'Filter ${sources.isNotEmpty ? sources[_selectedIndex].name : 'Source'}',
+                    ),
+                  ],
+                )
+              : AppBar(title: const Text('Discover')),
+          body: sources.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(
+                        KalinkaConstants.kContentVerticalPadding),
+                    child: RichText(
+                      text: TextSpan(
+                        style: DefaultTextStyle.of(context).style,
+                        children: [
+                          const TextSpan(
+                              text:
+                                  'No input sources available. Please enable modules in the '),
+                          TextSpan(
+                            text: 'settings',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              decoration: TextDecoration.underline,
+                            ),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                DefaultTabController.of(context).animateTo(3);
+                              },
+                          ),
+                          const TextSpan(text: '.'),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              : IndexedStack(
+                  index: _selectedIndex,
+                  children: [
+                    for (final item in sources)
+                      RefreshIndicator(
+                        onRefresh: () async {
+                          await KalinkaMusicCacheManager.instance.emptyCache();
+                          ref.invalidate(browseItemsProvider);
+                        },
+                        backgroundColor: theme.colorScheme.primary,
+                        color: theme.colorScheme.onPrimary,
+                        displacement: 20.0,
+                        edgeOffset: 0.0,
+                        strokeWidth: 3.0,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: DiscoverSource(
+                            sourceDesc: DefaultBrowseItemsSourceDesc(item),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              ),
-            );
-          }),
+        );
+      },
+      loading: () => Scaffold(
+        appBar: AppBar(title: Text('Discover')),
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, stack) => Scaffold(
+        appBar: AppBar(title: Text('Discover')),
+        body: Center(
+          child: Text(
+            'Error: $error',
+            style: TextStyle(color: Colors.red),
+          ),
+        ),
+      ),
     );
   }
 }
