@@ -76,7 +76,6 @@ class BrowseItemTilePreview extends ConsumerWidget {
       title: Text(
         browseItem.name ?? 'Unknown Section',
         style: const TextStyle(
-          fontSize: 18,
           fontWeight: FontWeight.bold,
         ),
       ),
