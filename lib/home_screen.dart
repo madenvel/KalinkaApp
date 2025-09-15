@@ -9,7 +9,6 @@ import 'package:kalinka/constants.dart';
 import 'package:kalinka/discover_source.dart';
 import 'package:kalinka/source_module_preview_card.dart' show SourceModule;
 
-import 'package:kalinka/settings_screen.dart';
 import 'package:kalinka/genre_filter_chips.dart';
 import 'package:kalinka/custom_cache_manager.dart';
 
@@ -29,21 +28,12 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-          title: const Row(children: [
-            Icon(Icons.explore),
-            SizedBox(width: KalinkaConstants.kContentHorizontalPadding),
-            Text('Discover')
-          ]),
-          actions: <Widget>[
-            IconButton(
-                icon: const Icon(Icons.settings),
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const SettingsScreen()));
-                })
-          ]),
+        title: const Row(children: [
+          Icon(Icons.explore),
+          SizedBox(width: KalinkaConstants.kContentHorizontalPadding),
+          Text('Discover')
+        ]),
+      ),
       body: _buildBody(context, ref),
     );
   }
@@ -111,12 +101,8 @@ class HomeScreen extends ConsumerWidget {
                         ),
                         recognizer: TapGestureRecognizer()
                           ..onTap = () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const SettingsScreen(),
-                              ),
-                            );
+                            // Switch to the last bottom bar tab (e.g., Settings)
+                            DefaultTabController.of(context).animateTo(3);
                           },
                       ),
                       const TextSpan(text: '.'),

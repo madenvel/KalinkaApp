@@ -608,6 +608,14 @@ class Catalog {
     this.previewConfig,
   });
 
+  static final empty = Catalog(
+      id: '',
+      title: '',
+      canGenreFilter: false,
+      image: null,
+      description: null,
+      previewConfig: null);
+
   factory Catalog.fromJson(Map<String, dynamic> json) => Catalog(
         id: json["id"],
         title: json["title"],
@@ -781,6 +789,19 @@ class BrowseItem {
       this.playlist,
       this.catalog,
       this.sections});
+
+  static final empty = BrowseItem(
+      id: '',
+      name: null,
+      subname: null,
+      canBrowse: false,
+      canAdd: false,
+      track: null,
+      album: null,
+      artist: null,
+      playlist: null,
+      catalog: null,
+      sections: null);
 
   BrowseItem copyWith({
     String? id,
