@@ -1,28 +1,32 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncData, AsyncNotifier, AsyncNotifierProvider;
+    show AsyncData, AsyncNotifierProvider, FamilyAsyncNotifier;
 import 'package:kalinka/data_model.dart' show Genre;
 import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 
 class GenreFilterList {
   final List<Genre> genres;
   final Set<String> selectedGenres;
+  final String source;
 
-  GenreFilterList({required this.genres, required this.selectedGenres});
+  GenreFilterList(
+      {required this.genres,
+      required this.selectedGenres,
+      required this.source});
 
   GenreFilterList copyWith({
     List<Genre>? genres,
     Set<String>? selectedGenres,
+    String? source,
   }) {
     return GenreFilterList(
       genres: genres ?? this.genres,
       selectedGenres: selectedGenres ?? this.selectedGenres,
+      source: source ?? this.source,
     );
   }
 }
 
-class GenreFilterProvider extends AsyncNotifier<GenreFilterList> {
-  GenreFilterProvider();
-
+class GenreFilterProvider extends FamilyAsyncNotifier<GenreFilterList, String> {
   void setSelectedGenres(List<String> genreId) {
     if (state.value == null) return;
     final currentState = state.value!;
@@ -55,17 +59,15 @@ class GenreFilterProvider extends AsyncNotifier<GenreFilterList> {
   }
 
   @override
-  Future<GenreFilterList> build() async {
-    final genres = await ref.watch(kalinkaProxyProvider).getGenres();
+  Future<GenreFilterList> build(String arg) async {
+    final genres = await ref.watch(kalinkaProxyProvider).getGenres(arg);
 
     return GenreFilterList(
-      genres: genres.items,
-      selectedGenres: <String>{},
-    );
+        genres: genres.items, selectedGenres: <String>{}, source: arg);
   }
 }
 
 final genreFilterProvider =
-    AsyncNotifierProvider<GenreFilterProvider, GenreFilterList>(
+    AsyncNotifierProvider.family<GenreFilterProvider, GenreFilterList, String>(
   GenreFilterProvider.new,
 );

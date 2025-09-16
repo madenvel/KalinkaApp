@@ -7,6 +7,7 @@ import 'package:kalinka/data_model.dart'
         BrowseItem,
         BrowseItemsList,
         Catalog,
+        EntityId,
         Preview,
         PreviewContentTypeExtension,
         PreviewType,
@@ -50,7 +51,7 @@ class DefaultBrowseItemsSourceDesc extends BrowseItemsSourceDesc {
   }
 
   @override
-  bool get canGenreFilter => true;
+  bool get canGenreFilter => browseItem.catalog?.canGenreFilter ?? false;
 }
 
 class SearchBrowseItemsSourceDesc extends BrowseItemsSourceDesc {
@@ -188,6 +189,7 @@ class BrowseItemsController
     extends FamilyAsyncNotifier<BrowseItemsState, BrowseItemsSourceDesc> {
   late BrowseItemsSourceDesc _desc;
   late BrowseItemsRepository _repository;
+  late String _inputSource;
   final logger = Logger();
 
   BrowseItemsSourceDesc get desc => _desc;
@@ -204,7 +206,10 @@ class BrowseItemsController
     _repository = ref.read(browseItemRepositoryProvider(_desc));
 
     if (_desc.canGenreFilter) {
-      ref.watch(genreFilterProvider);
+      _inputSource = EntityId.fromString(_desc.sourceItem.id).source;
+      ref.watch(genreFilterProvider(_inputSource));
+    } else {
+      _inputSource = '';
     }
 
     _sub = _repository.changes.listen((_) {
@@ -249,7 +254,11 @@ class BrowseItemsController
         (pageSize ?? state.valueOrNull?.pageSize ?? defaultItemsPerPage);
     final offset = page * activePageSize;
     final genreIds = _desc.canGenreFilter
-        ? ref.read(genreFilterProvider).valueOrNull?.selectedGenres.toList()
+        ? ref
+            .read(genreFilterProvider(_inputSource))
+            .valueOrNull
+            ?.selectedGenres
+            .toList()
         : null;
     try {
       final res = await _repository.fetchItems(
