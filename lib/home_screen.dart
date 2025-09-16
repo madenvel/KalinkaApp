@@ -10,7 +10,6 @@ import 'package:kalinka/discover_source.dart';
 import 'package:kalinka/source_attribution.dart';
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/providers/genre_filter_provider.dart';
-import 'package:kalinka/genre_selector.dart';
 
 import 'data_model.dart';
 
