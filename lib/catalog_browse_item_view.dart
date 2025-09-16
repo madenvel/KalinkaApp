@@ -9,10 +9,11 @@ import 'package:kalinka/genre_filter_chips.dart';
 
 class CatalogBrowseItemView extends ConsumerWidget {
   final BrowseItemsSourceDesc sourceDesc;
+  final String inputSource;
   final Function(BrowseItem)? onTap;
 
-  const CatalogBrowseItemView(
-      {super.key, required this.sourceDesc, this.onTap});
+  CatalogBrowseItemView({super.key, required this.sourceDesc, this.onTap})
+      : inputSource = EntityId.fromString(sourceDesc.sourceItem.id).source;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -61,7 +62,7 @@ class CatalogBrowseItemView extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
-          child: GenreFilterChips(),
+          child: GenreFilterChips(inputSource: inputSource),
         ),
         // Add the grid content
         SliverPadding(
@@ -135,7 +136,15 @@ class CatalogBrowseItemViewPlaceholder extends StatelessWidget {
       physics: NeverScrollableScrollPhysics(),
       slivers: [
         SliverToBoxAdapter(
-          child: GenreFilterChips(),
+          child: Container(
+            height: 36, // Typical chip height
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            // Optionally add width if you want a fixed size, e.g. width: 80,
+            decoration: BoxDecoration(
+              color: Theme.of(context).chipTheme.backgroundColor,
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
         ),
         // Add the grid content
         SliverPadding(

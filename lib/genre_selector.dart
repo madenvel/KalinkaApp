@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
 import 'package:kalinka/providers/genre_filter_provider.dart';
 
 class GenreSelector extends ConsumerStatefulWidget {
-  const GenreSelector({super.key});
+  const GenreSelector({super.key, required this.inputSource});
+
+  final String inputSource;
 
   @override
   ConsumerState<GenreSelector> createState() => _GenreSelectorState();
@@ -25,7 +27,7 @@ class _GenreSelectorState extends ConsumerState<GenreSelector> {
               onPressed: () {
                 if (_hasStartedSelection) {
                   ref
-                      .read(genreFilterProvider.notifier)
+                      .read(genreFilterProvider(widget.inputSource).notifier)
                       .setSelectedGenres(_selectedGenres.toList());
                 }
                 Navigator.pop(context);
@@ -40,7 +42,11 @@ class _GenreSelectorState extends ConsumerState<GenreSelector> {
     if (_hasStartedSelection) {
       return _selectedGenres.isNotEmpty;
     }
-    return ref.watch(genreFilterProvider).value?.selectedGenres.isNotEmpty ??
+    return ref
+            .watch(genreFilterProvider(widget.inputSource))
+            .value
+            ?.selectedGenres
+            .isNotEmpty ??
         false;
   }
 
@@ -49,7 +55,7 @@ class _GenreSelectorState extends ConsumerState<GenreSelector> {
       return _selectedGenres.contains(genreId);
     }
     return ref
-            .watch(genreFilterProvider)
+            .watch(genreFilterProvider(widget.inputSource))
             .value
             ?.selectedGenres
             .contains(genreId) ??
@@ -60,7 +66,10 @@ class _GenreSelectorState extends ConsumerState<GenreSelector> {
     if (_hasStartedSelection) return;
     _hasStartedSelection = true;
     _selectedGenres.clear();
-    _selectedGenres.addAll(ref.read(genreFilterProvider).value!.selectedGenres);
+    _selectedGenres.addAll(ref
+        .read(genreFilterProvider(widget.inputSource))
+        .value!
+        .selectedGenres);
   }
 
   void _addGenre(String genreId) {
@@ -79,7 +88,7 @@ class _GenreSelectorState extends ConsumerState<GenreSelector> {
   }
 
   Widget _buildGenreSelectorList(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(genreFilterProvider).value!;
+    final state = ref.watch(genreFilterProvider(widget.inputSource)).value!;
     final hasSelectedGenres = _hasSelectedGenres();
 
     return ListView.builder(

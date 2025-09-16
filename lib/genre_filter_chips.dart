@@ -9,13 +9,14 @@ import 'package:kalinka/genre_selector.dart';
 import 'package:kalinka/constants.dart';
 
 class GenreFilterChips extends ConsumerWidget {
-  const GenreFilterChips({super.key});
+  final String inputSource;
+  const GenreFilterChips({super.key, required this.inputSource});
 
   static const int maxGenresToShow = 2;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(genreFilterProvider);
+    final state = ref.watch(genreFilterProvider(inputSource));
     if (state.hasValue) {
       return _buildChips(context, ref);
     } else {
@@ -53,9 +54,10 @@ class GenreFilterChips extends ConsumerWidget {
   }
 
   Widget _buildChips(BuildContext context, WidgetRef ref) {
-    final selectedGenres = ref.watch(genreFilterProvider).value!.selectedGenres;
-    final genres = ref.watch(genreFilterProvider).value!.genres;
-    final notifier = ref.read(genreFilterProvider.notifier);
+    final selectedGenres =
+        ref.watch(genreFilterProvider(inputSource)).value!.selectedGenres;
+    final genres = ref.watch(genreFilterProvider(inputSource)).value!.genres;
+    final notifier = ref.read(genreFilterProvider(inputSource).notifier);
 
     return Align(
       alignment: Alignment.centerLeft,
@@ -77,7 +79,8 @@ class GenreFilterChips extends ConsumerWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const GenreSelector()),
+                              builder: (context) =>
+                                  GenreSelector(inputSource: inputSource)),
                         );
                       }
                     : null,
@@ -141,7 +144,8 @@ class GenreFilterChips extends ConsumerWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const GenreSelector()),
+                          builder: (context) =>
+                              GenreSelector(inputSource: inputSource)),
                     );
                   },
                 ),

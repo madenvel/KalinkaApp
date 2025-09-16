@@ -48,7 +48,7 @@ abstract class KalinkaPlayerProxy {
   Future<void> clear();
   Future<void> setVolume(int volume);
   Future<DeviceVolume> getVolume();
-  Future<GenreList> getGenres();
+  Future<GenreList> getGenres(String? source);
   Future<SeekStatusMessage> seek(int positionMs);
   Future<Playlist> playlistCreate(String name, String? description);
   Future<void> playlistDelete(String playlistId);
@@ -292,8 +292,11 @@ class KalinkaPlayerProxyImpl implements KalinkaPlayerProxy {
   }
 
   @override
-  Future<GenreList> getGenres() async {
-    return client.get('/genre/list').then((response) {
+  Future<GenreList> getGenres(String? source) async {
+    return client
+        .get('/genre/list',
+            queryParameters: source != null ? {'source': source} : null)
+        .then((response) {
       if (response.statusCode != 200) {
         throw Exception('Failed to get genres, url=${response.realUri}');
       }

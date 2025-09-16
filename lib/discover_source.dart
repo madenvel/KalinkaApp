@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/data_model.dart';
+import 'package:kalinka/genre_filter_chips.dart';
 
 import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart'
     show
@@ -13,8 +14,10 @@ import 'package:kalinka/preview_section.dart'
 
 class DiscoverSource extends ConsumerWidget {
   final BrowseItemsSourceDesc sourceDesc;
+  final String inputSource;
 
-  const DiscoverSource({super.key, required this.sourceDesc});
+  DiscoverSource({super.key, required this.sourceDesc})
+      : inputSource = EntityId.fromString(sourceDesc.sourceItem.id).source;
 
   static final emptyPlaceholder = BrowseItem.empty.copyWith(
       catalog: Catalog.empty
@@ -32,6 +35,7 @@ class DiscoverSource extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            GenreFilterChips(inputSource: inputSource),
             ListView.builder(
                 // Use NeverScrollableScrollPhysics for inner ListView to prevent scroll conflicts
                 physics: const NeverScrollableScrollPhysics(),
