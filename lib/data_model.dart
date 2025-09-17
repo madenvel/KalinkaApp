@@ -113,7 +113,8 @@ class PlayerState {
 
   static final PlayerState empty = PlayerState();
 
-  factory PlayerState.fromJson(Map<String, dynamic> json) => PlayerState(
+  factory PlayerState.fromJson(Map<String, dynamic> json, int? timestamp) =>
+      PlayerState(
         state: json.containsKey('state')
             ? PlayerStateTypeExtension.fromValue(json["state"])
             : null,
@@ -127,7 +128,7 @@ class PlayerState {
             ? null
             : AudioInfo.fromJson(json["audio_info"]),
         mimeType: json["mime_type"],
-        timestamp: json["timestamp"] ?? 0,
+        timestamp: timestamp ?? json["timestamp"] ?? 0,
       );
 
   Map<String, dynamic> toJson() => {
@@ -143,15 +144,14 @@ class PlayerState {
 
   PlayerState copyWith(PlayerState other) {
     return PlayerState(
-      state: other.state ?? state,
-      currentTrack: other.currentTrack ?? currentTrack,
-      index: other.index ?? index,
-      position: other.position ?? position,
-      message: other.message ?? message,
-      audioInfo: other.audioInfo ?? audioInfo,
-      mimeType: other.mimeType ?? mimeType,
-      timestamp: other.timestamp,
-    );
+        state: other.state ?? state,
+        currentTrack: other.currentTrack ?? currentTrack,
+        index: other.index ?? index,
+        position: other.position ?? position,
+        message: other.message ?? message,
+        audioInfo: other.audioInfo ?? audioInfo,
+        mimeType: other.mimeType ?? mimeType,
+        timestamp: other.timestamp != 0 ? other.timestamp : timestamp);
   }
 }
 
