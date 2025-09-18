@@ -120,9 +120,10 @@ class _BrowseItemListState extends ConsumerState<BrowseItemList> {
         }
         return item != null
             ? _buildTrackListItem(context, item, index)
-            : BrowseItemListItemPlaceholder(
-                browseItem: widget.sourceDesc.sourceItem,
-                showSourceAttribution: widget.showSourceAttribution);
+            : Shimmer(
+                child: BrowseItemListItemPlaceholder(
+                    browseItem: widget.sourceDesc.sourceItem,
+                    showSourceAttribution: widget.showSourceAttribution));
       },
     );
 
@@ -206,9 +207,10 @@ class _BrowseItemListState extends ConsumerState<BrowseItemList> {
               index,
               _createListLeadingImage(imageProvider, item)),
           cacheManager: KalinkaMusicCacheManager.instance,
-          placeholder: (context, url) => BrowseItemListItemPlaceholder(
-              browseItem: item,
-              showSourceAttribution: widget.showSourceAttribution),
+          placeholder: (context, url) => Shimmer(
+              child: BrowseItemListItemPlaceholder(
+                  browseItem: item,
+                  showSourceAttribution: widget.showSourceAttribution)),
           errorWidget: (context, url, error) => _buildTrackListItemTile(
               context, item, index, _createListLeadingIcon(item)));
     } else {
@@ -368,15 +370,10 @@ class BrowseItemListPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
-    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
-    return Shimmer(
-        baseColor: baseColor,
-        highlightColor: highlightColor,
-        child: Padding(
-          padding: padding,
-          child: _buildListPlaceholder(context),
-        ));
+    return Padding(
+      padding: padding,
+      child: _buildListPlaceholder(context),
+    );
   }
 
   Widget _buildListPlaceholder(BuildContext context) {
@@ -400,6 +397,7 @@ class BrowseItemListItemPlaceholder extends StatelessWidget {
       {super.key,
       required this.browseItem,
       this.showSourceAttribution = false});
+
   @override
   Widget build(BuildContext context) {
     final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
@@ -434,7 +432,7 @@ class BrowseItemListItemPlaceholder extends StatelessWidget {
             const Spacer(flex: 3),
           ],
         ),
-        subtitle: !isArtist && browseItem.catalog?.title != null
+        subtitle: !isArtist
             ? Row(children: [
                 Flexible(
                     flex: 4,

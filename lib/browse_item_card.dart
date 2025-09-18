@@ -54,25 +54,22 @@ class BrowseItemCard extends ConsumerWidget {
         PreviewContentTypeExtension.fromBrowseType(
             item?.browseType ?? BrowseType.album);
     final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
-    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
 
     return Shimmer(
-        baseColor: baseColor,
-        highlightColor: highlightColor,
         child: ImageCardTilePlaceholder(
-          hasTitle: previewType != PreviewType.textOnly,
-          hasSubtitle: previewType != PreviewType.textOnly &&
-              contentType != PreviewContentType.artist,
-          aspectRatio: previewType == PreviewType.textOnly ? 2.0 : 1.0,
-          borderRadius: KalinkaConstants.kDefaultBorderRadius,
-          shape: contentType == PreviewContentType.artist
-              ? BoxShape.circle
-              : BoxShape.rectangle,
-          textAlignment: contentType == PreviewContentType.artist
-              ? Alignment.center
-              : Alignment.centerLeft,
-          color: baseColor,
-        ));
+      hasTitle: previewType != PreviewType.textOnly,
+      hasSubtitle: previewType != PreviewType.textOnly &&
+          contentType != PreviewContentType.artist,
+      aspectRatio: previewType == PreviewType.textOnly ? 2.0 : 1.0,
+      borderRadius: KalinkaConstants.kDefaultBorderRadius,
+      shape: contentType == PreviewContentType.artist
+          ? BoxShape.circle
+          : BoxShape.rectangle,
+      textAlignment: contentType == PreviewContentType.artist
+          ? Alignment.center
+          : Alignment.centerLeft,
+      color: baseColor,
+    ));
   }
 
   Widget _buildImageCard(BuildContext context, WidgetRef ref) {

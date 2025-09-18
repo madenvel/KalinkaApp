@@ -103,24 +103,20 @@ class BrowseItemTilePreviewPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
-    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
     return Shimmer(
-        baseColor: baseColor,
-        highlightColor: highlightColor,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionHeaderPlaceholder(context),
-            BrowseItemListPlaceholder(
-                browseItem: browseItem,
-                padding: padding,
-                showSourceAttribution: showSourceAttribution,
-                shrinkWrap: shrinkWrap,
-                itemCount:
-                    browseItem.catalog?.previewConfig?.itemsCount ?? itemCount),
-          ],
-        ));
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeaderPlaceholder(context),
+        BrowseItemListPlaceholder(
+            browseItem: browseItem,
+            padding: padding,
+            showSourceAttribution: showSourceAttribution,
+            shrinkWrap: shrinkWrap,
+            itemCount:
+                browseItem.catalog?.previewConfig?.itemsCount ?? itemCount),
+      ],
+    ));
   }
 
   Widget _buildSectionHeaderPlaceholder(BuildContext context) {

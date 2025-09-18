@@ -25,11 +25,7 @@ class GenreFilterChips extends ConsumerWidget {
   }
 
   Widget _buildPlaceholderChips(BuildContext context) {
-    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
-    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
     return Shimmer(
-        baseColor: baseColor,
-        highlightColor: highlightColor,
         child: Padding(
             padding: const EdgeInsets.symmetric(
                 vertical: KalinkaConstants.kContentVerticalPadding,
@@ -44,7 +40,6 @@ class GenreFilterChips extends ConsumerWidget {
                     width: 70,
                     height: 30,
                     decoration: BoxDecoration(
-                      color: baseColor,
                       borderRadius: BorderRadius.circular(4.0),
                     ),
                   ),

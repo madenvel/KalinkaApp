@@ -132,11 +132,7 @@ class BrowseItemGridPreviewPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
-    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
     return Shimmer(
-      baseColor: baseColor,
-      highlightColor: highlightColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.start,
