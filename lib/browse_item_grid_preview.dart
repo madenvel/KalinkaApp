@@ -91,7 +91,6 @@ class BrowseItemGridPreview extends ConsumerWidget {
         title: Text(
           browseItem.name ?? 'Unknown Section',
           style: const TextStyle(
-            fontSize: KalinkaConstants.kSectionTitleFontSize,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -142,46 +141,54 @@ class BrowseItemGridPreviewPlaceholder extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: KalinkaConstants.kScreenContentHorizontalPadding),
-            child: Row(children: [
-              Container(
-                  width: 150,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: baseColor,
-                  )),
-              const Spacer(),
-              Container(
-                width: 80,
-                height: 20,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: baseColor,
-                ),
-              )
-            ]),
-          ),
-          const SizedBox(height: KalinkaConstants.kTitleContentVerticalSpace),
-          if (browseItem.description?.isNotEmpty ?? false)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: KalinkaConstants.kScreenContentHorizontalPadding,
-                  vertical: KalinkaConstants.kContentVerticalPadding),
-              child: Container(
-                width: 120,
-                height: 14,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: baseColor,
-                ),
-              ),
-            ),
+          _buildSectionHeaderPlaceholder(context),
           BrowseItemGridPlaceHolder(browseItem: browseItem)
         ],
       ),
     );
+  }
+
+  Widget _buildSectionHeaderPlaceholder(BuildContext context) {
+    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
+    return ListTile(
+        visualDensity: VisualDensity.standard,
+        title: Row(
+          children: [
+            Flexible(
+              flex: 3,
+              child: Container(
+                height: 16,
+                decoration: BoxDecoration(
+                  color: baseColor,
+                  borderRadius: BorderRadius.circular(
+                      KalinkaConstants.kShimmerBorderRadius),
+                ),
+              ),
+            ),
+            const Spacer(flex: 7),
+          ],
+        ),
+        subtitle: Row(children: [
+          Flexible(
+              flex: 4,
+              child: Container(
+                height: 14,
+                decoration: BoxDecoration(
+                  color: baseColor,
+                  borderRadius: BorderRadius.circular(
+                      KalinkaConstants.kShimmerBorderRadius),
+                ),
+              )),
+          const Spacer(flex: 6),
+        ]),
+        trailing: Container(
+          width: 80,
+          height: 18,
+          decoration: BoxDecoration(
+            borderRadius:
+                BorderRadius.circular(KalinkaConstants.kShimmerBorderRadius),
+            color: baseColor,
+          ),
+        ));
   }
 }
