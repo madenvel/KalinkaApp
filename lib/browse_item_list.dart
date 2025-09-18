@@ -120,7 +120,9 @@ class _BrowseItemListState extends ConsumerState<BrowseItemList> {
         }
         return item != null
             ? _buildTrackListItem(context, item, index)
-            : _buildLoadingListItem(context);
+            : BrowseItemListItemPlaceholder(
+                browseItem: widget.sourceDesc.sourceItem,
+                showSourceAttribution: widget.showSourceAttribution);
       },
     );
 
@@ -204,7 +206,9 @@ class _BrowseItemListState extends ConsumerState<BrowseItemList> {
               index,
               _createListLeadingImage(imageProvider, item)),
           cacheManager: KalinkaMusicCacheManager.instance,
-          placeholder: (context, url) => _buildLoadingListItem(context),
+          placeholder: (context, url) => BrowseItemListItemPlaceholder(
+              browseItem: item,
+              showSourceAttribution: widget.showSourceAttribution),
           errorWidget: (context, url, error) => _buildTrackListItemTile(
               context, item, index, _createListLeadingIcon(item)));
     } else {
@@ -224,13 +228,14 @@ class _BrowseItemListState extends ConsumerState<BrowseItemList> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           if (widget.showSourceAttribution) ...[
-            const SizedBox(width: 8),
-            SourceAttribution(id: item.id),
-            const SizedBox(width: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: SourceAttribution(id: item.id),
+            ),
           ],
           if (item.track != null && item.duration != null)
             SizedBox(
-              width: 60,
+              width: 55,
               child: Text(
                 formatTime(item.duration!),
                 style: Theme.of(context)
@@ -242,7 +247,7 @@ class _BrowseItemListState extends ConsumerState<BrowseItemList> {
             )
           else if (item.playlist != null || item.album != null)
             SizedBox(
-              width: 60,
+              width: 55,
               child: Text(
                 '${item.trackCount} track${item.trackCount != 1 ? "s" : ""}',
                 style: Theme.of(context)
@@ -264,70 +269,6 @@ class _BrowseItemListState extends ConsumerState<BrowseItemList> {
       },
       visualDensity: VisualDensity.standard,
     );
-  }
-
-  Widget _buildLoadingListItem(BuildContext context) {
-    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
-    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
-    final isArtist =
-        widget.sourceDesc.sourceItem.catalog?.previewConfig?.contentType ==
-            PreviewContentType.artist;
-
-    return Shimmer(
-        baseColor: baseColor,
-        highlightColor: highlightColor,
-        child: ListTile(
-            leading: Container(
-              width: leadingIconSize,
-              height: leadingIconSize,
-              decoration: BoxDecoration(
-                color: highlightColor,
-                borderRadius: isArtist ? null : BorderRadius.circular(4.0),
-                shape: isArtist ? BoxShape.circle : BoxShape.rectangle,
-              ),
-            ),
-            title: Container(
-              width: double.infinity,
-              height: 16,
-              decoration: BoxDecoration(
-                color: highlightColor,
-                borderRadius: BorderRadius.circular(4.0),
-              ),
-            ),
-            subtitle: !isArtist
-                ? Container(
-                    width: double.infinity,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: highlightColor,
-                      borderRadius: BorderRadius.circular(4.0),
-                    ),
-                  )
-                : null,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (widget.showSourceAttribution) ...[
-                  const SizedBox(width: 8),
-                  SourceAttribution(),
-                  const SizedBox(width: 8),
-                ],
-                if (!isArtist)
-                  Container(
-                    width: 60,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: highlightColor,
-                      borderRadius: BorderRadius.circular(4.0),
-                    ),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: const Icon(Icons.more_horiz),
-                ),
-              ],
-            ),
-            visualDensity: VisualDensity.standard));
   }
 
   Widget _withPlaybackAnimationOverlay(
@@ -445,10 +386,22 @@ class BrowseItemListPlaceholder extends StatelessWidget {
         padding: EdgeInsets.zero,
         separatorBuilder: (context, index) => const Divider(height: 1),
         itemCount: itemCount,
-        itemBuilder: (context, _) => _buildLoadingListItem(context));
+        itemBuilder: (context, _) => BrowseItemListItemPlaceholder(
+            browseItem: browseItem,
+            showSourceAttribution: showSourceAttribution));
   }
+}
 
-  Widget _buildLoadingListItem(BuildContext context) {
+class BrowseItemListItemPlaceholder extends StatelessWidget {
+  final BrowseItem browseItem;
+  final bool showSourceAttribution;
+
+  const BrowseItemListItemPlaceholder(
+      {super.key,
+      required this.browseItem,
+      this.showSourceAttribution = false});
+  @override
+  Widget build(BuildContext context) {
     final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
     final isArtist = browseItem.catalog?.previewConfig?.contentType ==
         PreviewContentType.artist;
@@ -481,7 +434,7 @@ class BrowseItemListPlaceholder extends StatelessWidget {
             const Spacer(flex: 3),
           ],
         ),
-        subtitle: !isArtist
+        subtitle: !isArtist && browseItem.catalog?.title != null
             ? Row(children: [
                 Flexible(
                     flex: 4,
@@ -500,21 +453,19 @@ class BrowseItemListPlaceholder extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (showSourceAttribution) ...[
-              const SizedBox(width: 8),
-              SourceAttribution(),
-              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: SourceAttribution(),
+              ),
             ],
             if (!isArtist)
-              UnconstrainedBox(
-                alignment: Alignment.centerRight,
-                child: Container(
-                  width: 40,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: baseColor,
-                    borderRadius: BorderRadius.circular(
-                        KalinkaConstants.kShimmerBorderRadius),
-                  ),
+              Container(
+                width: 55,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: baseColor,
+                  borderRadius: BorderRadius.circular(
+                      KalinkaConstants.kShimmerBorderRadius),
                 ),
               ),
             Padding(
