@@ -459,27 +459,42 @@ class BrowseItemListPlaceholder extends StatelessWidget {
           height: leadingIconSize,
           decoration: BoxDecoration(
             color: baseColor,
-            borderRadius: isArtist ? null : BorderRadius.circular(4.0),
+            borderRadius: isArtist
+                ? null
+                : BorderRadius.circular(KalinkaConstants.kShimmerBorderRadius),
             shape: isArtist ? BoxShape.circle : BoxShape.rectangle,
           ),
         ),
-        title: Container(
-          width: double.infinity,
-          height: 16,
-          decoration: BoxDecoration(
-            color: baseColor,
-            borderRadius: BorderRadius.circular(4.0),
-          ),
-        ),
-        subtitle: !isArtist
-            ? Container(
-                width: double.infinity,
-                height: 14,
+        title: Row(
+          children: [
+            Flexible(
+              flex: 7,
+              child: Container(
+                height: 16,
                 decoration: BoxDecoration(
                   color: baseColor,
-                  borderRadius: BorderRadius.circular(4.0),
+                  borderRadius: BorderRadius.circular(
+                      KalinkaConstants.kShimmerBorderRadius),
                 ),
-              )
+              ),
+            ),
+            const Spacer(flex: 3),
+          ],
+        ),
+        subtitle: !isArtist
+            ? Row(children: [
+                Flexible(
+                    flex: 4,
+                    child: Container(
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: baseColor,
+                        borderRadius: BorderRadius.circular(
+                            KalinkaConstants.kShimmerBorderRadius),
+                      ),
+                    )),
+                const Spacer(flex: 6),
+              ])
             : null,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -490,12 +505,16 @@ class BrowseItemListPlaceholder extends StatelessWidget {
               const SizedBox(width: 8),
             ],
             if (!isArtist)
-              Container(
-                width: 60,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: baseColor,
-                  borderRadius: BorderRadius.circular(4.0),
+              UnconstrainedBox(
+                alignment: Alignment.centerRight,
+                child: Container(
+                  width: 40,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: baseColor,
+                    borderRadius: BorderRadius.circular(
+                        KalinkaConstants.kShimmerBorderRadius),
+                  ),
                 ),
               ),
             Padding(
