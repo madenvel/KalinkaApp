@@ -14,7 +14,8 @@ import 'package:kalinka/providers/genre_filter_provider.dart';
 import 'data_model.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback? onNavigateToSettings;
+  const HomeScreen({super.key, this.onNavigateToSettings});
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -125,21 +126,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Padding(
         padding: EdgeInsets.all(KalinkaConstants.kContentVerticalPadding),
         child: RichText(
+          textAlign: TextAlign.center,
           text: TextSpan(
-            style: DefaultTextStyle.of(context).style,
+            style: DefaultTextStyle.of(context).style.copyWith(fontSize: 16),
             children: [
               const TextSpan(
                   text:
                       'No input sources available. Please enable modules in the '),
               TextSpan(
-                text: 'settings',
+                text: 'Settings',
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.primary,
                   decoration: TextDecoration.underline,
                 ),
                 recognizer: TapGestureRecognizer()
                   ..onTap = () {
-                    DefaultTabController.of(context).animateTo(3);
+                    // Delegate navigation to parent (e.g., switch bottom nav bar index to Settings)
+                    widget.onNavigateToSettings?.call();
                   },
               ),
               const TextSpan(text: '.'),
