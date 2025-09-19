@@ -21,6 +21,9 @@ class LargeImagePreviewCard extends ConsumerWidget {
     final cardSize = calculateCardSize(context, CardSize.small);
 
     final imageUrl = section.image?.large ?? section.image?.small;
+    if (imageUrl == null) {
+      return _buildPlaceholder(context, cardSize);
+    }
 
     return Material(
       type: MaterialType.transparency,

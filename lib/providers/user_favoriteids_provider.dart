@@ -1,12 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show
-        AsyncData,
-        AsyncNotifier,
-        AsyncNotifierProvider,
-        AsyncValue,
-        AsyncValueX;
+    show AsyncData, AsyncNotifier, AsyncNotifierProvider, AsyncValue;
 import 'package:kalinka/data_model.dart' show BrowseItem;
 import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 import 'package:logger/logger.dart' show Logger;
@@ -15,7 +10,7 @@ class UserFavoritesIdsProvider extends AsyncNotifier<Set<String>> {
   final logger = Logger();
 
   void addIdOnly(String id) {
-    final s = state.valueOrNull;
+    final s = state.value;
     if (s == null || s.contains(id)) return;
 
     // Optimistically add the ID to the local state
@@ -25,12 +20,12 @@ class UserFavoritesIdsProvider extends AsyncNotifier<Set<String>> {
   }
 
   Future<void> add(BrowseItem item) async {
-    if (state.valueOrNull == null || state.value!.contains(item.id)) return;
+    if (state.value == null || state.value!.contains(item.id)) return;
 
     state = AsyncValue.loading();
     Future<void> future = ref.read(kalinkaProxyProvider).addFavorite(item.id);
     return future.then((value) {
-      if (state.valueOrNull == null) {
+      if (state.value == null) {
         state = AsyncValue.error(
             'State is null after adding favorite', StackTrace.current);
         return;
@@ -45,7 +40,7 @@ class UserFavoritesIdsProvider extends AsyncNotifier<Set<String>> {
   }
 
   Future<void> remove(BrowseItem item) async {
-    if (state.valueOrNull == null || !state.value!.contains(item.id)) {
+    if (state.value == null || !state.value!.contains(item.id)) {
       return;
     }
 
@@ -54,7 +49,7 @@ class UserFavoritesIdsProvider extends AsyncNotifier<Set<String>> {
         ref.read(kalinkaProxyProvider).removeFavorite(item.id);
 
     return future.then((_) {
-      if (state.valueOrNull == null) {
+      if (state.value == null) {
         state = AsyncValue.error(
             'State is null after removing favorite', StackTrace.current);
         return;
@@ -69,7 +64,7 @@ class UserFavoritesIdsProvider extends AsyncNotifier<Set<String>> {
   }
 
   bool isFavorite(BrowseItem item) {
-    final s = state.valueOrNull;
+    final s = state.value;
     if (s == null) return false;
 
     return s.contains(item.id);
@@ -92,7 +87,7 @@ class UserFavoritesIdsProvider extends AsyncNotifier<Set<String>> {
   }
 
   void removeIdOnly(String id) {
-    final s = state.valueOrNull;
+    final s = state.value;
     if (s == null || !s.contains(id)) return;
 
     // Optimistically remove the ID from the local state

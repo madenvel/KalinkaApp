@@ -183,7 +183,7 @@ class BrowseItemCard extends ConsumerWidget {
 
   Widget? _buildTitle(BuildContext context) {
     final contentType = previewContentTypeHint ??
-        PreviewContentTypeExtension.fromBrowseType(item?.browseType);
+        PreviewContentTypeExtension.fromBrowseType(item!.browseType);
     return item!.name != null
         ? SizedBox(
             width: double.infinity,

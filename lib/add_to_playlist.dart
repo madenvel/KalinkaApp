@@ -3,7 +3,7 @@ import 'dart:collection';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncValueX, ConsumerState, ConsumerStatefulWidget;
+    show AsyncValueExtensions, ConsumerState, ConsumerStatefulWidget;
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/data_model.dart';
 import 'package:kalinka/providers/kalinka_player_api_provider.dart'
@@ -99,7 +99,7 @@ class AddToPlaylistState extends ConsumerState<AddToPlaylist> {
 
   Future<void> _addTracksToPlaylists(List<String> trackIds) async {
     final kalinkaApi = ref.read(kalinkaProxyProvider);
-    final state = ref.read(userPlaylistProvider).valueOrNull;
+    final state = ref.read(userPlaylistProvider).value;
 
     if (state == null) {
       _showSnackBar('Failed to load playlists', Icons.error, isError: true);

@@ -2,7 +2,7 @@ import 'dart:math' show min;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncValueX, ConsumerWidget, WidgetRef;
+    show AsyncValueExtensions, ConsumerWidget, WidgetRef;
 import 'package:kalinka/browse_item_card.dart' show BrowseItemCard;
 import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart'
     show BrowseItemsSourceDesc, browseItemsProvider, defaultItemsPerPage;
@@ -35,7 +35,7 @@ class BrowseItemGrid extends ConsumerWidget {
   Widget _buildGrid(
       BuildContext context, BoxConstraints constraints, WidgetRef ref) {
     final asyncValue = ref.watch(browseItemsProvider(sourceDesc));
-    final state = asyncValue.valueOrNull;
+    final state = asyncValue.value;
 
     if (state == null || asyncValue.isLoading) {
       return BrowseItemGridPlaceHolder(

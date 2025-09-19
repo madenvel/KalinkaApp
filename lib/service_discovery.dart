@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:bonsoir/bonsoir.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show
+        AsyncNotifier,
         AsyncNotifierProvider,
         AsyncValue,
-        AsyncValueX,
-        AutoDisposeAsyncNotifier,
-        AutoDisposeNotifier,
-        NotifierProvider;
+        Notifier,
+        NotifierProvider,
+        ProviderListenableSelect;
 import 'package:logger/logger.dart' show Logger;
 import 'package:uuid/v1.dart';
 
@@ -32,7 +32,7 @@ class DiscoverySessionState {
   }
 }
 
-class DiscoverySession extends AutoDisposeNotifier<DiscoverySessionState> {
+class DiscoverySession extends Notifier<DiscoverySessionState> {
   final logger = Logger();
   Timer? _discoveryTimer;
 
@@ -41,7 +41,8 @@ class DiscoverySession extends AutoDisposeNotifier<DiscoverySessionState> {
   @override
   DiscoverySessionState build() {
     ref.onDispose(() {
-      _stop();
+      _discoveryTimer?.cancel();
+      _discoveryTimer = null;
     });
     return _startNewSession(defaultTimeout);
   }
@@ -86,14 +87,14 @@ class DiscoveredServiceList {
 }
 
 class ResolvedServiceList {
-  final List<ResolvedBonsoirService> services;
+  final List<BonsoirService> services;
 
   ResolvedServiceList({
     required this.services,
   });
 
   ResolvedServiceList copyWith({
-    List<ResolvedBonsoirService>? services,
+    List<BonsoirService>? services,
   }) {
     return ResolvedServiceList(
       services: services ?? this.services,
@@ -101,8 +102,7 @@ class ResolvedServiceList {
   }
 }
 
-class ResolvedServiceListNotifier
-    extends AutoDisposeNotifier<ResolvedServiceList> {
+class ResolvedServiceListNotifier extends Notifier<ResolvedServiceList> {
   @override
   ResolvedServiceList build() {
     ref.watch(discoverySession.select((value) => value.sessionId));
@@ -112,7 +112,7 @@ class ResolvedServiceListNotifier
     );
   }
 
-  void addResolvedService(ResolvedBonsoirService service) {
+  void addResolvedService(BonsoirService service) {
     state = state.copyWith(services: [...state.services, service]);
   }
 
@@ -124,7 +124,7 @@ class ResolvedServiceListNotifier
   }
 }
 
-class ServiceDiscovery extends AutoDisposeAsyncNotifier<DiscoveredServiceList> {
+class ServiceDiscovery extends AsyncNotifier<DiscoveredServiceList> {
   StreamSubscription<BonsoirDiscoveryEvent>? _discoverySubscription;
   static const String type = '_kalinkaplayer._tcp';
   final logger = Logger();
@@ -134,49 +134,50 @@ class ServiceDiscovery extends AutoDisposeAsyncNotifier<DiscoveredServiceList> {
     final session = ref.watch(discoverySession);
     if (session.inProgress) {
       final discovery = BonsoirDiscovery(type: ServiceDiscovery.type);
-      await discovery.ready;
+      await discovery.initialize();
 
       _discoverySubscription = discovery.eventStream?.listen((event) {
         if (event.service == null) return;
-        final s = state.valueOrNull;
+        final s = state.value;
+        if (s == null) return;
 
-        if (event.type == BonsoirDiscoveryEventType.discoveryServiceFound) {
-          event.service!.resolve(discovery.serviceResolver);
-          if (s == null) {
-            state = AsyncValue.data(DiscoveredServiceList(
-              unresolvedServices: [event.service!],
-            ));
-          } else {
+        switch (event) {
+          case BonsoirDiscoveryServiceFoundEvent():
+            {
+              event.service.resolve(discovery.serviceResolver);
+              state = AsyncValue.data(s.copyWith(
+                unresolvedServices: List.from(s.unresolvedServices)
+                  ..add(event.service),
+              ));
+            }
+            break;
+          case BonsoirDiscoveryServiceResolvedEvent():
+            final index = s.unresolvedServices.indexWhere((element) =>
+                element.name == event.service.name &&
+                element.type == event.service.type);
+            if (index != -1) {
+              state = AsyncValue.data(s.copyWith(
+                unresolvedServices: List.from(s.unresolvedServices)
+                  ..removeAt(index),
+              ));
+              ref
+                  .read(resolvedServicesListProvider.notifier)
+                  .addResolvedService(event.service);
+            }
+            break;
+          case BonsoirDiscoveryServiceUpdatedEvent():
+            break;
+          case BonsoirDiscoveryServiceLostEvent():
             state = AsyncValue.data(s.copyWith(
               unresolvedServices: List.from(s.unresolvedServices)
-                ..add(event.service!),
-            ));
-          }
-        } else if (event.type ==
-            BonsoirDiscoveryEventType.discoveryServiceResolved) {
-          if (s == null) return;
-
-          final index = s.unresolvedServices.indexWhere((element) =>
-              element.name == event.service!.name &&
-              element.type == event.service!.type);
-          if (index != -1) {
-            state = AsyncValue.data(s.copyWith(
-              unresolvedServices: List.from(s.unresolvedServices)
-                ..removeAt(index),
+                ..remove(event.service),
             ));
             ref
                 .read(resolvedServicesListProvider.notifier)
-                .addResolvedService(event.service! as ResolvedBonsoirService);
-          }
-        } else if (event.type ==
-            BonsoirDiscoveryEventType.discoveryServiceLost) {
-          state = AsyncValue.data(s!.copyWith(
-            unresolvedServices: List.from(s.unresolvedServices)
-              ..remove(event.service!),
-          ));
-          ref
-              .read(resolvedServicesListProvider.notifier)
-              .removeService(event.service!);
+                .removeService(event.service);
+            break;
+          default:
+            break;
         }
       });
 

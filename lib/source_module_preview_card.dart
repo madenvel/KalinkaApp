@@ -3,10 +3,11 @@ import 'dart:math' show min;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show
-        AsyncValueX,
+        AsyncNotifier,
+        AsyncNotifierProvider,
+        AsyncValue,
+        AsyncValueExtensions,
         ConsumerWidget,
-        StateNotifier,
-        StateNotifierProvider,
         WidgetRef;
 import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/constants.dart';
@@ -16,80 +17,65 @@ import 'package:kalinka/source_attribution.dart';
 import 'package:shared_preferences/shared_preferences.dart'
     show SharedPreferencesWithCache, SharedPreferencesWithCacheOptions;
 
-class SourceCollapseStateNotifier extends StateNotifier<Map<String, bool>> {
-  SharedPreferencesWithCache? prefs;
-  bool _isInitialized = false;
-
-  SourceCollapseStateNotifier() : super({}) {
-    _initializeState();
-  }
+class SourceCollapseStateNotifier extends AsyncNotifier<Map<String, bool>> {
+  late final SharedPreferencesWithCache prefs;
 
   static const String kCollapsedKey = 'Kalinka.input_source.collapsed';
 
-  Future<void> _initializeState() async {
-    if (_isInitialized) return;
+  Future<Map<String, bool>> _loadState() async {
+    final collapsedStateString = prefs.getString(kCollapsedKey);
 
-    try {
-      prefs = await SharedPreferencesWithCache.create(
-          cacheOptions: SharedPreferencesWithCacheOptions(allowList: {
-        kCollapsedKey,
-      }));
-
-      final collapsedStateString = prefs?.getString(kCollapsedKey);
-      if (collapsedStateString != null && collapsedStateString.isNotEmpty) {
-        // Parse the stored JSON-like string back to Map<String, bool>
-        final Map<String, String> queryParams =
-            Uri.splitQueryString(collapsedStateString);
-        final Map<String, bool> collapsedStateMap = queryParams
-            .map((key, value) => MapEntry(key, value.toLowerCase() == 'true'));
-        state = Map<String, bool>.from(collapsedStateMap);
-      }
-
-      _isInitialized = true;
-    } catch (e) {
-      // If there's an error reading from shared prefs, just use empty state
-      _isInitialized = true;
+    if (collapsedStateString != null && collapsedStateString.isNotEmpty) {
+      // Parse the stored JSON-like string back to Map<String, bool>
+      final Map<String, String> queryParams =
+          Uri.splitQueryString(collapsedStateString);
+      final Map<String, bool> collapsedStateMap = queryParams
+          .map((key, value) => MapEntry(key, value.toLowerCase() == 'true'));
+      return Map<String, bool>.from(collapsedStateMap);
     }
+    return {};
   }
 
   Future<void> _saveState() async {
-    if (!_isInitialized || prefs == null) return;
+    if (state.value == null) return;
 
-    try {
-      // Convert Map<String, bool> to a query string format for storage
-      final String stateString = state.entries
-          .map((entry) => '${Uri.encodeComponent(entry.key)}=${entry.value}')
-          .join('&');
-      await prefs!.setString(kCollapsedKey, stateString);
-    } catch (e) {
-      // Handle save errors gracefully
-    }
+    // Convert Map<String, bool> to a query string format for storage
+    final String stateString = state.value!.entries
+        .map((entry) => '${Uri.encodeComponent(entry.key)}=${entry.value}')
+        .join('&');
+    await prefs.setString(kCollapsedKey, stateString);
   }
 
   Future<void> toggleCollapse(String sourceId) async {
-    // Ensure initialization is complete before toggling
-    await _initializeState();
+    if (state.value == null) return;
+    final value = state.value!;
 
-    state = {
-      ...state,
-      sourceId: !(state[sourceId] ?? false),
-    };
-
+    state = AsyncValue.data({
+      ...value,
+      sourceId: !(value[sourceId] ?? false),
+    });
     // Save state after updating
     await _saveState();
   }
 
   bool isCollapsed(String sourceId) {
-    return state[sourceId] ?? false;
+    return state.value != null ? state.value![sourceId] ?? false : false;
+  }
+
+  @override
+  Future<Map<String, bool>> build() async {
+    prefs = await SharedPreferencesWithCache.create(
+        cacheOptions: SharedPreferencesWithCacheOptions(allowList: {
+      kCollapsedKey,
+    }));
+    return _loadState();
   }
 }
 
 // Provider for managing collapsed states of source modules
 final sourceCollapseStateProvider =
-    StateNotifierProvider<SourceCollapseStateNotifier, Map<String, bool>>(
-        (ref) {
-  return SourceCollapseStateNotifier();
-});
+    AsyncNotifierProvider<SourceCollapseStateNotifier, Map<String, bool>>(
+        SourceCollapseStateNotifier.new);
 
 class SourceModule extends ConsumerWidget {
   final BrowseItem source;
@@ -99,8 +85,9 @@ class SourceModule extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final collapseState = ref.watch(sourceCollapseStateProvider);
-    final isCollapsed = collapseState[source.id] ?? false;
+    final collapseState = ref.watch(sourceCollapseStateProvider).value;
+    final isCollapsed =
+        collapseState == null ? false : collapseState[source.id] ?? false;
     final desc = DefaultBrowseItemsSourceDesc(source);
     final asyncState = ref.watch(browseItemsProvider(desc));
 

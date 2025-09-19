@@ -1,4 +1,5 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart' show Provider;
+import 'package:flutter_riverpod/flutter_riverpod.dart'
+    show Provider, ProviderListenableSelect;
 import 'package:kalinka/connection_settings_provider.dart'
     show connectionSettingsProvider;
 

@@ -114,7 +114,7 @@ class BottomMenu extends ConsumerWidget {
 
   List<Widget> _buildFavoriteOptions(BuildContext context, WidgetRef ref) {
     List<Widget> widgets = [];
-    final state = ref.watch(userFavoritesIdsProvider).valueOrNull;
+    final state = ref.watch(userFavoritesIdsProvider).value;
     if (state == null) return [];
 
     final notifier = ref.read(userFavoritesIdsProvider.notifier);

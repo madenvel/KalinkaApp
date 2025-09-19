@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show ConsumerWidget, WidgetRef;
+    show AsyncValueExtensions, ConsumerWidget, WidgetRef;
 import 'package:kalinka/data_model.dart' show Genre;
 import 'package:kalinka/providers/genre_filter_provider.dart'
     show genreFilterProvider;

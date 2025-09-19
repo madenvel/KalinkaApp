@@ -315,7 +315,7 @@ class _LandingPageContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final searchHistory = ref.watch(searchHistoryProvider);
+    final searchHistory = ref.watch(searchHistoryProvider).value ?? [];
 
     if (searchHistory.isEmpty) {
       return Center(
@@ -355,7 +355,7 @@ class _LandingPageContent extends ConsumerWidget {
   }
 
   Widget _buildRecentSearchHistory(WidgetRef ref) {
-    final searchHistory = ref.watch(searchHistoryProvider);
+    final searchHistory = ref.watch(searchHistoryProvider).value ?? [];
     if (searchHistory.isEmpty) return const SizedBox.shrink();
 
     return Padding(

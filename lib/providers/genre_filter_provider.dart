@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncData, AsyncNotifierProvider, FamilyAsyncNotifier;
+    show AsyncData, AsyncNotifier, AsyncNotifierProvider;
 import 'package:kalinka/data_model.dart' show Genre;
 import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 
@@ -26,7 +26,11 @@ class GenreFilterList {
   }
 }
 
-class GenreFilterProvider extends FamilyAsyncNotifier<GenreFilterList, String> {
+class GenreFilterProvider extends AsyncNotifier<GenreFilterList> {
+  final String inputSource;
+
+  GenreFilterProvider(this.inputSource);
+
   void setSelectedGenres(List<String> genreId) {
     if (state.value == null) return;
     final currentState = state.value!;
@@ -59,11 +63,11 @@ class GenreFilterProvider extends FamilyAsyncNotifier<GenreFilterList, String> {
   }
 
   @override
-  Future<GenreFilterList> build(String arg) async {
-    final genres = await ref.watch(kalinkaProxyProvider).getGenres(arg);
+  Future<GenreFilterList> build() async {
+    final genres = await ref.watch(kalinkaProxyProvider).getGenres(inputSource);
 
     return GenreFilterList(
-        genres: genres.items, selectedGenres: <String>{}, source: arg);
+        genres: genres.items, selectedGenres: <String>{}, source: inputSource);
   }
 }
 

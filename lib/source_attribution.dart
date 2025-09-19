@@ -22,7 +22,7 @@ class SourceAttribution extends ConsumerWidget {
           })())
         : null;
 
-    final modulesState = ref.watch(modulesProvider).valueOrNull;
+    final modulesState = ref.watch(modulesProvider).value;
 
     if (entityId == null) {
       final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;

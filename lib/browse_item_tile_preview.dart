@@ -39,7 +39,7 @@ class BrowseItemTilePreview extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final browseItem = sourceDesc.sourceItem;
     final asyncValue = ref.watch(browseItemsProvider(sourceDesc));
-    final state = asyncValue.valueOrNull;
+    final state = asyncValue.value;
 
     if (state == null || asyncValue.isLoading) {
       return BrowseItemTilePreviewPlaceholder(browseItem: browseItem);

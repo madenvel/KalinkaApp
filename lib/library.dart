@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show
-        AsyncValueX,
+        AsyncValueExtensions,
         ConsumerState,
         ConsumerStatefulWidget,
         Notifier,
@@ -197,7 +197,7 @@ class _LibraryState extends ConsumerState<Library> {
         ref.watch(searchControllerProvider).text);
 
     final asyncValue = ref.watch(browseItemsProvider(sourceDesc));
-    final state = asyncValue.valueOrNull;
+    final state = asyncValue.value;
 
     if (state == null || asyncValue.isLoading) {
       return Shimmer(
@@ -287,7 +287,7 @@ class _LibraryState extends ConsumerState<Library> {
     }
   }
 
-  _buildCancelSearchButton(BuildContext context) {
+  Widget _buildCancelSearchButton(BuildContext context) {
     return IconButton(
       icon: const Icon(Icons.cancel),
       onPressed: () {
