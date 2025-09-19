@@ -22,9 +22,8 @@ class ServerItem {
       required this.apiVersion,
       this.isLocalNetwork = false});
 
-  // Factory to create ServerItem from a ResolvedBonsoirService
-  static Future<ServerItem> fromBonsoirService(
-      ResolvedBonsoirService service) async {
+  // Factory to create ServerItem from a BonsoirService
+  static Future<ServerItem> fromBonsoirService(BonsoirService service) async {
     final logger = Logger();
 
     // Get the best IP address for this service
@@ -84,7 +83,7 @@ class ServiceDiscoveryWidget extends ConsumerWidget {
 
   // Helper method to convert BonsoirServices to ServerItems
   Future<List<ServerItem>> _getServersFromProvider(
-      List<ResolvedBonsoirService> services) async {
+      List<BonsoirService> services) async {
     final List<ServerItem> serverItems = [];
 
     for (final service in services) {

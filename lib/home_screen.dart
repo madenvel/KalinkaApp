@@ -1,7 +1,7 @@
 import 'package:flutter/gestures.dart' show TapGestureRecognizer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncValueX, ConsumerStatefulWidget, ConsumerState;
+    show AsyncValueExtensions, ConsumerState, ConsumerStatefulWidget;
 
 import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart';
 
@@ -31,7 +31,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       DefaultBrowseItemsSourceDesc(browseItem);
 
   bool _hasActiveFilters(String inputSource) {
-    final genreState = ref.watch(genreFilterProvider(inputSource)).valueOrNull;
+    final genreState = ref.watch(genreFilterProvider(inputSource)).value;
     return genreState?.selectedGenres.isNotEmpty ?? false;
   }
 

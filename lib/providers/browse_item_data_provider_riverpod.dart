@@ -185,8 +185,7 @@ final sharedPrefsProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('override in main()');
 });
 
-class BrowseItemsController
-    extends FamilyAsyncNotifier<BrowseItemsState, BrowseItemsSourceDesc> {
+class BrowseItemsController extends AsyncNotifier<BrowseItemsState> {
   late BrowseItemsSourceDesc _desc;
   late BrowseItemsRepository _repository;
   late String _inputSource;
@@ -196,8 +195,10 @@ class BrowseItemsController
 
   StreamSubscription<void>? _sub;
 
+  BrowseItemsController(this._desc);
+
   @override
-  Future<BrowseItemsState> build(BrowseItemsSourceDesc desc) async {
+  Future<BrowseItemsState> build() async {
     // Keep the provider alive to prevent reloading when switching tabs or folding/unfolding
     ref.keepAlive();
     ref.watch(connectionStateProvider);
@@ -226,7 +227,7 @@ class BrowseItemsController
   }
 
   Future<void> ensureIndexLoaded(int index) async {
-    final s = state.valueOrNull;
+    final s = state.value;
     if (s == null) return;
 
     final page = index ~/ s.pageSize;
@@ -238,7 +239,7 @@ class BrowseItemsController
     ));
 
     final r = await _fetchPage(page, null);
-    final after = state.valueOrNull;
+    final after = state.value;
     if (after == null) return;
 
     final newPages = Map<int, List<BrowseItem>>.from(after.pages)
@@ -251,12 +252,12 @@ class BrowseItemsController
 
   Future<BrowseItemsList> _fetchPage(int page, int? pageSize) async {
     final activePageSize =
-        (pageSize ?? state.valueOrNull?.pageSize ?? defaultItemsPerPage);
+        (pageSize ?? state.value?.pageSize ?? defaultItemsPerPage);
     final offset = page * activePageSize;
     final genreIds = _desc.canGenreFilter
         ? ref
             .read(genreFilterProvider(_inputSource))
-            .valueOrNull
+            .value
             ?.selectedGenres
             .toList()
         : null;

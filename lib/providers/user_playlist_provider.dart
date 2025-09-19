@@ -43,7 +43,7 @@ class UserPlaylistNotifier extends AsyncNotifier<UserPlaylistsState> {
           .read(kalinkaProxyProvider)
           .playlistCreate(name, description);
 
-      final s = state.valueOrNull;
+      final s = state.value;
 
       if (s != null) {
         final currentPlaylists = List<BrowseItem>.from(s.items);
@@ -72,7 +72,7 @@ class UserPlaylistNotifier extends AsyncNotifier<UserPlaylistsState> {
 
   Future<void> removePlaylist(Playlist playlist) async {
     try {
-      final s = state.valueOrNull;
+      final s = state.value;
       if (s == null) return;
 
       final currentPlaylists = s.items;

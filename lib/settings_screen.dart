@@ -5,7 +5,6 @@ import 'package:flutter/services.dart'
     show FilteringTextInputFormatter, TextInputFormatter;
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show
-        AsyncValueX,
         ConsumerState,
         ConsumerStatefulWidget,
         ConsumerWidget,
@@ -101,7 +100,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildDynamicSettings(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(settingsProvider).valueOrNull;
+    final state = ref.watch(settingsProvider).value;
     if (state == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -148,11 +147,11 @@ class DynamicSettingsSubsection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(settingsProvider).valueOrNull;
+    final state = ref.watch(settingsProvider).value;
     if (state == null) {
       return SizedBox.shrink();
     }
-    final modulesState = ref.watch(modulesProvider).valueOrNull;
+    final modulesState = ref.watch(modulesProvider).value;
     final setting = state.getCurrentValue(path);
     final isChanged = state.isPathChanged(path);
     ModuleState? moduleStatus = modulesState?.getModuleStatus(path);
@@ -191,7 +190,7 @@ class DynamicSettingsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(settingsProvider).valueOrNull;
+    final state = ref.watch(settingsProvider).value;
     if (state == null) {
       return SizedBox.shrink();
     }
@@ -252,7 +251,7 @@ class DynamicSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(settingsProvider).valueOrNull;
+    final state = ref.watch(settingsProvider).value;
     if (state == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -298,7 +297,7 @@ class SettingEditorWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(settingsProvider).valueOrNull;
+    final state = ref.watch(settingsProvider).value;
 
     if (state == null) {
       return const Center(child: CircularProgressIndicator());
@@ -327,32 +326,34 @@ class SettingEditorWidget extends ConsumerWidget {
         return ValueListenableBuilder(
             valueListenable: controller,
             builder: (context, value, child) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (setting['title'] != null)
-                    Padding(
-                      padding: const EdgeInsets.only(
-                          bottom: KalinkaConstants.kContentVerticalPadding),
-                      child: Text(
-                        setting['title'],
-                        style: Theme.of(context).textTheme.titleMedium,
+              return RadioGroup<String>(
+                onChanged: (newValue) {
+                  if (newValue != null) {
+                    controller.value = newValue;
+                  }
+                },
+                groupValue: controller.value,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (setting['title'] != null)
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            bottom: KalinkaConstants.kContentVerticalPadding),
+                        child: Text(
+                          setting['title'],
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
                       ),
-                    ),
-                  ...setting['values'].map<Widget>((option) {
-                    return RadioListTile<String>(
-                      title: Text(option),
-                      value: option,
-                      groupValue: controller.value,
-                      onChanged: (String? newValue) {
-                        if (newValue != null) {
-                          controller.value = newValue;
-                        }
-                      },
-                    );
-                  }).toList(),
-                ],
+                    ...setting['values'].map<Widget>((option) {
+                      return RadioListTile<String>(
+                        title: Text(option),
+                        value: option,
+                      );
+                    }).toList(),
+                  ],
+                ),
               );
             });
       default:
@@ -450,7 +451,7 @@ class ListSettingEditor extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(settingsProvider).valueOrNull;
+    final state = ref.watch(settingsProvider).value;
     if (state == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -520,7 +521,7 @@ class DynamicSettingsPrimitiveItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(settingsProvider).valueOrNull;
+    final state = ref.watch(settingsProvider).value;
     if (state == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -591,7 +592,7 @@ class DynamicSettingsListItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var state = ref.watch(settingsProvider).valueOrNull;
+    var state = ref.watch(settingsProvider).value;
     if (state == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -648,7 +649,7 @@ class DynamicSettingsListItem extends ConsumerWidget {
 
 Future<void> showEditDialog(
     BuildContext context, WidgetRef ref, String path) async {
-  final state = ref.read(settingsProvider).valueOrNull;
+  final state = ref.read(settingsProvider).value;
   if (state == null) return;
   final setting = state.getCurrentValue(path);
   final isPassword =
@@ -737,7 +738,7 @@ class SettingsChangedBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(settingsProvider).valueOrNull;
+    final state = ref.watch(settingsProvider).value;
     if (state == null) {
       return SizedBox.shrink();
     }

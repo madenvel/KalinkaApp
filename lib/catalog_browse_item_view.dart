@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncValueX, ConsumerWidget, WidgetRef;
+    show AsyncValueExtensions, ConsumerWidget, WidgetRef;
 import 'package:kalinka/browse_item_card.dart' show BrowseItemCard;
 import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/constants.dart';
@@ -33,7 +33,7 @@ class CatalogBrowseItemView extends ConsumerWidget {
       BuildContext context, BoxConstraints constraints, WidgetRef ref) {
     final provider = browseItemsProvider(sourceDesc);
     final asyncValue = ref.watch(provider);
-    final state = asyncValue.valueOrNull;
+    final state = asyncValue.value;
     final notifier = ref.read(provider.notifier);
 
     if (state == null || asyncValue.isLoading) {

@@ -1,6 +1,6 @@
 enum PlayerStateType { stopped, playing, paused, buffering, error }
 
-enum BrowseType { album, artist, playlist, catalog, track }
+enum BrowseType { album, artist, playlist, catalog, track, unknown }
 
 extension PlayerStateTypeExtension on PlayerStateType {
   String toValue() {
@@ -453,7 +453,7 @@ extension CardSizeExtension on CardSize {
   }
 }
 
-enum PreviewContentType { catalog, album, artist, playlist, track }
+enum PreviewContentType { catalog, album, artist, playlist, track, unknown }
 
 extension PreviewContentTypeExtension on PreviewContentType {
   String toValue() {
@@ -468,6 +468,8 @@ extension PreviewContentTypeExtension on PreviewContentType {
         return 'playlist';
       case PreviewContentType.track:
         return 'track';
+      case PreviewContentType.unknown:
+        return 'unknown';
     }
   }
 
@@ -500,6 +502,8 @@ extension PreviewContentTypeExtension on PreviewContentType {
         return PreviewContentType.catalog;
       case BrowseType.track:
         return PreviewContentType.track;
+      default:
+        return PreviewContentType.unknown;
     }
   }
 
@@ -514,7 +518,7 @@ extension PreviewContentTypeExtension on PreviewContentType {
       case SearchType.track:
         return PreviewContentType.track;
       default:
-        return PreviewContentType.catalog; // Default for invalid search type
+        return PreviewContentType.unknown; // Default for invalid search type
     }
   }
 }
@@ -831,7 +835,7 @@ class BrowseItem {
     );
   }
 
-  get image {
+  AlbumImage? get image {
     if (album != null) {
       return album?.image;
     } else if (artist != null) {
@@ -868,7 +872,7 @@ class BrowseItem {
     return album != null || track != null || artist != null || playlist != null;
   }
 
-  get browseType {
+  BrowseType get browseType {
     if (album != null) {
       return BrowseType.album;
     } else if (artist != null) {
@@ -880,9 +884,10 @@ class BrowseItem {
     } else if (track != null) {
       return BrowseType.track;
     }
+    return BrowseType.unknown;
   }
 
-  get description {
+  String? get description {
     if (catalog != null) {
       return catalog?.description;
     } else if (playlist != null) {

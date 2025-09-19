@@ -188,17 +188,17 @@ class SettingsNotifier extends AsyncNotifier<SettingsState> {
 
   /// Get original settings
   Map<String, dynamic> getOriginalSettings() {
-    return Map<String, dynamic>.from(state.valueOrNull?.originalSettings ?? {});
+    return Map<String, dynamic>.from(state.value?.originalSettings ?? {});
   }
 
   /// Get current settings
   Map<String, dynamic> getCurrentSettings() {
-    return Map<String, dynamic>.from(state.valueOrNull?.currentSettings ?? {});
+    return Map<String, dynamic>.from(state.value?.currentSettings ?? {});
   }
 
   /// Set value at specific path in current settings
   void setValue(String path, dynamic value) {
-    final s = state.valueOrNull;
+    final s = state.value;
     if (s == null) return;
 
     final newCurrentSettings = _deepCopy(s.currentSettings);
@@ -225,7 +225,7 @@ class SettingsNotifier extends AsyncNotifier<SettingsState> {
 
   /// Revert a setting to its original value using path
   void revertSetting(String path) {
-    final s = state.valueOrNull;
+    final s = state.value;
     if (s == null) return;
     if (s.changedPaths.containsKey(path)) {
       final originalValue = s.changedPaths[path]['original'];
@@ -236,7 +236,7 @@ class SettingsNotifier extends AsyncNotifier<SettingsState> {
 
   /// Revert all settings to original values
   void revertAllSettings() {
-    final s = state.valueOrNull;
+    final s = state.value;
     if (s == null) return;
     final originalCopy = _deepCopy(s.originalSettings);
     state =
@@ -246,7 +246,7 @@ class SettingsNotifier extends AsyncNotifier<SettingsState> {
 
   /// Save current settings to server
   Future<bool> saveSettings() async {
-    final s = state.valueOrNull;
+    final s = state.value;
     if (s == null) return false;
 
     try {
@@ -273,7 +273,7 @@ class SettingsNotifier extends AsyncNotifier<SettingsState> {
 
   /// Restart the server (useful after settings changes)
   Future<bool> restartServer() async {
-    final s = state.valueOrNull;
+    final s = state.value;
     if (s == null) return false;
 
     try {

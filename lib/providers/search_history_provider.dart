@@ -4,21 +4,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 final int maxSearchHistorySize = 5;
 
 /// State notifier for managing search history
-class SearchHistoryNotifier extends StateNotifier<List<String>> {
+class SearchHistoryNotifier extends AsyncNotifier<List<String>> {
   static const String _prefsKey = 'search_history';
-  final int _maxHistorySize;
 
-  SearchHistoryNotifier(int maxHistorySize)
-      : _maxHistorySize = maxHistorySize,
-        super([]) {
+  SearchHistoryNotifier() {
     _loadHistory();
   }
 
   /// Loads search history from SharedPreferences
-  Future<void> _loadHistory() async {
+  Future<List<String>> _loadHistory() async {
     final prefs = await SharedPreferences.getInstance();
     final history = prefs.getStringList(_prefsKey) ?? [];
-    state = history;
+    return history;
   }
 
   /// Saves search history to SharedPreferences
@@ -34,31 +31,40 @@ class SearchHistoryNotifier extends StateNotifier<List<String>> {
     // Ignore empty queries
     if (query.trim().isEmpty) return;
 
+    if (state.value == null) {
+      return;
+    }
+
+    final value = state.value!;
+
     // Remove the query if it already exists to avoid duplicates
-    final currentState = state.where((item) => item != query).toList();
+    final currentState = value.where((item) => item != query).toList();
 
     // Add the new query at the top
     final newState = [query, ...currentState];
 
     // Keep only the most recent queries up to max size
-    final updatedState = newState.length > _maxHistorySize
-        ? newState.sublist(0, _maxHistorySize)
+    final updatedState = newState.length > maxSearchHistorySize
+        ? newState.sublist(0, maxSearchHistorySize)
         : newState;
 
-    state = updatedState;
+    state = AsyncValue.data(updatedState);
     await _saveHistory(updatedState);
   }
 
   /// Clears the search history
   Future<void> clearHistory() async {
-    state = [];
+    state = AsyncValue.data([]);
     await _saveHistory([]);
+  }
+
+  @override
+  Future<List<String>> build() async {
+    return _loadHistory();
   }
 }
 
 /// Provider for the search history
 final searchHistoryProvider =
-    StateNotifierProvider<SearchHistoryNotifier, List<String>>(
-  (ref) => SearchHistoryNotifier(
-      maxSearchHistorySize), // Specify the max history size here
-);
+    AsyncNotifierProvider<SearchHistoryNotifier, List<String>>(
+        SearchHistoryNotifier.new);

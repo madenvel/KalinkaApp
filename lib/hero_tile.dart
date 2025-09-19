@@ -99,7 +99,7 @@ class _HeroTileState extends ConsumerState<HeroTile> {
   @override
   Widget build(BuildContext context) {
     final asyncValue = ref.watch(browseItemsProvider(widget.sourceDesc));
-    final state = asyncValue.valueOrNull;
+    final state = asyncValue.value;
 
     if (state == null || asyncValue.isLoading) {
       return const SizedBox.shrink();

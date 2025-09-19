@@ -1,7 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show ConsumerState, ConsumerStatefulWidget, ConsumerWidget, WidgetRef;
+    show
+        ConsumerState,
+        ConsumerStatefulWidget,
+        ConsumerWidget,
+        ProviderListenableSelect,
+        WidgetRef;
 import 'package:kalinka/providers/app_state_provider.dart';
 import 'package:kalinka/providers/kalinka_player_api_provider.dart'
     show kalinkaProxyProvider;

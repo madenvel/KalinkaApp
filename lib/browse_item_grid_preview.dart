@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'
-    show AsyncValueX, ConsumerWidget, WidgetRef;
+    show AsyncValueExtensions, ConsumerWidget, WidgetRef;
 import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/catalog_browse_item_view.dart'
     show CatalogBrowseItemView;
@@ -48,7 +48,7 @@ class BrowseItemGridPreview extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncValue = ref.watch(browseItemsProvider(sourceDesc));
-    final state = asyncValue.valueOrNull;
+    final state = asyncValue.value;
     if (state == null || asyncValue.isLoading) {
       return BrowseItemGridPreviewPlaceholder(
           browseItem: sourceDesc.sourceItem);
