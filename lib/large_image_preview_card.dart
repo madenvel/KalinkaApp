@@ -64,20 +64,15 @@ class LargeImagePreviewCard extends ConsumerWidget {
   }
 
   Widget _buildPlaceholder(BuildContext context, double cardSize) {
-    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
-    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
-
     return Shimmer(
-        baseColor: baseColor,
-        highlightColor: highlightColor,
         child: Container(
-          width: double.infinity,
-          height: cardSize,
-          decoration: BoxDecoration(
-            color: baseColor,
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ));
+      width: double.infinity,
+      height: cardSize,
+      decoration: BoxDecoration(
+        borderRadius:
+            BorderRadius.circular(KalinkaConstants.kShimmerBorderRadius),
+      ),
+    ));
   }
 
   double calculateCardSize(BuildContext context, CardSize cardSizeSelection) {

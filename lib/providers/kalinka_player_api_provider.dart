@@ -13,7 +13,6 @@ import 'package:kalinka/data_model.dart'
         FavoriteIds,
         GenreList,
         ModulesAndDevices,
-        PlayerState,
         Playlist,
         SearchType,
         SearchTypeExtension,
@@ -30,7 +29,6 @@ abstract class KalinkaPlayerProxy {
   Future<StatusMessage> pause({bool paused = true});
   Future<StatusMessage> stop();
   Future<TrackList> listTracks({int offset = 0, int limit = 100});
-  Future<PlayerState> getState();
   Future<StatusMessage> setPlaybackMode(
       {bool? repeatOne, bool? repeatAll, bool? shuffle});
   Future<BrowseItemsList> search(SearchType queryType, String query,
@@ -136,17 +134,6 @@ class KalinkaPlayerProxyImpl implements KalinkaPlayerProxy {
       }
 
       return TrackList.fromJson(response.data);
-    });
-  }
-
-  @override
-  Future<PlayerState> getState() async {
-    return client.get('/queue/state').then((response) {
-      if (response.statusCode != 200) {
-        throw Exception('Failed to get state');
-      }
-
-      return PlayerState.fromJson(response.data);
     });
   }
 

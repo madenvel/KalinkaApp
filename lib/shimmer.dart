@@ -45,10 +45,8 @@ class Shimmer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final bg = baseColor ??
-        theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35);
-    final hl =
-        highlightColor ?? theme.colorScheme.onSurface.withValues(alpha: 0.12);
+    final bg = baseColor ?? theme.colorScheme.surfaceContainerHigh;
+    final hl = highlightColor ?? theme.colorScheme.surfaceBright;
 
     if (!enabled) {
       // Render a static “skeleton” without animation.
@@ -61,45 +59,15 @@ class Shimmer extends ConsumerWidget {
         );
 
     // Build a 3-stop gradient with a narrow highlight band that moves across.
-    final w = widthFactor.clamp(0.05, 0.9);
-    final center = phase; // 0..1
-    final startStop = (center - w / 2).clamp(0.0, 1.0);
-    final endStop = (center + w / 2).clamp(0.0, 1.0);
+    // Simpler shimmer: 2 stops, invisible at phase 0.0 and 1.0
+    // The highlight band is only visible in the middle of the gradient, and fades in/out at the edges.
+    final double bandWidth = widthFactor.clamp(0.05, 0.9);
+    final double bandStart = (phase - bandWidth / 2).clamp(0.0, 1.0);
+    final double bandEnd = (phase + bandWidth / 2).clamp(0.0, 1.0);
 
-    // When the band crosses edges we split into two segments (wrap-around).
-    final colors = <Color>[];
-    final stops = <double>[];
-
-    void addSegment(double a, double b) {
-      colors.addAll([bg, hl, bg]);
-      stops.addAll([a, (a + b) / 2, b]);
-    }
-
-    if (startStop == 0.0 && endStop == 1.0) {
-      // Band covers entire gradient: just highlight everywhere.
-      return ShaderMask(
-        blendMode: blendMode,
-        shaderCallback: (rect) {
-          final dx = math.cos(angle);
-          final dy = math.sin(angle);
-          return LinearGradient(
-            begin: Alignment(-(dx), -(dy)),
-            end: Alignment(dx, dy),
-            colors: [hl, hl],
-          ).createShader(rect);
-        },
-        child: child,
-      );
-    } else if (startStop < endStop) {
-      addSegment(0.0, startStop);
-      addSegment(startStop, endStop);
-      addSegment(endStop, 1.0);
-    } else {
-      // Wrapped case: [start..1] ∪ [0..end]
-      addSegment(0.0, endStop);
-      addSegment(endStop, startStop);
-      addSegment(startStop, 1.0);
-    }
+    // If phase is at 0.0 or 1.0, make the highlight fully transparent (invisible)
+    final bool invisible = phase <= 0.0 || phase >= 1.0;
+    final Color effectiveHighlight = invisible ? bg : hl;
 
     return ShaderMask(
       blendMode: blendMode,
@@ -109,8 +77,8 @@ class Shimmer extends ConsumerWidget {
         return LinearGradient(
           begin: Alignment(-(dx), -(dy)),
           end: Alignment(dx, dy),
-          colors: colors,
-          stops: stops,
+          colors: [bg, effectiveHighlight, bg],
+          stops: [bandStart, phase.clamp(0.0, 1.0), bandEnd],
         ).createShader(rect);
       },
       child: child,

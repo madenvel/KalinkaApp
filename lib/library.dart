@@ -17,6 +17,7 @@ import 'package:kalinka/bottom_menu.dart';
 import 'package:kalinka/browse_item_list.dart';
 
 import 'package:kalinka/data_model.dart';
+import 'package:kalinka/shimmer.dart' show Shimmer;
 
 class SearchTypeProvider extends Notifier<SearchType> {
   void updateSearchType(SearchType searchType) {
@@ -199,7 +200,8 @@ class _LibraryState extends ConsumerState<Library> {
     final state = asyncValue.valueOrNull;
 
     if (state == null || asyncValue.isLoading) {
-      return BrowseItemListPlaceholder(browseItem: sourceDesc.sourceItem);
+      return Shimmer(
+          child: BrowseItemListPlaceholder(browseItem: sourceDesc.sourceItem));
     }
 
     if (state.totalCount == 0) {

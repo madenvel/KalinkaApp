@@ -25,9 +25,6 @@ class FavoriteButton extends ConsumerWidget {
 
     final state = ref.watch(userFavoritesIdsProvider);
 
-    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
-    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
-
     onPressed(bool isFavorite) {
       final notifier = ref.read(userFavoritesIdsProvider.notifier);
       if (isFavorite) {
@@ -56,10 +53,7 @@ class FavoriteButton extends ConsumerWidget {
     return state.when(data: (data) {
       return buildHeartIconButton(context, data, onPressed);
     }, loading: () {
-      return Shimmer(
-          baseColor: baseColor,
-          highlightColor: highlightColor,
-          child: buildHeartIconButton(context, {}, null));
+      return Shimmer(child: buildHeartIconButton(context, {}, null));
     }, error: (error, stack) {
       return const SizedBox.shrink();
     });

@@ -135,7 +135,9 @@ class _MyHomePageState extends ConsumerState<MyHomePage>
           return MaterialPageRoute(
               settings: settings,
               builder: (_) => [
-                    HomeScreen(),
+                    HomeScreen(
+                      onNavigateToSettings: () => _handleTabChange(3),
+                    ),
                     Library(),
                     SearchScreen(),
                     SettingsScreen()

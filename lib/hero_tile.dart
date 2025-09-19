@@ -416,8 +416,6 @@ class HeroTilePlaceholder extends StatelessWidget {
         context, browseItem.catalog?.previewConfig?.cardSize ?? CardSize.small);
 
     final imageSize = Size(cardSize, cardSize / aspectRatio);
-    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
-    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -431,8 +429,6 @@ class HeroTilePlaceholder extends StatelessWidget {
         ),
       ),
       child: Shimmer(
-        baseColor: baseColor,
-        highlightColor: highlightColor,
         child: Row(
           children: [
             // Left side: Image placeholder
@@ -441,7 +437,6 @@ class HeroTilePlaceholder extends StatelessWidget {
               height: imageSize.height,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: baseColor.withValues(alpha: 0.5),
               ),
             ),
 
@@ -465,8 +460,8 @@ class HeroTilePlaceholder extends StatelessWidget {
                             height: 18,
                             width: double.infinity,
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(9),
-                              color: baseColor.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(
+                                  KalinkaConstants.kShimmerBorderRadius),
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -475,8 +470,8 @@ class HeroTilePlaceholder extends StatelessWidget {
                             height: 14,
                             width: 120,
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(7),
-                              color: baseColor.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(
+                                  KalinkaConstants.kShimmerBorderRadius),
                             ),
                           ),
                         ],
@@ -493,7 +488,6 @@ class HeroTilePlaceholder extends StatelessWidget {
                           height: 48,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: baseColor.withValues(alpha: 0.5),
                           ),
                         ),
                         const Spacer(),
@@ -503,7 +497,6 @@ class HeroTilePlaceholder extends StatelessWidget {
                           height: 56,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: baseColor.withValues(alpha: 0.5),
                           ),
                         ),
                       ],

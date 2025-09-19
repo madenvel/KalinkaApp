@@ -473,12 +473,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildAlbumShimmeringPlaceholder() {
-    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
-    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
-
     return Shimmer(
-      baseColor: baseColor,
-      highlightColor: highlightColor,
       child: Container(
         decoration: BoxDecoration(
           borderRadius:

@@ -7,6 +7,7 @@ import 'package:kalinka/data_model.dart'
     show PlaybackMode, PlayerState, Track, TrackList;
 import 'package:kalinka/providers/connection_state_provider.dart';
 import 'package:kalinka/providers/kalinka_player_api_provider.dart';
+import 'package:kalinka/providers/monotonic_clock_provider.dart';
 import 'package:logger/logger.dart' show Logger;
 
 sealed class WireEvent {}
@@ -120,7 +121,8 @@ final wireEventsProvider = StreamProvider.autoDispose<WireEvent>((ref) async* {
           switch (type) {
             case 'state_replay':
               yield StateReplayEvent(
-                playerState: PlayerState.fromJson(args[0]),
+                playerState: PlayerState.fromJson(args[0],
+                    ref.read(monotonicClockProvider).elapsedMilliseconds),
                 playQueue: TrackList.fromJson(args[1]).items,
                 playbackMode: PlaybackMode.fromJson(args[2]),
               );
@@ -128,7 +130,8 @@ final wireEventsProvider = StreamProvider.autoDispose<WireEvent>((ref) async* {
 
             case 'state_changed':
               yield StateChangedEvent(
-                  playerState: PlayerState.fromJson(args[0]));
+                  playerState: PlayerState.fromJson(args[0],
+                      ref.read(monotonicClockProvider).elapsedMilliseconds));
               break;
 
             case 'track_added':

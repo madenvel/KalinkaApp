@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kalinka/constants.dart' show KalinkaConstants;
 import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/browse_item_list.dart'
     show BrowseItemList, BrowseItemListPlaceholder;
-import 'package:kalinka/constants.dart' show KalinkaConstants;
 import 'package:kalinka/data_model.dart' show BrowseItem;
 import 'package:kalinka/shimmer.dart' show Shimmer;
 
@@ -103,41 +103,54 @@ class BrowseItemTilePreviewPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
-    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
     return Shimmer(
-        baseColor: baseColor,
-        highlightColor: highlightColor,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionHeaderPlaceholder(context),
-            BrowseItemListPlaceholder(
-                browseItem: browseItem,
-                padding: padding,
-                showSourceAttribution: showSourceAttribution,
-                shrinkWrap: shrinkWrap,
-                itemCount:
-                    browseItem.catalog?.previewConfig?.itemsCount ?? itemCount),
-          ],
-        ));
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeaderPlaceholder(context),
+        BrowseItemListPlaceholder(
+            browseItem: browseItem,
+            padding: padding,
+            showSourceAttribution: showSourceAttribution,
+            shrinkWrap: shrinkWrap,
+            itemCount:
+                browseItem.catalog?.previewConfig?.itemsCount ?? itemCount),
+      ],
+    ));
   }
 
   Widget _buildSectionHeaderPlaceholder(BuildContext context) {
     final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
-    return Padding(
-      padding: const EdgeInsets.only(
-          bottom: KalinkaConstants.kContentVerticalPadding,
-          left: KalinkaConstants.kScreenContentHorizontalPadding,
-          right: KalinkaConstants.kScreenContentHorizontalPadding),
-      child: Container(
-        width: 200,
-        height: 20,
-        decoration: BoxDecoration(
-          color: baseColor,
-          borderRadius: BorderRadius.circular(8),
+    return ListTile(
+        visualDensity: VisualDensity.standard,
+        title: Row(
+          children: [
+            Flexible(
+              flex: 3,
+              child: Container(
+                height: 16,
+                decoration: BoxDecoration(
+                  color: baseColor,
+                  borderRadius: BorderRadius.circular(
+                      KalinkaConstants.kShimmerBorderRadius),
+                ),
+              ),
+            ),
+            const Spacer(flex: 7),
+          ],
         ),
-      ),
-    );
+        subtitle: Row(children: [
+          Flexible(
+              flex: 4,
+              child: Container(
+                height: 14,
+                decoration: BoxDecoration(
+                  color: baseColor,
+                  borderRadius: BorderRadius.circular(
+                      KalinkaConstants.kShimmerBorderRadius),
+                ),
+              )),
+          const Spacer(flex: 6),
+        ]));
   }
 }

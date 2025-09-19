@@ -16,7 +16,6 @@ import 'package:kalinka/providers/url_resolver.dart';
 import 'data_model.dart';
 
 // --- Constants ---
-const double _kDefaultPadding = 8.0;
 const double _kVerticalPaddingMedium = 16.0;
 const double _kVerticalPaddingLarge = 24.0;
 const double _kImageSize = 250.0;
@@ -259,70 +258,145 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
   }
 
   Widget _buildHeaderPlaceholder(BuildContext context) {
+    // Match the structure and paddings of _buildHeaderView
     final topPadding = MediaQuery.paddingOf(context).top + kToolbarHeight;
     final isArtist = widget.browseItem.artist != null;
+    final isTrack = widget.browseItem.track != null;
+    final isPlaylist = widget.browseItem.playlist != null;
+    final isAlbum = widget.browseItem.album != null;
 
     final baseColor = Theme.of(context).colorScheme.surfaceContainerHigh;
-    final highlightColor = Theme.of(context).colorScheme.surfaceBright;
+
     return Shimmer(
-        baseColor: baseColor,
-        highlightColor: highlightColor,
-        child: Padding(
-          padding: EdgeInsets.only(
-            top: topPadding,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: _kImageSize,
-                height: _kImageSize,
-                decoration: BoxDecoration(
-                  color: baseColor,
-                  shape: isArtist ? BoxShape.circle : BoxShape.rectangle,
-                  borderRadius:
-                      !isArtist ? BorderRadius.circular(_kBorderRadius) : null,
-                ),
+      child: Padding(
+        padding: EdgeInsets.only(top: topPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Image placeholder (always use shimmer radius)
+            isArtist
+                ? CircleAvatar(radius: _kCircleAvatarRadius)
+                : Container(
+                    width: _kImageSize,
+                    height: _kImageSize,
+                    decoration: BoxDecoration(
+                      color: baseColor,
+                      borderRadius: BorderRadius.circular(
+                        KalinkaConstants.kShimmerBorderRadius,
+                      ),
+                    ),
+                  ),
+
+            // Cover info padding mirrors _buildHeaderView
+            Padding(
+              padding: const EdgeInsets.only(
+                left: KalinkaConstants.kScreenContentHorizontalPadding,
+                right: KalinkaConstants.kScreenContentHorizontalPadding,
+                top: _kVerticalPaddingMedium,
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: _kDefaultPadding,
-                    vertical: _kVerticalPaddingMedium + 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                        height: _kFontSizeTitle * 1.3,
-                        width: 180,
-                        color: baseColor),
-                    const SizedBox(height: 8.0),
-                    Container(
-                        height: _kFontSizeSubtitle * 1.3,
-                        width: 140,
-                        color: baseColor),
-                    const SizedBox(height: 16.0),
-                    Container(
-                        height: _kFontSizeBody * 1.3,
-                        width: 100,
-                        color: baseColor),
-                  ],
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    height: _kFontSizeTitle * 1.3,
+                    width: 180,
+                    decoration: BoxDecoration(
+                      color: baseColor,
+                      borderRadius: BorderRadius.circular(
+                        KalinkaConstants.kShimmerBorderRadius,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8.0),
+                  Container(
+                    height: _kFontSizeSubtitle * 1.3,
+                    width: 140,
+                    decoration: BoxDecoration(
+                      color: baseColor,
+                      borderRadius: BorderRadius.circular(
+                        KalinkaConstants.kShimmerBorderRadius,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12.0),
+                  Container(
+                    height: _kFontSizeBody * 1.3,
+                    width: 100,
+                    decoration: BoxDecoration(
+                      color: baseColor,
+                      borderRadius: BorderRadius.circular(
+                        KalinkaConstants.kShimmerBorderRadius,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              Card.filled(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Container(
-                      height: _kIconSizeMedium + 20,
-                      width: 240,
+            ),
+            const SizedBox(height: 18),
+            // Buttons bar placeholder that mirrors _buildButtonsBar layout
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: KalinkaConstants.kScreenContentHorizontalPadding,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!isArtist)
+                    Expanded(
+                      child: Container(
+                        height: KalinkaConstants.kButtonSize,
+                        decoration: BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(
+                            KalinkaConstants.kButtonSize / 2.0,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (!isArtist) const SizedBox(width: 12),
+                  if (!isArtist)
+                    Container(
+                      width: KalinkaConstants.kButtonSize,
+                      height: KalinkaConstants.kButtonSize,
                       decoration: BoxDecoration(
                         color: baseColor,
-                        borderRadius: BorderRadius.circular(10),
-                      )),
-                ),
+                        borderRadius: BorderRadius.circular(
+                          KalinkaConstants.kButtonSize / 2.0,
+                        ),
+                      ),
+                    ),
+                  if (!isArtist) const SizedBox(width: 12),
+                  if (!isArtist)
+                    Container(
+                      width: KalinkaConstants.kButtonSize,
+                      height: KalinkaConstants.kButtonSize,
+                      decoration: BoxDecoration(
+                        color: baseColor,
+                        borderRadius: BorderRadius.circular(
+                          KalinkaConstants.kButtonSize / 2.0,
+                        ),
+                      ),
+                    ),
+                  if (isTrack || isPlaylist || isAlbum) const Spacer(),
+                  if (isArtist || isTrack || isPlaylist || isAlbum)
+                    Container(
+                      width: KalinkaConstants.kButtonSize,
+                      height: KalinkaConstants.kButtonSize,
+                      decoration: BoxDecoration(
+                        color: baseColor,
+                        borderRadius: BorderRadius.circular(
+                          KalinkaConstants.kButtonSize / 2.0,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ],
-          ),
-        ));
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildImageCover(BuildContext context, ImageProvider imageProvider) {

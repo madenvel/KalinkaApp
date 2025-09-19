@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/data_model.dart' show PlayerState, PlayerStateType;
 import 'package:kalinka/providers/app_state_provider.dart'
     show playerStateProvider;
+import 'package:kalinka/providers/monotonic_clock_provider.dart'
+    show monotonicClockProvider;
 
 /// Expose app lifecycle as a provider.
 final appLifecycleProvider =
@@ -36,74 +38,53 @@ final playbackTimeMsProvider =
     NotifierProvider<PlaybackTimeMsNotifier, int>(PlaybackTimeMsNotifier.new);
 
 class PlaybackTimeMsNotifier extends Notifier<int> {
-  late final Stopwatch _sw;
-  late int _baseAccurateMs;
-  Timer? _tick;
-
-  void _startTicking() {
-    _tick ??= Timer.periodic(const Duration(seconds: 1), (_) {
-      state = _baseAccurateMs + _sw.elapsedMilliseconds;
-    });
-  }
-
-  void _stopTicking() {
-    _tick?.cancel();
-    _tick = null;
-  }
-
-  void _resyncToAccurate(PlayerStateType playerState, int accurateMs) {
-    _baseAccurateMs = accurateMs;
-    _updateStopwatchState(playerState);
-  }
-
-  void _updateStopwatchState(PlayerStateType? playerState) {
-    _sw.reset();
-    if (playerState == PlayerStateType.playing) {
-      _sw.start();
-      _startTicking();
-    } else {
-      _sw.stop();
-      _stopTicking();
+  int getDeltaMs(PlayerState playerState) {
+    if (playerState.state == PlayerStateType.playing) {
+      int delta = ref.read(monotonicClockProvider).elapsedMilliseconds -
+          playerState.timestamp;
+      return delta;
     }
+    return 0;
   }
 
   @override
   int build() {
-    _sw = Stopwatch();
-    final playerState = ref.read(playerStateProvider);
-    _baseAccurateMs = playerState.position ?? 0;
-    state = _baseAccurateMs; // initial emit
-    _updateStopwatchState(playerState.state);
+    Timer? tick;
 
-    // Re-sync whenever the accurate source updates.
-    ref.listen<PlayerState>(playerStateProvider, (prev, next) {
-      _resyncToAccurate(
-          next.state ?? PlayerStateType.stopped, next.position ?? 0);
-      // Emit immediately so UI catches up even if we’re paused/resumed.
-      state = _baseAccurateMs + _sw.elapsedMilliseconds;
-    });
+    bool isDisposed = false;
+    final playerState = ref.watch(playerStateProvider);
+    final baseTimeMs = playerState.position ?? 0;
+    state = baseTimeMs + getDeltaMs(playerState);
 
     // Start/stop ticking based on lifecycle.
     ref.listen<AppLifecycleState>(appLifecycleProvider, (prev, next) {
       if (next == AppLifecycleState.resumed) {
-        // Catch up immediately, then restart periodic ticks.
-        state = _baseAccurateMs + _sw.elapsedMilliseconds;
-        _startTicking();
-      } else {
-        // Stop periodic rebuilds while backgrounded.
-        _stopTicking();
-      }
-    });
+        state = baseTimeMs + getDeltaMs(playerState);
 
-    // Also respect the current lifecycle at build time.
-    final lifecycle = ref.read(appLifecycleProvider);
-    if (lifecycle == AppLifecycleState.resumed) {
-      _startTicking();
-    }
+        if (playerState.state == PlayerStateType.playing) {
+          final msUntilNextSecond = 1000 - (state % 1000);
+          tick = Timer(Duration(milliseconds: msUntilNextSecond), () {
+            final lifecycle = ref.read(appLifecycleProvider);
+            if (isDisposed || lifecycle != AppLifecycleState.resumed) {
+              return;
+            }
+
+            state = baseTimeMs + getDeltaMs(playerState);
+            tick = Timer.periodic(const Duration(seconds: 1), (_) {
+              state = baseTimeMs + getDeltaMs(playerState);
+            });
+          });
+        }
+      } else {
+        tick?.cancel();
+        tick = null;
+      }
+    }, fireImmediately: true);
 
     ref.onDispose(() {
-      _stopTicking();
-      _sw.stop();
+      tick?.cancel();
+      tick = null;
+      isDisposed = true;
     });
 
     return state;
