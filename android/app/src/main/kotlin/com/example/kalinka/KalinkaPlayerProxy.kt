@@ -1,61 +1,51 @@
 package com.example.kalinka
 
-import android.os.Build
-import androidx.annotation.RequiresApi
+import android.annotation.SuppressLint
+import io.flutter.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
-import java.net.URL
-import io.flutter.Log
-import org.json.JSONObject
 import java.net.URI
+import java.net.URL
 
-open class Response(
-    var message: String? = null
-) {
-    companion object Factory {
-        fun fromJson(json: JSONObject?): Response? {
-            if (json == null) {
-                return null
-            }
-            val obj = Response()
-            obj.message = "message".let { if (json.has(it)) json.getString(it) else null }
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class Response(
+    val message: String? = null
+)
 
-            return obj
-        }
-    }
-}
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class SeekResponse(var message: String? = null, var positionMs: Long? = null)
 
-class SeekResponse(var message: String? = null, var positionMs: Long? = null)
-{
-    companion object Factory {
-        fun fromJson(json: JSONObject?): SeekResponse? {
-            if (json == null) {
-                return null
-            }
-            val obj = SeekResponse()
-            obj.message = "message".let { if (json.has(it)) json.getString(it) else null }
-            obj.positionMs = "position_ms".let{ if (json.has(it)) json.getLong(it) else null }
-            return obj
-        }
-    }
-}
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
+data class DeviceVolume(
+    @SerialName("max_volume") val maxVolume: Int = 0,
+    @SerialName("current_volume") val currentVolume: Int = 0,
+    @SerialName("volume_gain") val volumeGain: Int = 0,
+    val supported: Boolean = true
+)
 
 class KalinkaPlayerProxy(
     private val baseUrl: String,
     private val onError: () -> Unit
 ) {
-    private val LOGTAG = "KalinkaPlayerProxy"
+    companion object {
+        private const val LOG = "KalinkaPlayerProxy"
+    }
 
     fun play(onSuccess: (Response) -> Unit) {
         asyncGetHttpRequest<Response>(
             "PUT",
             URI(baseUrl).resolve("/queue/play").toURL(),
             onSuccess,
-            converter = { Response.fromJson(it) }
         )
 
     }
@@ -65,7 +55,6 @@ class KalinkaPlayerProxy(
             "PUT",
             URI(baseUrl).resolve("/queue/pause?paused=$paused").toURL(),
             onSuccess,
-            converter = { Response.fromJson(it) }
         )
     }
 
@@ -74,7 +63,6 @@ class KalinkaPlayerProxy(
             "PUT",
             URI(baseUrl).resolve("/queue/next").toURL(),
             onSuccess,
-            converter = { Response.fromJson(it) }
         )
     }
 
@@ -83,7 +71,6 @@ class KalinkaPlayerProxy(
             "PUT",
             URI(baseUrl).resolve("/queue/prev").toURL(),
             onSuccess,
-            converter = { Response.fromJson(it) }
         )
     }
 
@@ -92,26 +79,42 @@ class KalinkaPlayerProxy(
             "PUT",
             URI(baseUrl).resolve("/queue/current_track/seek?position_ms=$positionMs").toURL(),
             onSuccess,
-            converter = { SeekResponse.fromJson(it) }
         )
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
+    fun setDeviceVolume(volume: Int, onSuccess: (Response) -> Unit) {
+        asyncGetHttpRequest<Response>(
+            "PUT",
+            URI(baseUrl).resolve("/device/set_volume?volume=$volume").toURL(),
+            onSuccess,
+        )
+    }
+
+    fun getDeviceVolume(onSuccess: (DeviceVolume) -> Unit) {
+        asyncGetHttpRequest<DeviceVolume>(
+            "GET",
+            URI(baseUrl).resolve("/device/get_volume").toURL(),
+            onSuccess
+        )
+    }
+
     private inline fun <reified T> asyncGetHttpRequest(
         requestMethod: String,
         url: URL,
         crossinline onSuccess: (res: T) -> Unit,
-        crossinline converter: (JSONObject) -> T?
     ) {
         CoroutineScope(Dispatchers.IO).launch {
             val openedConnection = url.openConnection() as HttpURLConnection
             openedConnection.requestMethod = requestMethod
+            val json = Json {
+                ignoreUnknownKeys = true   // forwards/backwards compat
+                explicitNulls = false
+            }
 
-            val responseCode = openedConnection.responseCode
             try {
                 val reader = BufferedReader(InputStreamReader(openedConnection.inputStream))
                 val line = reader.readLine()
-                val response: T? = converter(JSONObject(line))
+                val response: T? = json.decodeFromString<T>(line)
                 if (response != null) {
                     launch(Dispatchers.Main) {
                         onSuccess(response)
@@ -119,7 +122,7 @@ class KalinkaPlayerProxy(
                 }
                 reader.close()
             } catch (e: Exception) {
-                Log.d(LOGTAG, e.message.toString())
+                Log.d(LOG, e.message.toString())
                 // Handle error cases and call the error callback on the main thread
                 launch(Dispatchers.Main) {
                     onError()

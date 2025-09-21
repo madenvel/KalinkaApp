@@ -1,14 +1,10 @@
 package com.example.kalinka
 
 import android.content.Intent
-import android.os.SystemClock
-import androidx.annotation.RequiresApi
 import io.flutter.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
-import java.net.URL
-import kotlinx.coroutines.*
 
 data class PlaybackInfo(
     val playerStateType: PlayerStateType,
@@ -24,8 +20,11 @@ data class Metadata(
 )
 
 class MainActivity : FlutterActivity() {
-    private val LOGTAG = "MainActivity"
-    private val CHANNEL = "com.example.kalinka/notification_controls"
+    companion object {
+        private const val LOG = "MainActivity"
+        private const val CHANNEL = "com.example.kalinka/notification_controls"
+    }
+
     private lateinit var methodChannel: MethodChannel
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -72,7 +71,7 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun showNotificationControls(host: String, port: Int): Boolean {
-        Log.i(LOGTAG, "showNotificationControls called")
+        Log.d(LOG, "showNotificationControls called")
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             val intent = Intent(this, KalinkaMusicService::class.java)
             intent.putExtra("host", host)
@@ -86,9 +85,9 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun hideNotificationControls(): Boolean {
-        Log.i(LOGTAG, "hideNotificationControls called")
+        Log.d(LOG, "hideNotificationControls called")
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            var intent = Intent(this, KalinkaMusicService::class.java)
+            val intent = Intent(this, KalinkaMusicService::class.java)
             stopService(intent)
         }
         return true

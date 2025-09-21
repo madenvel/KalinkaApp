@@ -1,23 +1,28 @@
 package com.example.kalinka
 
 import io.flutter.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.URL
+import kotlin.coroutines.cancellation.CancellationException
 
 interface EventCallback {
     fun onStateChanged(newState: PlayerState)
     fun onDisconnected()
 }
 
-class EventListener(private val baseUrl: String, private val eventCallback: EventCallback?) :
-    Thread() {
-    private val LOGTAG = "EventListener"
+class EventListener(private val baseUrl: String, private val eventCallback: EventCallback?) {
 
-    override fun run() {
+    companion object {
+        private const val LOG = "EventListener"
+    }
+
+    suspend fun runOnce() {
         try {
-            while (!isInterrupted) {
+            withContext(Dispatchers.IO) {
                 val url = URL(baseUrl).toURI().resolve("/queue/events").toURL()
                 val connection = url.openConnection()
                 val inputStream = connection.getInputStream()
@@ -34,15 +39,18 @@ class EventListener(private val baseUrl: String, private val eventCallback: Even
                             eventCallback?.onStateChanged(state)
                         }
                     } catch (e: Exception) {
-                        Log.w(LOGTAG, "Error parsing JSON: $e, $line", e)
+                        Log.w(LOG, "Error parsing JSON: $e, $line", e)
                     }
                 }
                 reader.close()
             }
+        } catch (ce: CancellationException) {
+            // normal shutdown
         } catch (e: Exception) {
-            Log.w(LOGTAG, "Error: $e")
+            Log.w(LOG, "Stream ended with error: $e")
+        } finally {
             eventCallback?.onDisconnected()
         }
-        Log.i(LOGTAG, "Thread interrupted")
+        Log.d(LOG, "Thread interrupted")
     }
 }

@@ -1,17 +1,18 @@
 package com.example.kalinka
 
-import kotlinx.serialization.ExperimentalSerializationApi
+
+import android.annotation.SuppressLint
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class PlayerState(
     val state: PlayerStateType,
     @SerialName("current_track") val currentTrack: Track? = null,
     val index: Int,
-    /** Playback position in milliseconds */
-    val position: Long,
+    val position: Long, // position in milliseconds
     @SerialName("audio_info") val audioInfo: AudioInfo? = null,
     @SerialName("mime_type") val mimeType: String? = null,
     val timestamp: Long? = null
@@ -26,34 +27,36 @@ enum class PlayerStateType {
     @SerialName("ERROR") ERROR,
     @SerialName("SKIP_TO_NEXT") SKIP_TO_NEXT,
     @SerialName("SKIP_TO_PREV") SKIP_TO_PREV,
-    @SerialName("SEEK_IN_PROGRESS") SEEK_IN_PROGRESS
     // If the server may send other states, consider making this a String instead.
 }
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class Track(
     val id: String,
     val title: String,
-    /** Track duration in seconds (if present) */
     val duration: Int? = null,
     val performer: Artist? = null,
     val album: Album? = null
 )
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class Artist(
     val id: String,
     val name: String
 )
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class Album(
     val id: String,
     val title: String,
     val artist: Artist? = null,
-    val image: AlbumImage? = null   // <-- new optional field
+    val image: AlbumImage? = null
 )
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class AlbumImage(
     val small: String? = null,
@@ -61,6 +64,7 @@ data class AlbumImage(
     val large: String? = null
 )
 
+@SuppressLint("UnsafeOptInUsageError")
 @Serializable
 data class AudioInfo(
     @SerialName("sample_rate") val sampleRate: Int,
@@ -70,12 +74,11 @@ data class AudioInfo(
 )
 
 object PlayerJson {
-    @OptIn(ExperimentalSerializationApi::class)
     private val json = Json {
         ignoreUnknownKeys = true   // forwards/backwards compat
         explicitNulls = false
     }
 
     fun parse(input: String): PlayerState =
-        json.decodeFromString(input)
+        json.decodeFromString<PlayerState>(input)
 }
