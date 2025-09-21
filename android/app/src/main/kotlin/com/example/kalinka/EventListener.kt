@@ -36,7 +36,9 @@ class EventListener(private val baseUrl: String, private val eventCallback: Even
                             val argsArray = jsonObject.getJSONArray("args")
                             val stateJsonString = argsArray.getJSONObject(0).toString()
                             val state = PlayerJson.parse(stateJsonString)
-                            eventCallback?.onStateChanged(state)
+                            withContext(Dispatchers.Main) {
+                                eventCallback?.onStateChanged(state)
+                            }
                         }
                     } catch (e: Exception) {
                         Log.w(LOG, "Error parsing JSON: $e, $line", e)

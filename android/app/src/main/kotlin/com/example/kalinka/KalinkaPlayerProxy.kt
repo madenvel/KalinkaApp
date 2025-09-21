@@ -22,7 +22,10 @@ data class Response(
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable
-data class SeekResponse(var message: String? = null, var positionMs: Long? = null)
+data class SeekResponse(
+    val message: String? = null,
+    @SerialName("position_ms") val positionMs: Long? = null
+)
 
 @SuppressLint("UnsafeOptInUsageError")
 @Serializable

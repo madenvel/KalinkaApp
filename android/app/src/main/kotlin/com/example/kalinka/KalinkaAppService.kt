@@ -28,6 +28,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.URL
 
 
@@ -154,19 +155,16 @@ class KalinkaMusicService : Service(), EventCallback {
         kalinkaPlayerProxy.getDeviceVolume { deviceVolume ->
             if (deviceVolume.supported) {
                 val volumeProvider = object : VolumeProvider(
-                    VOLUME_CONTROL_ABSOLUTE, // or RELATIVE
+                    VOLUME_CONTROL_ABSOLUTE,
                     /* max */ deviceVolume.maxVolume,
                     /* current */ deviceVolume.currentVolume
                 ) {
                     override fun onSetVolumeTo(volume: Int) {
                         kalinkaPlayerProxy.setDeviceVolume(volume) {}
                         currentVolume = volume
-                        Log.d(TAG, "onSetVolumeTo called, volume=$volume")
                     }
 
                     override fun onAdjustVolume(direction: Int) {
-                        Log.d(TAG, "onAdjustVolume called, direction=$direction")
-                        // -1 down, 0 same, +1 up
                         val newVol = (currentVolume + direction).coerceIn(0, maxVolume)
                         onSetVolumeTo(newVol)
                     }
@@ -207,7 +205,7 @@ class KalinkaMusicService : Service(), EventCallback {
     }
 
 
-    @WorkerThread
+    @MainThread
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onStateChanged(newState: PlayerState) {
         Log.d(TAG, "onStateChanged called, $newState")
@@ -231,14 +229,7 @@ class KalinkaMusicService : Service(), EventCallback {
         val progressMs = when {
             // If seek is in progress, use the stored seek position
             isSeekInProgress -> lastSeekPosition
-            // For states that have valid position data (PLAYING, PAUSED, BUFFERING)
-            newState.state in listOf(
-                PlayerStateType.PLAYING,
-                PlayerStateType.PAUSED,
-                PlayerStateType.BUFFERING
-            ) -> newState.position
-            // For other states (SKIP_TO_NEXT, SKIP_TO_PREV, etc.), maintain current position from media session
-            else -> mediaSession.controller.playbackState?.position ?: 0L
+            else -> newState.position
         }
 
         val playbackInfo = PlaybackInfo(
@@ -246,10 +237,8 @@ class KalinkaMusicService : Service(), EventCallback {
             progressMs
         )
 
-        scope.launch(Dispatchers.Main) {
-            updatePlaybackState(playbackInfo)
-            updateNotification()
-        }
+        updatePlaybackState(playbackInfo)
+        updateNotification()
     }
 
     override fun onDisconnected() {
@@ -314,7 +303,7 @@ class KalinkaMusicService : Service(), EventCallback {
         }
     }
 
-    @WorkerThread
+    @MainThread
     private fun updateMetadata(metadata: Metadata) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             return
@@ -324,14 +313,14 @@ class KalinkaMusicService : Service(), EventCallback {
             metadata.albumArtworkUri?.let { artCache.get(it.hashCode().toString()) }
 
 
-        scope.launch(Dispatchers.Main) {
-            mediaSession.setMetadata(buildMetaData(metadata, cachedImage ?: defaultImage))
-        }
+        mediaSession.setMetadata(buildMetaData(metadata, cachedImage ?: defaultImage))
 
         metadata.albumArtworkUri?.let {
-            loadAlbumArt(it)?.also { bitmap ->
-                scope.launch(Dispatchers.Main) {
-                    mediaSession.setMetadata(buildMetaData(metadata, bitmap))
+            scope.launch {
+                loadAlbumArt(it)?.also { bitmap ->
+                    withContext(Dispatchers.Main) {
+                        mediaSession.setMetadata(buildMetaData(metadata, bitmap))
+                    }
                 }
             }
         }
@@ -358,9 +347,9 @@ class KalinkaMusicService : Service(), EventCallback {
     }
 
     @WorkerThread
-    private fun loadAlbumArt(
+    private suspend fun loadAlbumArt(
         uri: String,
-    ): Bitmap? {
+    ): Bitmap? = withContext(Dispatchers.IO) {
         val key = uri.hashCode().toString()
         val url = URL(urlResolver.abs(uri))
         try {
@@ -369,11 +358,11 @@ class KalinkaMusicService : Service(), EventCallback {
 
             val bmp = BitmapFactory.decodeStream(connection.inputStream)
             if (bmp != null) artCache.put(key, bmp)
-            return bmp ?: defaultImage
+            return@withContext bmp ?: defaultImage
         } catch (e: Exception) {
             Log.w(TAG, "Error loading album art from $uri: $e")
         }
-        return null
+        return@withContext null
     }
 
 }
