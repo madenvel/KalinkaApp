@@ -27,10 +27,4 @@ class UrlResolver(private val base: String) {
 
         return "$b$p"
     }
-
-    /**
-     * Returns the base URL as a stable key.
-     */
-    val baseKey: String
-        get() = base
 }

@@ -6,40 +6,60 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadata
 import android.media.Rating
+import android.media.VolumeProvider
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
+import android.util.LruCache
+import androidx.annotation.AnyThread
+import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
+import androidx.annotation.WorkerThread
 import io.flutter.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import java.net.URL
-
-
 
 
 class KalinkaMusicService : Service(), EventCallback {
 
-    private val LOGTAG: String = "KalinkaMusicService"
-    private val NOTIFICATION_CHANNEL_ID = "KalinkaMusicNotificationChannel"
-    private val NOTIFICATION: Int = 1001
+    companion object {
+        private const val TAG: String = "KalinkaMusicService"
+        private const val NOTIFICATION_CHANNEL_ID = "KalinkaApp Playback Controls"
+        private const val NOTIFICATION: Int = 1001
+    }
 
     private lateinit var mNM: NotificationManager
     private lateinit var eventListener: EventListener
     private lateinit var kalinkaPlayerProxy: KalinkaPlayerProxy
     private lateinit var urlResolver: UrlResolver
 
-    private var mediaSession: MediaSession? = null
+    private lateinit var mediaSession: MediaSession
     private var isRunning = false
-    private var isSeekInProgress = false;
+    private var isSeekInProgress = false
+    private var lastSeekPosition: Long = 0L
+
+    private val scope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
+
+    private val defaultImage: Bitmap by lazy {
+        BitmapFactory.decodeResource(resources, R.mipmap.redberry_icon)
+    }
+
+    private val artCache = object : LruCache<String, Bitmap>(20) {}
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate() {
-        Log.i(LOGTAG, "onCreate called")
+        Log.d(TAG, "onCreate called")
         mNM = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         mNM.createNotificationChannel(
             NotificationChannel(
@@ -48,83 +68,119 @@ class KalinkaMusicService : Service(), EventCallback {
                 NotificationManager.IMPORTANCE_LOW
             )
         )
-        Log.i(LOGTAG, "Notification channel created")
+        mediaSession = MediaSession(this, "KalinkaMusicMediaSession")
+        Log.d(TAG, "Notification channel created")
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         if (isRunning) {
             return START_NOT_STICKY
         }
         isRunning = true
-        Log.i(LOGTAG, "Received start id $startId: $intent")
+        Log.d(TAG, "Received start id $startId: $intent")
         setupMediaSession()
-        startForeground(NOTIFICATION, createNotification())
+        startForeground(
+            NOTIFICATION,
+            createNotification(),
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+        )
         val host = intent.getStringExtra("host") ?: ""
         val port = intent.getIntExtra("port", 0)
         val baseUrl = "http://$host:$port"
         urlResolver = UrlResolver(baseUrl)
-        eventListener = EventListener(baseUrl, this);
+        eventListener = EventListener(baseUrl, this)
         kalinkaPlayerProxy = KalinkaPlayerProxy(baseUrl, onError = {
             this.onDisconnected()
         })
-        eventListener.start()
+        setupOutputDevice()
+        scope.launch { eventListener.runOnce() }
         return START_NOT_STICKY
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
     private fun setupMediaSession() {
-        Log.i(LOGTAG, "setupMediaSession called")
-        mediaSession = MediaSession(this, "KalinkaMusicMediaSession")
-        mediaSession!!.setCallback(object : MediaSession.Callback() {
-            override fun onPlay() {
-                Log.i(LOGTAG, "onPlay called")
-                if (mediaSession!!.controller.playbackState?.state == PlaybackState.STATE_PAUSED) {
-                    kalinkaPlayerProxy.pause(false) {}
-                    return
-                }
-                kalinkaPlayerProxy.play {}
-            }
+        Log.d(TAG, "setupMediaSession called")
 
-            override fun onPause() {
-                Log.i(LOGTAG, "onPause called")
-                kalinkaPlayerProxy.pause(true) {}
-            }
-
-            override fun onSkipToNext() {
-                Log.i(LOGTAG, "onSkipToNext called")
-                kalinkaPlayerProxy.skipToNext {}
-                updatePlaybackState(PlaybackInfo(PlayerStateType.SKIP_TO_NEXT, 0))
-            }
-
-            override fun onSkipToPrevious() {
-                Log.i(LOGTAG, "onSkipToPrevious called")
-                kalinkaPlayerProxy.skipToPrev {}
-                updatePlaybackState(PlaybackInfo(PlayerStateType.SKIP_TO_PREV, 0))
-            }
-
-            override fun onSeekTo(pos: Long) {
-                Log.i(LOGTAG, "onSeekTo called")
-                isSeekInProgress = true
-                kalinkaPlayerProxy.seekTo(pos) { response ->
-                    if (response.positionMs != null && response.positionMs!! > 0) {
-                        updatePlaybackState(PlaybackInfo(PlayerStateType.SEEK_IN_PROGRESS, pos))
+        mediaSession.apply {
+            setCallback(object : MediaSession.Callback() {
+                override fun onPlay() {
+                    Log.d(TAG, "onPlay called")
+                    if (controller.playbackState?.state == PlaybackState.STATE_PAUSED) {
+                        kalinkaPlayerProxy.pause(false) {}
+                        return
                     }
-                    else {
-                        isSeekInProgress = false
+                    kalinkaPlayerProxy.play {}
+                }
+
+                override fun onPause() {
+                    Log.d(TAG, "onPause called")
+                    kalinkaPlayerProxy.pause(true) {}
+                }
+
+                override fun onSkipToNext() {
+                    Log.d(TAG, "onSkipToNext called")
+                    updatePlaybackState(PlaybackInfo(PlayerStateType.SKIP_TO_NEXT, 0))
+                    kalinkaPlayerProxy.skipToNext {}
+                }
+
+                override fun onSkipToPrevious() {
+                    Log.d(TAG, "onSkipToPrevious called")
+                    updatePlaybackState(PlaybackInfo(PlayerStateType.SKIP_TO_PREV, 0))
+                    kalinkaPlayerProxy.skipToPrev {}
+                }
+
+                override fun onSeekTo(pos: Long) {
+                    Log.d(TAG, "onSeekTo called, pos=$pos")
+                    if (isSeekInProgress) {
+                        Log.d(TAG, "Seek already in progress, ignoring new seek request")
+                        return
+                    }
+                    isSeekInProgress = true
+                    lastSeekPosition = pos
+                    updatePlaybackState(PlaybackInfo(PlayerStateType.BUFFERING, pos))
+                    kalinkaPlayerProxy.seekTo(pos) { response ->
+                        if (response.positionMs == null) {
+                            isSeekInProgress = false
+                        }
                     }
                 }
+            })
+            setRatingType(Rating.RATING_HEART)
+        }
+        Log.d(TAG, "setupMediaSession complete")
+    }
+
+    private fun setupOutputDevice() {
+        kalinkaPlayerProxy.getDeviceVolume { deviceVolume ->
+            if (deviceVolume.supported) {
+                val volumeProvider = object : VolumeProvider(
+                    VOLUME_CONTROL_ABSOLUTE, // or RELATIVE
+                    /* max */ deviceVolume.maxVolume,
+                    /* current */ deviceVolume.currentVolume
+                ) {
+                    override fun onSetVolumeTo(volume: Int) {
+                        kalinkaPlayerProxy.setDeviceVolume(volume) {}
+                        currentVolume = volume
+                        Log.d(TAG, "onSetVolumeTo called, volume=$volume")
+                    }
+
+                    override fun onAdjustVolume(direction: Int) {
+                        Log.d(TAG, "onAdjustVolume called, direction=$direction")
+                        // -1 down, 0 same, +1 up
+                        val newVol = (currentVolume + direction).coerceIn(0, maxVolume)
+                        onSetVolumeTo(newVol)
+                    }
+                }
+                mediaSession.setPlaybackToRemote(volumeProvider)
             }
-        })
-        mediaSession!!.setRatingType(Rating.RATING_HEART)
-        Log.i(LOGTAG, "setupMediaSession complete")
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotification(): Notification {
         val mediaStyle =
             Notification.MediaStyle()
-                .setMediaSession(mediaSession!!.sessionToken)
+                .setMediaSession(mediaSession.sessionToken)
 
         val notificationIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
@@ -140,10 +196,10 @@ class KalinkaMusicService : Service(), EventCallback {
     }
 
 
-    @RequiresApi(Build.VERSION_CODES.N)
     override fun onDestroy() {
-        eventListener.interrupt()
-        mediaSession?.release()
+        scope.cancel()
+        mediaSession.isActive = false
+        mediaSession.release()
     }
 
     override fun onBind(p0: Intent?): IBinder? {
@@ -151,17 +207,13 @@ class KalinkaMusicService : Service(), EventCallback {
     }
 
 
+    @WorkerThread
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onStateChanged(newState: PlayerState) {
-        onStateChangedImpl(newState, false)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun onStateChangedImpl(newState: PlayerState, doNotRemoveNotification: Boolean) {
-        Log.i(LOGTAG, "onStateChanged called, $newState")
+        Log.d(TAG, "onStateChanged called, $newState")
         newState.currentTrack?.let {
             val metadata = Metadata(
-                it.duration!!.toLong() * 1000L,
+                (it.duration?.toLong() ?: 0) * 1000L,
                 it.album?.image?.let { image -> image.large ?: image.thumbnail ?: image.small },
                 it.title,
                 it.performer?.name ?: "Unknown Artist",
@@ -170,43 +222,60 @@ class KalinkaMusicService : Service(), EventCallback {
             updateMetadata(metadata)
         }
 
+        // Clear seek in progress when we receive PLAYING state
         if (newState.state == PlayerStateType.PLAYING) {
             isSeekInProgress = false
         }
-        val progressMs =
-            if (!isSeekInProgress) newState.position else mediaSession!!.controller.playbackState?.position
-                ?: 0L
+
+        // Calculate progress position to prevent thumb jumping during seeks
+        val progressMs = when {
+            // If seek is in progress, use the stored seek position
+            isSeekInProgress -> lastSeekPosition
+            // For states that have valid position data (PLAYING, PAUSED, BUFFERING)
+            newState.state in listOf(
+                PlayerStateType.PLAYING,
+                PlayerStateType.PAUSED,
+                PlayerStateType.BUFFERING
+            ) -> newState.position
+            // For other states (SKIP_TO_NEXT, SKIP_TO_PREV, etc.), maintain current position from media session
+            else -> mediaSession.controller.playbackState?.position ?: 0L
+        }
+
         val playbackInfo = PlaybackInfo(
             newState.state,
             progressMs
         )
-        updatePlaybackState(playbackInfo)
-        updateNotification(doNotRemoveNotification)
+
+        scope.launch(Dispatchers.Main) {
+            updatePlaybackState(playbackInfo)
+            updateNotification()
+        }
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
     override fun onDisconnected() {
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
-        mediaSession!!.release()
-        mediaSession = null
+        scope.launch(Dispatchers.Main) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
     }
 
+    @MainThread
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun updateNotification(firstStart: Boolean) {
-        Log.i(
-            LOGTAG,
-            "updateNotification called, ${mediaSession!!.controller.playbackState}, ${
-                mediaSession!!.controller.metadata?.getString(
-                    MediaMetadata.METADATA_KEY_TITLE
-                )
-            }"
-        )
+    private fun updateNotification() {
+        mediaSession.apply {
+            Log.d(
+                TAG,
+                "updateNotification called, ${controller.playbackState}, ${
+                    controller.metadata?.getString(
+                        MediaMetadata.METADATA_KEY_TITLE
+                    )
+                }"
+            )
 
-        mNM.notify(NOTIFICATION, createNotification())
+            mNM.notify(NOTIFICATION, createNotification())
+        }
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun convertToPlaybackState(playerStateType: PlayerStateType): Int {
         return when (playerStateType) {
             PlayerStateType.PLAYING -> PlaybackState.STATE_PLAYING
@@ -216,78 +285,95 @@ class KalinkaMusicService : Service(), EventCallback {
             PlayerStateType.STOPPED -> PlaybackState.STATE_STOPPED
             PlayerStateType.SKIP_TO_NEXT -> PlaybackState.STATE_SKIPPING_TO_NEXT
             PlayerStateType.SKIP_TO_PREV -> PlaybackState.STATE_SKIPPING_TO_PREVIOUS
-            PlayerStateType.SEEK_IN_PROGRESS -> PlaybackState.STATE_REWINDING
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    @MainThread
     private fun updatePlaybackState(info: PlaybackInfo) {
-        Log.i(LOGTAG, "updatePlaybackState called, $info")
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            return
-        }
+        Log.d(TAG, "updatePlaybackState called, $info")
         val state = convertToPlaybackState(info.playerStateType)
-        mediaSession!!.isActive = state != PlaybackState.STATE_STOPPED
-        val playbackState =
-            PlaybackState.Builder()
-                .setState(
-                    state,
-                    info.progressMs,
-                    1.0f,
-                    SystemClock.elapsedRealtime()
-                )
-                .setActions(
-                    PlaybackState.ACTION_PLAY_PAUSE or
-                            PlaybackState.ACTION_SKIP_TO_NEXT or
-                            PlaybackState.ACTION_SKIP_TO_PREVIOUS or
-                            PlaybackState.ACTION_SET_RATING or
-                            PlaybackState.ACTION_SEEK_TO
-                )
-                .build()
-        mediaSession!!.setPlaybackState(playbackState)
+        mediaSession.apply {
+            isActive = state != PlaybackState.STATE_STOPPED
+            val playbackState =
+                PlaybackState.Builder()
+                    .setState(
+                        state,
+                        info.progressMs,
+                        1.0f,
+                        SystemClock.elapsedRealtime()
+                    )
+                    .setActions(
+                        PlaybackState.ACTION_PLAY_PAUSE or
+                                PlaybackState.ACTION_SKIP_TO_NEXT or
+                                PlaybackState.ACTION_SKIP_TO_PREVIOUS or
+                                PlaybackState.ACTION_SET_RATING or
+                                PlaybackState.ACTION_SEEK_TO
+                    )
+                    .build()
+            setPlaybackState(playbackState)
+        }
     }
 
+    @WorkerThread
     private fun updateMetadata(metadata: Metadata) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             return
         }
 
-        Log.i(LOGTAG, "updateMetadata called, $metadata")
-        val bitmap: Bitmap = try {
-            metadata.albumArtworkUri?.let { loadBitmap(it) } ?: BitmapFactory.decodeResource(
-                resources,
-                R.mipmap.redberry_icon
-            )
-        } catch (e: Exception) {
-            Log.e(LOGTAG, "Failed to load album artwork", e)
-            BitmapFactory.decodeResource(resources, R.mipmap.redberry_icon)
+        val cachedImage =
+            metadata.albumArtworkUri?.let { artCache.get(it.hashCode().toString()) }
+
+
+        scope.launch(Dispatchers.Main) {
+            mediaSession.setMetadata(buildMetaData(metadata, cachedImage ?: defaultImage))
         }
-        Log.i(LOGTAG, "Finished loading bitmap")
-        mediaSession!!.setMetadata(
-            MediaMetadata.Builder()
-                .putString(MediaMetadata.METADATA_KEY_TITLE, metadata.title)
-                .putString(MediaMetadata.METADATA_KEY_ARTIST, metadata.artist)
-                .putString(MediaMetadata.METADATA_KEY_ALBUM, metadata.album)
-                .putRating(
-                    MediaMetadata.METADATA_KEY_USER_RATING,
-                    Rating.newHeartRating(false)
-                )
-                .putLong(MediaMetadata.METADATA_KEY_DURATION, metadata.durationMs)
-                .putBitmap(
-                    MediaMetadata.METADATA_KEY_ALBUM_ART,
-                    bitmap
-                )
-                .build()
-        )
-        Log.i(LOGTAG, "finished setting metadata")
+
+        metadata.albumArtworkUri?.let {
+            loadAlbumArt(it)?.also { bitmap ->
+                scope.launch(Dispatchers.Main) {
+                    mediaSession.setMetadata(buildMetaData(metadata, bitmap))
+                }
+            }
+        }
+
+        Log.d(TAG, "finished setting metadata")
     }
 
-    private fun loadBitmap(uri: String): Bitmap {
+    @AnyThread
+    private fun buildMetaData(metadata: Metadata, bitmap: Bitmap): MediaMetadata {
+        return MediaMetadata.Builder()
+            .putString(MediaMetadata.METADATA_KEY_TITLE, metadata.title)
+            .putString(MediaMetadata.METADATA_KEY_ARTIST, metadata.artist)
+            .putString(MediaMetadata.METADATA_KEY_ALBUM, metadata.album)
+            .putRating(
+                MediaMetadata.METADATA_KEY_USER_RATING,
+                Rating.newHeartRating(false)
+            )
+            .putLong(MediaMetadata.METADATA_KEY_DURATION, metadata.durationMs)
+            .putBitmap(
+                MediaMetadata.METADATA_KEY_ALBUM_ART,
+                bitmap
+            )
+            .build()
+    }
+
+    @WorkerThread
+    private fun loadAlbumArt(
+        uri: String,
+    ): Bitmap? {
+        val key = uri.hashCode().toString()
         val url = URL(urlResolver.abs(uri))
-        val connection = url.openConnection()
-        connection.connect()
-        val input = connection.inputStream
-        return BitmapFactory.decodeStream(input)
+        try {
+            val connection = url.openConnection()
+            connection.connect()
+
+            val bmp = BitmapFactory.decodeStream(connection.inputStream)
+            if (bmp != null) artCache.put(key, bmp)
+            return bmp ?: defaultImage
+        } catch (e: Exception) {
+            Log.w(TAG, "Error loading album art from $uri: $e")
+        }
+        return null
     }
 
 }
