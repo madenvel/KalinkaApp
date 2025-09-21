@@ -257,10 +257,8 @@ class KalinkaPlayerProxyImpl implements KalinkaPlayerProxy {
 
   @override
   Future<void> setVolume(int volume) async {
-    return client.put('/device/set_volume', queryParameters: {
-      'device_id': 'musiccast',
-      'volume': volume.toString()
-    }).then((response) {
+    return client.put('/device/set_volume',
+        queryParameters: {'volume': volume.toString()}).then((response) {
       if (response.statusCode != 200) {
         throw Exception(
             'Failed to set volume to $volume, url=${response.realUri}');
