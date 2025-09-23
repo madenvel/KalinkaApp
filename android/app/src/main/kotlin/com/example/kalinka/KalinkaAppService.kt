@@ -11,7 +11,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadata
 import android.media.Rating
-import android.media.VolumeProvider
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.Build
@@ -46,6 +45,7 @@ class KalinkaMusicService : Service(), EventCallback {
     private lateinit var urlResolver: UrlResolver
 
     private lateinit var mediaSession: MediaSession
+    private lateinit var volumeProvider: RemoteVolumeProvider
     private var isRunning = false
     private var isSeekInProgress = false
     private var lastSeekPosition: Long = 0L
@@ -154,21 +154,23 @@ class KalinkaMusicService : Service(), EventCallback {
     private fun setupOutputDevice() {
         kalinkaPlayerProxy.getDeviceVolume { deviceVolume ->
             if (deviceVolume.supported) {
-                val volumeProvider = object : VolumeProvider(
-                    VOLUME_CONTROL_ABSOLUTE,
-                    /* max */ deviceVolume.maxVolume,
-                    /* current */ deviceVolume.currentVolume
-                ) {
-                    override fun onSetVolumeTo(volume: Int) {
-                        kalinkaPlayerProxy.setDeviceVolume(volume) {}
-                        currentVolume = volume
+                val throttler = Throttler(5.0)
+                volumeProvider = RemoteVolumeProvider(
+                    deviceVolume.maxVolume, deviceVolume.currentVolume,
+                    onLocalSet = { vol ->
+                        // Send volume to server (throttled)
+                        throttler.executeWithThrottle {
+                            kalinkaPlayerProxy.setDeviceVolume(vol) {}
+                        }
+                    },
+                    onInteractionStart = {
+                        eventListener.volumeInteractionStart()
+                    },
+                    onInteractionEnd = {
+                        eventListener.volumeInteractionEnd()
+                        throttler.flush()
                     }
-
-                    override fun onAdjustVolume(direction: Int) {
-                        val newVol = (currentVolume + direction).coerceIn(0, maxVolume)
-                        onSetVolumeTo(newVol)
-                    }
-                }
+                )
                 mediaSession.setPlaybackToRemote(volumeProvider)
             }
         }
@@ -241,11 +243,14 @@ class KalinkaMusicService : Service(), EventCallback {
         updateNotification()
     }
 
+    override fun onVolumeChanged(volume: Int) {
+        volumeProvider.currentVolume = volume
+    }
+
+    @MainThread
     override fun onDisconnected() {
-        scope.launch(Dispatchers.Main) {
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
-        }
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
     }
 
     @MainThread

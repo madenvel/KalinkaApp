@@ -1,5 +1,6 @@
 package com.example.kalinka
 
+import androidx.annotation.MainThread
 import io.flutter.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -7,10 +8,12 @@ import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.URL
+import kotlin.concurrent.Volatile
 import kotlin.coroutines.cancellation.CancellationException
 
 interface EventCallback {
     fun onStateChanged(newState: PlayerState)
+    fun onVolumeChanged(volume: Int)
     fun onDisconnected()
 }
 
@@ -18,6 +21,26 @@ class EventListener(private val baseUrl: String, private val eventCallback: Even
 
     companion object {
         private const val LOG = "EventListener"
+    }
+
+    @Volatile
+    private var cachedVolume = -1
+
+    @Volatile
+    var inVolumeInteraction = false
+
+    @MainThread
+    fun volumeInteractionStart() {
+        inVolumeInteraction = true
+    }
+
+    @MainThread
+    fun volumeInteractionEnd() {
+        inVolumeInteraction = false
+        // Reconcile volume with cached server value
+        if (cachedVolume >= 0) {
+            eventCallback?.onVolumeChanged(cachedVolume)
+        }
     }
 
     suspend fun runOnce() {
@@ -32,12 +55,23 @@ class EventListener(private val baseUrl: String, private val eventCallback: Even
                     try {
                         val jsonObject = JSONObject(line)
                         val eventType = jsonObject.getString("event_type")
-                        if (eventType == "state_changed" || eventType == "state_replay") {
-                            val argsArray = jsonObject.getJSONArray("args")
-                            val stateJsonString = argsArray.getJSONObject(0).toString()
-                            val state = PlayerJson.parse(stateJsonString)
-                            withContext(Dispatchers.Main) {
-                                eventCallback?.onStateChanged(state)
+                        when (eventType) {
+                            "state_changed", "state_replay" -> {
+                                val argsArray = jsonObject.getJSONArray("args")
+                                val stateJsonString = argsArray.getJSONObject(0).toString()
+                                val state = PlayerJson.parse(stateJsonString)
+                                withContext(Dispatchers.Main) {
+                                    eventCallback?.onStateChanged(state)
+                                }
+                            }
+
+                            "volume_changed" -> {
+                                cachedVolume = jsonObject.getJSONArray("args").getInt(0)
+                                if (!inVolumeInteraction) {
+                                    withContext(Dispatchers.Main) {
+                                        eventCallback?.onVolumeChanged(cachedVolume)
+                                    }
+                                }
                             }
                         }
                     } catch (e: Exception) {
