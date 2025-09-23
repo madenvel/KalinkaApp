@@ -32,6 +32,7 @@ class EventListener(private val baseUrl: String, private val eventCallback: Even
     @MainThread
     fun volumeInteractionStart() {
         inVolumeInteraction = true
+        cachedVolume = -1 // reset cached volume
     }
 
     @MainThread
