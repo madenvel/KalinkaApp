@@ -21,7 +21,7 @@ data class Metadata(
 
 class MainActivity : FlutterActivity() {
     companion object {
-        private const val LOG = "MainActivity"
+        private const val TAG = "MainActivity"
         private const val CHANNEL = "com.example.kalinka/notification_controls"
     }
 
@@ -71,7 +71,7 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun showNotificationControls(host: String, port: Int): Boolean {
-        Log.d(LOG, "showNotificationControls called")
+        Log.d(TAG, "showNotificationControls called")
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             val intent = Intent(this, KalinkaMusicService::class.java)
             intent.putExtra("host", host)
@@ -85,7 +85,7 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun hideNotificationControls(): Boolean {
-        Log.d(LOG, "hideNotificationControls called")
+        Log.d(TAG, "hideNotificationControls called")
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             val intent = Intent(this, KalinkaMusicService::class.java)
             stopService(intent)
