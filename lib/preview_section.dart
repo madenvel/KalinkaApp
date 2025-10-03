@@ -11,7 +11,7 @@ import 'package:kalinka/browse_item_tile_preview.dart'
     show BrowseItemTilePreview, BrowseItemTilePreviewPlaceholder;
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
 import 'package:kalinka/constants.dart' show KalinkaConstants;
-import 'package:kalinka/data_model.dart'
+import 'package:kalinka/data_model/data_model.dart'
     show BrowseItem, BrowseType, PreviewType;
 import 'package:kalinka/hero_tile.dart' show HeroTile, HeroTilePlaceholder;
 import 'package:kalinka/large_image_preview_card.dart';
@@ -31,8 +31,10 @@ class PreviewSection extends ConsumerWidget {
     this.seeMore = true,
     this.showSourceAttribution = false,
   }) {
-    assert(sourceDesc.sourceItem.browseType == BrowseType.catalog,
-        "PreviewSection can only be used with catalog BrowseItems.");
+    assert(
+      sourceDesc.sourceItem.browseType == BrowseType.catalog,
+      "PreviewSection can only be used with catalog BrowseItems.",
+    );
   }
 
   @override
@@ -45,7 +47,8 @@ class PreviewSection extends ConsumerWidget {
         return BrowseItemGridPreview(
           sourceDesc: sourceDesc,
           padding: const EdgeInsets.only(
-              bottom: KalinkaConstants.kContentVerticalPadding),
+            bottom: KalinkaConstants.kContentVerticalPadding,
+          ),
           onItemSelected: onItemSelected,
           onSeeAll: onSeeMore,
           seeAll: seeMore,
@@ -57,11 +60,12 @@ class PreviewSection extends ConsumerWidget {
         return BrowseItemTilePreview(
           sourceDesc: sourceDesc,
           padding: const EdgeInsets.only(
-              bottom: KalinkaConstants.kContentVerticalPadding),
+            bottom: KalinkaConstants.kContentVerticalPadding,
+          ),
           showImage: previewType == PreviewType.tile,
           onTap: (context, index, browseItem) =>
               _onListItemTapAction(context, ref, index, browseItem),
-          onAction: (_, __, BrowseItem item) =>
+          onAction: (_, _, BrowseItem item) =>
               _showItemMenu(context, parentContext, item),
           showSourceAttribution: showSourceAttribution,
         );
@@ -79,7 +83,11 @@ class PreviewSection extends ConsumerWidget {
   }
 
   void _onListItemTapAction(
-      BuildContext context, WidgetRef ref, int index, BrowseItem item) {
+    BuildContext context,
+    WidgetRef ref,
+    int index,
+    BrowseItem item,
+  ) {
     onItemSelected?.call(item);
     if (item.canBrowse) {
       Navigator.of(context).push(
@@ -93,7 +101,10 @@ class PreviewSection extends ConsumerWidget {
   }
 
   void _showItemMenu(
-      BuildContext context, BuildContext parentContext, BrowseItem item) {
+    BuildContext context,
+    BuildContext parentContext,
+    BrowseItem item,
+  ) {
     showModalBottomSheet(
       context: context, // Use the builder context
       showDragHandle: true,
@@ -140,7 +151,7 @@ class PreviewSectionPlaceholder extends StatelessWidget {
         return Column(
           children: [
             Container(width: double.infinity, height: 40, color: Colors.grey),
-            const SizedBox(height: 10)
+            const SizedBox(height: 10),
           ],
         );
     }

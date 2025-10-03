@@ -693,6 +693,13 @@ class TrackList {
         json["total"],
         List<Track>.from(json["items"].map((x) => Track.fromJson(x))),
       );
+
+  Map<String, dynamic> toJson() => {
+        "offset": offset,
+        "limit": limit,
+        "total": total,
+        "items": List<dynamic>.from(items.map((x) => x.toJson())),
+      };
 }
 
 enum EntityType { catalog, album, artist, playlist, track, label, genre, user }

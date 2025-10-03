@@ -7,7 +7,7 @@ import 'package:kalinka/providers/app_state_provider.dart'
 import 'package:kalinka/providers/url_resolver.dart' show urlResolverProvider;
 import 'package:kalinka/soundwave.dart';
 import 'custom_cache_manager.dart';
-import 'data_model.dart';
+import 'data_model/data_model.dart';
 
 class CustomListTile extends ConsumerWidget {
   final BrowseItem browseItem;

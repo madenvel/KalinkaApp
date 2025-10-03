@@ -11,7 +11,7 @@ import 'package:kalinka/source_attribution.dart';
 import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/providers/genre_filter_provider.dart';
 
-import 'data_model.dart';
+import 'data_model/data_model.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   final VoidCallback? onNavigateToSettings;

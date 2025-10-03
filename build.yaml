@@ -1,0 +1,13 @@
+targets:
+  $default:
+    builders:
+      freezed:
+        options:
+          # Generate snake_case field names in JSON
+          field_rename: snake
+      json_serializable:
+        options:
+          # Use snake_case for all JSON keys
+          field_rename: snake
+          # Ensure explicit toJson is generated
+          explicit_to_json: true

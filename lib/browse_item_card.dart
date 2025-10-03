@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/category_card.dart' show CategoryCard;
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/custom_cache_manager.dart';
-import 'package:kalinka/data_model.dart'
+import 'package:kalinka/data_model/data_model.dart'
     show
         BrowseItem,
         BrowseType,

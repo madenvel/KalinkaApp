@@ -14,7 +14,7 @@ import 'package:kalinka/shimmer.dart' show Shimmer;
 import 'package:kalinka/soundwave.dart';
 import 'package:kalinka/source_attribution.dart' show SourceAttribution;
 import 'package:kalinka/providers/url_resolver.dart';
-import 'data_model.dart';
+import 'data_model/data_model.dart';
 
 const double leadingIconSize = 40.0;
 

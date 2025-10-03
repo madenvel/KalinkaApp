@@ -4,7 +4,7 @@ import 'package:kalinka/constants.dart' show KalinkaConstants;
 import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/browse_item_list.dart'
     show BrowseItemList, BrowseItemListPlaceholder;
-import 'package:kalinka/data_model.dart' show BrowseItem;
+import 'package:kalinka/data_model/data_model.dart' show BrowseItem;
 import 'package:kalinka/shimmer.dart' show Shimmer;
 
 class BrowseItemTilePreview extends ConsumerWidget {

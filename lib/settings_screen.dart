@@ -11,7 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
         ProviderSubscription,
         WidgetRef;
 import 'package:kalinka/connection_settings_provider.dart';
-import 'package:kalinka/data_model.dart' show ModuleState;
+import 'package:kalinka/data_model/data_model.dart' show ModuleState;
 import 'package:kalinka/providers/connection_state_provider.dart';
 import 'package:kalinka/providers/settings_provider.dart';
 import 'package:kalinka/providers/modules_provider.dart';

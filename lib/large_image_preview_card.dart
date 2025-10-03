@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/custom_cache_manager.dart'
     show KalinkaMusicCacheManager;
-import 'package:kalinka/data_model.dart' show BrowseItem, CardSize;
+import 'package:kalinka/data_model/data_model.dart' show BrowseItem, CardSize;
 import 'package:kalinka/browse_item_view.dart';
 import 'package:kalinka/shimmer.dart' show Shimmer;
 import 'package:kalinka/providers/url_resolver.dart' show urlResolverProvider;

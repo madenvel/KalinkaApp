@@ -8,7 +8,7 @@ import 'package:kalinka/providers/user_favoriteids_provider.dart'
     show userFavoritesIdsProvider;
 import 'package:kalinka/providers/user_playlist_provider.dart';
 import 'package:kalinka/custom_list_tile.dart';
-import 'package:kalinka/data_model.dart';
+import 'package:kalinka/data_model/data_model.dart';
 
 class BottomMenu extends ConsumerWidget {
   final BrowseItem browseItem;

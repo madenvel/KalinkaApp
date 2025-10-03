@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show AsyncData, AsyncNotifier, AsyncNotifierProvider, AsyncValue;
-import 'package:kalinka/data_model.dart' show BrowseItem;
+import 'package:kalinka/data_model/data_model.dart' show BrowseItem;
 import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 import 'package:logger/logger.dart' show Logger;
 

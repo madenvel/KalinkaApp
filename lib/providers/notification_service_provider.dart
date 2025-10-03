@@ -7,12 +7,14 @@ import 'package:logger/logger.dart';
 
 class AudioPlayerService {
   final logger = Logger();
-  final MethodChannel _channel =
-      const MethodChannel('com.example.kalinka/notification_controls');
+  final MethodChannel _channel = const MethodChannel(
+    'com.example.kalinka/notification_controls',
+  );
 
   String host;
   int port;
   bool isShown = false;
+  bool notImplemented = false;
 
   AudioPlayerService(this.host, this.port);
 
@@ -22,7 +24,7 @@ class AudioPlayerService {
   }
 
   Future<void> showNotificationControls() async {
-    if (host.isEmpty || port == 0) {
+    if (host.isEmpty || port == 0 || notImplemented) {
       return;
     }
     isShown = true;
@@ -34,7 +36,9 @@ class AudioPlayerService {
             logger.e('Failed to show notification controls: ${e.message}');
           } else if (e is MissingPluginException) {
             logger.w(
-                'Notification controls are not implemented for this platform: ${e.message}');
+              'Notification controls are not implemented for this platform: ${e.message}',
+            );
+            notImplemented = true;
           } else {
             logger.e('An unexpected error occurred: $e');
           }
@@ -42,7 +46,7 @@ class AudioPlayerService {
   }
 
   Future<void> hideNotificationControls() async {
-    if (host.isEmpty || port == 0 || !isShown) {
+    if (notImplemented || host.isEmpty || port == 0 || !isShown) {
       return;
     }
     isShown = false;
@@ -51,7 +55,9 @@ class AudioPlayerService {
         logger.e('Failed to hide notification controls: ${e.message}');
       } else if (e is MissingPluginException) {
         logger.w(
-            'Notification controls are not implemented for this platform: ${e.message}');
+          'Notification controls are not implemented for this platform: ${e.message}',
+        );
+        notImplemented = true;
       } else {
         logger.e('An unexpected error occurred: $e');
       }
