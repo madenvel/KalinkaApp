@@ -16,7 +16,7 @@ import 'package:kalinka/playlist_creation_dialog.dart';
 import 'package:kalinka/bottom_menu.dart';
 import 'package:kalinka/browse_item_list.dart';
 
-import 'package:kalinka/data_model.dart';
+import 'package:kalinka/data_model/data_model.dart';
 import 'package:kalinka/shimmer.dart' show Shimmer;
 
 class SearchTypeProvider extends Notifier<SearchType> {

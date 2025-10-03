@@ -16,7 +16,7 @@ import 'package:kalinka/providers/url_resolver.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
 import 'custom_cache_manager.dart';
-import 'data_model.dart';
+import 'data_model/data_model.dart';
 
 class Playbar extends ConsumerStatefulWidget {
   const Playbar({super.key, this.onTap});

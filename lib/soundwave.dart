@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
 import 'package:kalinka/providers/app_state_provider.dart'
     show playerStateProvider;
 
-import 'data_model.dart';
+import 'data_model/data_model.dart';
 
 class SoundwaveWidget extends ConsumerStatefulWidget {
   const SoundwaveWidget({super.key});

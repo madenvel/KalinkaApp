@@ -2,7 +2,7 @@ import 'dart:async' show StreamController, StreamSubscription;
 import 'dart:convert' show jsonDecode, jsonEncode;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kalinka/data_model.dart'
+import 'package:kalinka/data_model/data_model.dart'
     show
         BrowseItem,
         BrowseItemsList,

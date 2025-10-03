@@ -13,7 +13,7 @@ import 'package:kalinka/polka_dot_painter.dart';
 import 'package:kalinka/preview_section.dart' show PreviewSection;
 import 'package:kalinka/shimmer.dart' show Shimmer;
 import 'package:kalinka/providers/url_resolver.dart';
-import 'data_model.dart';
+import 'data_model/data_model.dart';
 
 // --- Constants ---
 const double _kVerticalPaddingMedium = 16.0;
@@ -33,8 +33,10 @@ class BrowseItemView extends ConsumerStatefulWidget {
   final Function(BrowseItem)? onItemSelected;
 
   BrowseItemView({super.key, required this.browseItem, this.onItemSelected})
-      : assert(browseItem.artist != null || browseItem.canAdd,
-            "browseItem must have either artist or canAdd property");
+    : assert(
+        browseItem.artist != null || browseItem.canAdd,
+        "browseItem must have either artist or canAdd property",
+      );
 
   @override
   ConsumerState<BrowseItemView> createState() => _BrowseItemViewState();
@@ -98,7 +100,10 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
   }
 
   AppBar _buildAppBar(
-      BuildContext context, String title, BuildContext parentContext) {
+    BuildContext context,
+    String title,
+    BuildContext parentContext,
+  ) {
     return AppBar(
       title: _showAppBarTitle ? Text(title) : null,
       centerTitle: true,
@@ -119,7 +124,8 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
 
   Widget _buildBody(BuildContext context) {
     final browseItem = widget.browseItem;
-    final albumImage = browseItem.image?.large ??
+    final albumImage =
+        browseItem.image?.large ??
         browseItem.image?.small ??
         browseItem.image?.thumbnail;
 
@@ -167,7 +173,8 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
   Widget _buildHeader(BuildContext context, String? albumImage) {
     return Padding(
       padding: const EdgeInsets.only(
-          bottom: KalinkaConstants.kContentVerticalPadding),
+        bottom: KalinkaConstants.kContentVerticalPadding,
+      ),
       child: SizedBox(
         width: double.infinity,
         child: Stack(
@@ -190,8 +197,8 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
               CachedNetworkImage(
                 imageUrl: ref.read(urlResolverProvider).abs(albumImage!),
                 cacheManager: KalinkaMusicCacheManager.instance,
-                placeholder: (_, __) => _buildHeaderPlaceholder(context),
-                errorWidget: (_, __, ___) => _buildHeaderView(context, null),
+                placeholder: (_, _) => _buildHeaderPlaceholder(context),
+                errorWidget: (_, _, _) => _buildHeaderView(context, null),
                 imageBuilder: (_, imageProvider) =>
                     _buildHeaderView(context, imageProvider),
               )
@@ -208,9 +215,7 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
     final topPadding = MediaQuery.paddingOf(context).top + kToolbarHeight;
 
     return Padding(
-      padding: EdgeInsets.only(
-        top: topPadding,
-      ),
+      padding: EdgeInsets.only(top: topPadding),
       child: Column(
         mainAxisSize: MainAxisSize.min, // Take minimum vertical space
         children: [
@@ -220,9 +225,10 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
             _buildImagePlaceholder(context),
           Padding(
             padding: const EdgeInsets.only(
-                left: KalinkaConstants.kScreenContentHorizontalPadding,
-                right: KalinkaConstants.kScreenContentHorizontalPadding,
-                top: _kVerticalPaddingMedium),
+              left: KalinkaConstants.kScreenContentHorizontalPadding,
+              right: KalinkaConstants.kScreenContentHorizontalPadding,
+              top: _kVerticalPaddingMedium,
+            ),
             child: _buildCoverInfo(context),
           ),
           _buildButtonsBar(context),
@@ -238,8 +244,9 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
     final iconData = isArtist
         ? Icons.person
         : (widget.browseItem.album != null ? Icons.album : Icons.playlist_play);
-    final iconSize =
-        isArtist ? _kImageSize * 0.92 : _kIconSizeLarge; // Adjust icon size
+    final iconSize = isArtist
+        ? _kImageSize * 0.92
+        : _kIconSizeLarge; // Adjust icon size
 
     return Container(
       width: _kImageSize,
@@ -249,11 +256,7 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
         shape: isArtist ? BoxShape.circle : BoxShape.rectangle,
         borderRadius: isArtist ? null : BorderRadius.circular(_kBorderRadius),
       ),
-      child: Icon(
-        iconData,
-        size: iconSize,
-        color: colorScheme.onPrimary,
-      ),
+      child: Icon(iconData, size: iconSize, color: colorScheme.onPrimary),
     );
   }
 
@@ -403,7 +406,8 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
     final isArtist = widget.browseItem.artist != null;
     return ConstrainedBox(
       constraints: BoxConstraints(
-        maxWidth: MediaQuery.sizeOf(context).width -
+        maxWidth:
+            MediaQuery.sizeOf(context).width -
             (KalinkaConstants.kScreenContentHorizontalPadding * 2),
         maxHeight: _kImageSize,
       ),
@@ -417,10 +421,7 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
           : ClipRRect(
               key: _albumCoverKey,
               borderRadius: BorderRadius.circular(_kBorderRadius),
-              child: Image(
-                image: imageProvider,
-                fit: BoxFit.cover,
-              ),
+              child: Image(image: imageProvider, fit: BoxFit.cover),
             ),
     );
   }
@@ -434,9 +435,10 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
         Text(
           name,
           style: Theme.of(context).listTileTheme.titleTextStyle?.copyWith(
-              fontWeight: FontWeight.bold,
-              fontSize: _kFontSizeTitle,
-              overflow: TextOverflow.visible),
+            fontWeight: FontWeight.bold,
+            fontSize: _kFontSizeTitle,
+            overflow: TextOverflow.visible,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4.0),
@@ -444,8 +446,8 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
           Text(
             subname,
             style: Theme.of(context).listTileTheme.subtitleTextStyle?.copyWith(
-                  fontSize: _kFontSizeSubtitle,
-                ),
+              fontSize: _kFontSizeSubtitle,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
@@ -475,10 +477,9 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
       padding: const EdgeInsets.only(bottom: _kVerticalPaddingMedium),
       child: Text(
         '$durationString$trackCountString',
-        style: Theme.of(context)
-            .listTileTheme
-            .subtitleTextStyle
-            ?.copyWith(fontSize: _kFontSizeBody),
+        style: Theme.of(
+          context,
+        ).listTileTheme.subtitleTextStyle?.copyWith(fontSize: _kFontSizeBody),
         textAlign: TextAlign.center,
       ),
     );
@@ -505,18 +506,21 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
               icon: Icon(Icons.play_arrow, size: _kIconSizeMedium - 8),
               label: const Text(
                 'Play All',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               onPressed: () => BrowseItemActions.replaceAndPlay(
-                  context, ref, widget.browseItem, 0),
+                context,
+                ref,
+                widget.browseItem,
+                0,
+              ),
               style: FilledButton.styleFrom(
                 backgroundColor: colorScheme.secondary,
                 foregroundColor: colorScheme.surface,
-                fixedSize:
-                    const Size(double.infinity, KalinkaConstants.kButtonSize),
+                fixedSize: const Size(
+                  double.infinity,
+                  KalinkaConstants.kButtonSize,
+                ),
                 padding: const EdgeInsets.only(
                   left: 16.0,
                   right: 24.0,
@@ -528,22 +532,27 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
           const SizedBox(width: 12),
           if (!isArtist)
             ActionButton(
-                icon: Icons.queue_music,
-                onPressed: () => BrowseItemActions.addToQueueAction(
-                    context, ref, widget.browseItem),
-                tooltip: 'Add to queue'),
+              icon: Icons.queue_music,
+              onPressed: () => BrowseItemActions.addToQueueAction(
+                context,
+                ref,
+                widget.browseItem,
+              ),
+              tooltip: 'Add to queue',
+            ),
           if (!isArtist) const SizedBox(width: 12),
           if (!isArtist)
             ActionButton(
-                icon: Icons.playlist_add,
-                onPressed: () => BrowseItemActions.addToPlaylistAction(
-                    context, widget.browseItem),
-                tooltip: 'Add to playlist'),
+              icon: Icons.playlist_add,
+              onPressed: () => BrowseItemActions.addToPlaylistAction(
+                context,
+                widget.browseItem,
+              ),
+              tooltip: 'Add to playlist',
+            ),
           if (isTrack || isPlaylist || isAlbum) const Spacer(),
           if (isArtist || isTrack || isPlaylist || isAlbum)
-            FavoriteButton(
-              item: widget.browseItem,
-            ),
+            FavoriteButton(item: widget.browseItem),
         ],
       ),
     );
@@ -551,8 +560,11 @@ class _BrowseItemViewState extends ConsumerState<BrowseItemView> {
 
   // --- Actions ---
 
-  void _showItemMenu(BuildContext context, BuildContext parentContext,
-      {BrowseItem? item}) {
+  void _showItemMenu(
+    BuildContext context,
+    BuildContext parentContext, {
+    BrowseItem? item,
+  }) {
     showModalBottomSheet(
       context: context, // Use the builder context
       showDragHandle: true,

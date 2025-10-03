@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kalinka/data_model.dart'
+import 'package:kalinka/data_model/data_model.dart'
     show ModuleInfo, ModuleState, ModulesAndDevices;
 import 'package:kalinka/providers/connection_state_provider.dart';
 import 'package:kalinka/providers/kalinka_player_api_provider.dart'

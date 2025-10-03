@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
 import 'package:kalinka/browse_item_card.dart' show BrowseItemCard;
 import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/constants.dart';
-import 'package:kalinka/data_model.dart';
+import 'package:kalinka/data_model/data_model.dart';
 import 'package:kalinka/genre_filter_chips.dart';
 
 class CatalogBrowseItemView extends ConsumerWidget {

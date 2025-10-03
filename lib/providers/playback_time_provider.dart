@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kalinka/data_model.dart' show PlayerState, PlayerStateType;
+import 'package:kalinka/data_model/data_model.dart'
+    show PlayerState, PlayerStateType;
 import 'package:kalinka/providers/app_state_provider.dart'
     show playerStateProvider;
 import 'package:kalinka/providers/monotonic_clock_provider.dart'

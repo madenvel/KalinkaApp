@@ -5,7 +5,7 @@ import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/catalog_browse_item_view.dart'
     show CatalogBrowseItemView;
 import 'package:kalinka/constants.dart';
-import 'package:kalinka/data_model.dart' show BrowseItem, BrowseType;
+import 'package:kalinka/data_model/data_model.dart' show BrowseItem, BrowseType;
 import 'package:kalinka/large_image_preview_card.dart'
     show LargeImagePreviewCard;
 import 'package:kalinka/browse_item_grid.dart'

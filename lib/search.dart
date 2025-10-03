@@ -12,7 +12,7 @@ import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart'
 import 'package:kalinka/browse_item_list.dart' show BrowseItemList;
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
 import 'package:kalinka/constants.dart';
-import 'package:kalinka/data_model.dart'
+import 'package:kalinka/data_model/data_model.dart'
     show
         BrowseItem,
         Catalog,

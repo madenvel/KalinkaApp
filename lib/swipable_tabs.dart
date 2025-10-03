@@ -8,7 +8,7 @@ import 'package:kalinka/providers/connection_state_provider.dart';
 import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 import 'package:kalinka/polka_dot_painter.dart' show PolkaDotPainter;
 import 'package:kalinka/bottom_menu.dart';
-import 'package:kalinka/data_model.dart';
+import 'package:kalinka/data_model/data_model.dart';
 
 import 'nowplaying.dart';
 import 'playqueue.dart';

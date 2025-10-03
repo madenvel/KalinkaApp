@@ -5,7 +5,7 @@ import 'package:dio/dio.dart' show BaseOptions, Dio, Headers, Options, Response;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/connection_settings_provider.dart'
     show connectionSettingsProvider;
-import 'package:kalinka/data_model.dart'
+import 'package:kalinka/data_model/data_model.dart'
     show
         BrowseItem,
         BrowseItemsList,

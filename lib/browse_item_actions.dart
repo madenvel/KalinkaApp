@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart' show WidgetRef;
 import 'package:kalinka/add_to_playlist.dart' show AddToPlaylist;
-import 'package:kalinka/data_model.dart' show BrowseItem, BrowseItemsList;
+import 'package:kalinka/data_model/data_model.dart'
+    show BrowseItem, BrowseItemsList;
 import 'package:kalinka/providers/kalinka_player_api_provider.dart'
     show kalinkaProxyProvider;
 

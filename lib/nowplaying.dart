@@ -19,7 +19,7 @@ import 'package:kalinka/favorite_button.dart';
 
 import 'add_to_playlist.dart';
 import 'custom_cache_manager.dart';
-import 'data_model.dart';
+import 'data_model/data_model.dart';
 
 /// Constants for UI elements to avoid magic numbers
 class _NowPlayingConstants {
@@ -53,8 +53,10 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
     super.initState();
     kalinkaApi = ref.read(kalinkaProxyProvider);
     if (mounted) {
-      playerStateSubscription =
-          ref.listenManual(playerStateProvider, (previous, next) {
+      playerStateSubscription = ref.listenManual(playerStateProvider, (
+        previous,
+        next,
+      ) {
         if (next.state == PlayerStateType.playing) {
           setState(() {
             isSeeking = false;
@@ -74,20 +76,23 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: _NowPlayingConstants.horizontalPadding,
-          vertical: _NowPlayingConstants.verticalPadding),
-      child: Column(children: [
-        Expanded(child: Center(child: _buildAlbumArtWidget(context))),
-        const SizedBox(height: _NowPlayingConstants.sectionSpacing),
-        _buildTrackInfoWidget(context),
-        const SizedBox(height: _NowPlayingConstants.sectionSpacing),
-        _buildAudioInfoWidget(context),
-        const SizedBox(height: _NowPlayingConstants.sectionSpacing),
-        _buildTrackProgressSection(),
-        _buildButtonsBar(context),
-        _buildVolumeControl(context),
-        const SizedBox(height: _NowPlayingConstants.sectionSpacing)
-      ]),
+        horizontal: _NowPlayingConstants.horizontalPadding,
+        vertical: _NowPlayingConstants.verticalPadding,
+      ),
+      child: Column(
+        children: [
+          Expanded(child: Center(child: _buildAlbumArtWidget(context))),
+          const SizedBox(height: _NowPlayingConstants.sectionSpacing),
+          _buildTrackInfoWidget(context),
+          const SizedBox(height: _NowPlayingConstants.sectionSpacing),
+          _buildAudioInfoWidget(context),
+          const SizedBox(height: _NowPlayingConstants.sectionSpacing),
+          _buildTrackProgressSection(),
+          _buildButtonsBar(context),
+          _buildVolumeControl(context),
+          const SizedBox(height: _NowPlayingConstants.sectionSpacing),
+        ],
+      ),
     );
   }
 
@@ -100,12 +105,13 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
     if (track == null) return null;
 
     return BrowseItem(
-        id: track.id,
-        name: track.title,
-        subname: track.performer?.name,
-        canAdd: true,
-        canBrowse: false,
-        track: track);
+      id: track.id,
+      name: track.title,
+      subname: track.performer?.name,
+      canAdd: true,
+      canBrowse: false,
+      track: track,
+    );
   }
 
   Widget _buildAudioInfoWidget(BuildContext context) {
@@ -124,9 +130,10 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
       children: [
         if (item != null)
           ActionButton(
-              icon: Icons.playlist_add,
-              tooltip: 'Add to playlist',
-              onPressed: () => _addToPlaylist(context, item)),
+            icon: Icons.playlist_add,
+            tooltip: 'Add to playlist',
+            onPressed: () => _addToPlaylist(context, item),
+          ),
         const Spacer(),
         _buildAudioFormatBadge(context, decoderType, sampleRate, bitDepth),
         const Spacer(),
@@ -138,15 +145,20 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   void _addToPlaylist(BuildContext context, BrowseItem item) {
     Navigator.pop(context);
     Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => AddToPlaylist(
-                  items: BrowseItemsList(0, 1, 1, [item]),
-                )));
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            AddToPlaylist(items: BrowseItemsList(0, 1, 1, [item])),
+      ),
+    );
   }
 
-  Widget _buildAudioFormatBadge(BuildContext context, String decoderType,
-      double sampleRate, int bitDepth) {
+  Widget _buildAudioFormatBadge(
+    BuildContext context,
+    String decoderType,
+    double sampleRate,
+    int bitDepth,
+  ) {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Theme.of(context).splashColor),
@@ -166,19 +178,25 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
     final playerState = ref.watch(playerStateProvider);
     final track = playerState.currentTrack;
 
-    return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Text(track?.title ?? 'Unknown',
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          track?.title ?? 'Unknown',
           style: const TextStyle(
-              fontSize: _NowPlayingConstants.largeTextSize,
-              fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center),
-      const SizedBox(height: 8),
-      Text(
-        '${track?.performer?.name ?? 'Unknown'}  •  ${track?.album?.title ?? 'Unknown'}',
-        style: TextStyle(fontSize: _NowPlayingConstants.mediumTextSize),
-        textAlign: TextAlign.center,
-      ),
-    ]);
+            fontSize: _NowPlayingConstants.largeTextSize,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${track?.performer?.name ?? 'Unknown'}  •  ${track?.album?.title ?? 'Unknown'}',
+          style: TextStyle(fontSize: _NowPlayingConstants.mediumTextSize),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
   }
 
   String _formatDuration(int duration) {
@@ -192,18 +210,20 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildProgressBarWidget(BuildContext context) {
-    final duration = ref.watch(playerStateProvider
-        .select((state) => state.audioInfo?.durationMs ?? 0));
+    final duration = ref.watch(
+      playerStateProvider.select((state) => state.audioInfo?.durationMs ?? 0),
+    );
     final position = ref.watch(playbackTimeMsProvider);
 
-    return Column(children: [
-      SliderTheme(
+    return Column(
+      children: [
+        SliderTheme(
           data: Theme.of(context).sliderTheme.copyWith(
-                trackShape: CustomTrackShape(),
-                thumbShape: CustomThumbShape(),
-                overlayShape: SliderComponentShape.noOverlay,
-                trackHeight: 4,
-              ),
+            trackShape: CustomTrackShape(),
+            thumbShape: CustomThumbShape(),
+            overlayShape: SliderComponentShape.noOverlay,
+            trackHeight: 4,
+          ),
           child: Slider(
             value: isSeeking
                 ? seekValue
@@ -217,9 +237,11 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
             },
             onChangeStart: (_) => setState(() => isSeeking = true),
             onChangeEnd: (value) => _handleSeek(value),
-          )),
-      _buildTimeIndicators(position, duration),
-    ]);
+          ),
+        ),
+        _buildTimeIndicators(position, duration),
+      ],
+    );
   }
 
   void _handleSeek(double value) {
@@ -242,14 +264,17 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
         children: [
           Text(
             _formatDuration(
-                ((isSeeking ? seekValue : position) / 1000).floor()),
-            style:
-                const TextStyle(fontSize: _NowPlayingConstants.smallTextSize),
+              ((isSeeking ? seekValue : position) / 1000).floor(),
+            ),
+            style: const TextStyle(
+              fontSize: _NowPlayingConstants.smallTextSize,
+            ),
           ),
           Text(
             _formatDuration((duration / 1000).floor()),
-            style:
-                const TextStyle(fontSize: _NowPlayingConstants.smallTextSize),
+            style: const TextStyle(
+              fontSize: _NowPlayingConstants.smallTextSize,
+            ),
           ),
         ],
       ),
@@ -266,37 +291,45 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(mainAxisSize: MainAxisSize.max, children: [
-        const Icon(Icons.volume_down, size: 24),
-        Expanded(
-          child: RepaintBoundary(
+      child: Row(
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const Icon(Icons.volume_down, size: 24),
+          Expanded(
+            child: RepaintBoundary(
               child: SliderTheme(
-            data: SliderThemeData(
-              trackHeight: 3,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                data: SliderThemeData(
+                  trackHeight: 3,
+                  thumbShape: const RoundSliderThumbShape(
+                    enabledThumbRadius: 6,
+                  ),
+                  overlayShape: const RoundSliderOverlayShape(
+                    overlayRadius: 14,
+                  ),
+                ),
+                child: Slider(
+                  value: state.currentVolume.toDouble(),
+                  min: 0,
+                  max: state.maxVolume.toDouble(),
+                  onChangeStart: supported
+                      ? (_) => notifier.setBlockNotifications(true)
+                      : null,
+                  onChanged: supported
+                      ? (value) => notifier.setVolume(value.toInt())
+                      : null,
+                  onChangeEnd: supported
+                      ? (value) {
+                          notifier.setVolume(value.toInt());
+                          notifier.setBlockNotifications(false);
+                        }
+                      : null,
+                ),
+              ),
             ),
-            child: Slider(
-              value: state.currentVolume.toDouble(),
-              min: 0,
-              max: state.maxVolume.toDouble(),
-              onChangeStart: supported
-                  ? (_) => notifier.setBlockNotifications(true)
-                  : null,
-              onChanged: supported
-                  ? (value) => notifier.setVolume(value.toInt())
-                  : null,
-              onChangeEnd: supported
-                  ? (value) {
-                      notifier.setVolume(value.toInt());
-                      notifier.setBlockNotifications(false);
-                    }
-                  : null,
-            ),
-          )),
-        ),
-        const Icon(Icons.volume_up, size: 24)
-      ]),
+          ),
+          const Icon(Icons.volume_up, size: 24),
+        ],
+      ),
     );
   }
 
@@ -309,13 +342,15 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16.0),
-      child: Row(children: [
-        _buildRepeatButton(),
-        const Spacer(),
-        _buildPlaybackControls(context, state),
-        const Spacer(),
-        _buildVolumeControlButton(context),
-      ]),
+      child: Row(
+        children: [
+          _buildRepeatButton(),
+          const Spacer(),
+          _buildPlaybackControls(context, state),
+          const Spacer(),
+          _buildVolumeControlButton(context),
+        ],
+      ),
     );
   }
 
@@ -323,20 +358,22 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
     final state = ref.watch(volumeControlProvider);
     if (!state.supported) {
       return const IconButton(
-          icon: Icon(Icons.volume_off),
-          onPressed: null,
-          tooltip: "No volume control available");
+        icon: Icon(Icons.volume_off),
+        onPressed: null,
+        tooltip: "No volume control available",
+      );
     }
 
     final IconData iconData = state.currentVolume > state.maxVolume / 2
         ? Icons.volume_up
         : state.currentVolume == 0
-            ? Icons.volume_off
-            : Icons.volume_down;
+        ? Icons.volume_off
+        : Icons.volume_down;
     return IconButton(
-        icon: Icon(iconData),
-        onPressed: state.supported ? () {} : null,
-        tooltip: 'Volume Control');
+      icon: Icon(iconData),
+      onPressed: state.supported ? () {} : null,
+      tooltip: 'Volume Control',
+    );
   }
 
   IconData _getPlaybackIcon(PlayerStateType state) {
@@ -357,32 +394,37 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
     final IconData playIcon = _getPlaybackIcon(state);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-      ActionButton(
-        icon: Icons.fast_rewind,
-        onPressed: () => kalinkaApi.previous(),
-        fixedButtonSize: 56,
-      ),
-      const SizedBox(width: 16),
-      IconButton.filled(
-        icon: Icon(playIcon,
-            size: _NowPlayingConstants.playIconSize,
-            color: colorScheme.surface),
-        onPressed: () => _handlePlayPause(state),
-        style: IconButton.styleFrom(
-          backgroundColor: colorScheme.secondary,
-          foregroundColor: colorScheme.surface,
-          padding: const EdgeInsets.all(8),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        ActionButton(
+          icon: Icons.fast_rewind,
+          onPressed: () => kalinkaApi.previous(),
+          fixedButtonSize: 56,
         ),
-        tooltip: 'Play',
-      ),
-      const SizedBox(width: 16),
-      ActionButton(
-        icon: Icons.fast_forward,
-        onPressed: () => kalinkaApi.next(),
-        fixedButtonSize: 56,
-      ),
-    ]);
+        const SizedBox(width: 16),
+        IconButton.filled(
+          icon: Icon(
+            playIcon,
+            size: _NowPlayingConstants.playIconSize,
+            color: colorScheme.surface,
+          ),
+          onPressed: () => _handlePlayPause(state),
+          style: IconButton.styleFrom(
+            backgroundColor: colorScheme.secondary,
+            foregroundColor: colorScheme.surface,
+            padding: const EdgeInsets.all(8),
+          ),
+          tooltip: 'Play',
+        ),
+        const SizedBox(width: 16),
+        ActionButton(
+          icon: Icons.fast_forward,
+          onPressed: () => kalinkaApi.next(),
+          fixedButtonSize: 56,
+        ),
+      ],
+    );
   }
 
   void _handlePlayPause(PlayerStateType state) {
@@ -422,10 +464,9 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
       repeatSingle = false;
     }
 
-    await ref.read(kalinkaProxyProvider).setPlaybackMode(
-          repeatOne: repeatSingle,
-          repeatAll: repeatAll,
-        );
+    await ref
+        .read(kalinkaProxyProvider)
+        .setPlaybackMode(repeatOne: repeatSingle, repeatAll: repeatAll);
   }
 
   IconData _getRepeatIcon(PlaybackMode state) {
@@ -439,10 +480,12 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   }
 
   Widget _buildAlbumArtWidget(BuildContext context) {
-    final currentTrack =
-        ref.watch(playerStateProvider.select((state) => state.currentTrack));
+    final currentTrack = ref.watch(
+      playerStateProvider.select((state) => state.currentTrack),
+    );
 
-    String imageUrl = currentTrack?.album?.image?.large ??
+    String imageUrl =
+        currentTrack?.album?.image?.large ??
         currentTrack?.album?.image?.small ??
         currentTrack?.album?.image?.thumbnail ??
         '';
@@ -460,8 +503,8 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
         cacheManager: KalinkaMusicCacheManager.instance,
         imageUrl: ref.read(urlResolverProvider).abs(imageUrl),
         fit: BoxFit.contain,
-        placeholder: (_, __) => _buildAlbumShimmeringPlaceholder(),
-        errorWidget: (_, __, ___) => _buildAlbumPlaceholder(),
+        placeholder: (_, _) => _buildAlbumShimmeringPlaceholder(),
+        errorWidget: (_, _, _) => _buildAlbumPlaceholder(),
       ),
     );
   }
@@ -469,8 +512,9 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   Widget _buildAlbumPlaceholder() {
     return Container(
       decoration: BoxDecoration(
-        borderRadius:
-            BorderRadius.circular(_NowPlayingConstants.albumArtRadius),
+        borderRadius: BorderRadius.circular(
+          _NowPlayingConstants.albumArtRadius,
+        ),
       ),
       child: const Icon(Icons.album, size: 250),
     );
@@ -480,8 +524,9 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
     return Shimmer(
       child: Container(
         decoration: BoxDecoration(
-          borderRadius:
-              BorderRadius.circular(_NowPlayingConstants.albumArtRadius),
+          borderRadius: BorderRadius.circular(
+            _NowPlayingConstants.albumArtRadius,
+          ),
         ),
         child: const Icon(Icons.album, size: 250),
       ),
@@ -521,8 +566,9 @@ class CustomThumbShape extends SliderComponentShape {
       ..style = PaintingStyle.fill;
 
     final RRect rect = RRect.fromRectAndRadius(
-        Rect.fromCenter(center: center, width: thumbWidth, height: thumbHeight),
-        Radius.circular(thumbRadius));
+      Rect.fromCenter(center: center, width: thumbWidth, height: thumbHeight),
+      Radius.circular(thumbRadius),
+    );
 
     canvas.drawRRect(rect, paint);
   }

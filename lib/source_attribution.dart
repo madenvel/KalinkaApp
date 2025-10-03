@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kalinka/data_model.dart' show EntityId;
+import 'package:kalinka/data_model/data_model.dart' show EntityId;
 import 'package:kalinka/providers/modules_provider.dart' show modulesProvider;
 import 'package:kalinka/text_card_colors.dart' show TextCardColors;
 
