@@ -4,7 +4,6 @@ import androidx.annotation.MainThread
 import io.flutter.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.URL
@@ -54,25 +53,32 @@ class EventListener(private val baseUrl: String, private val eventCallback: Even
                 var line: String
                 while (reader.readLine().also { line = it } != null) {
                     try {
-                        val jsonObject = JSONObject(line)
-                        val eventType = jsonObject.getString("event_type")
-                        when (eventType) {
-                            "state_changed", "state_replay" -> {
-                                val argsArray = jsonObject.getJSONArray("args")
-                                val stateJsonString = argsArray.getJSONObject(0).toString()
-                                val state = PlayerJson.parse(stateJsonString)
+                        val event = decodeEnvelopedEvent(line)
+
+                        when (event) {
+                            is StateChangedWireEvent -> {
                                 withContext(Dispatchers.Main) {
-                                    eventCallback?.onStateChanged(state)
+                                    eventCallback?.onStateChanged(event.payload.state)
                                 }
                             }
 
-                            "volume_changed" -> {
-                                cachedVolume = jsonObject.getJSONArray("args").getInt(0)
+                            is StateReplayWireEvent -> {
+                                withContext(Dispatchers.Main) {
+                                    eventCallback?.onStateChanged(event.payload.state)
+                                }
+                            }
+
+                            is VolumeChangedWireEvent -> {
+                                cachedVolume = event.payload.volume
                                 if (!inVolumeInteraction) {
                                     withContext(Dispatchers.Main) {
                                         eventCallback?.onVolumeChanged(cachedVolume)
                                     }
                                 }
+                            }
+
+                            else -> {
+                                Log.w(LOG, "Unhandled event type: ${event.eventType}")
                             }
                         }
                     } catch (e: Exception) {

@@ -120,13 +120,11 @@ class KalinkaMusicService : Service(), EventCallback {
 
                 override fun onSkipToNext() {
                     Log.d(TAG, "onSkipToNext called")
-                    updatePlaybackState(PlaybackInfo(PlayerStateType.SKIP_TO_NEXT, 0))
                     kalinkaPlayerProxy.skipToNext {}
                 }
 
                 override fun onSkipToPrevious() {
                     Log.d(TAG, "onSkipToPrevious called")
-                    updatePlaybackState(PlaybackInfo(PlayerStateType.SKIP_TO_PREV, 0))
                     kalinkaPlayerProxy.skipToPrev {}
                 }
 
@@ -277,8 +275,6 @@ class KalinkaMusicService : Service(), EventCallback {
             PlayerStateType.BUFFERING -> PlaybackState.STATE_BUFFERING
             PlayerStateType.ERROR -> PlaybackState.STATE_ERROR
             PlayerStateType.STOPPED -> PlaybackState.STATE_STOPPED
-            PlayerStateType.SKIP_TO_NEXT -> PlaybackState.STATE_SKIPPING_TO_NEXT
-            PlayerStateType.SKIP_TO_PREV -> PlaybackState.STATE_SKIPPING_TO_PREVIOUS
         }
     }
 

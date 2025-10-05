@@ -1,6 +1,6 @@
-# Kalinka Audio Player App
+# Kalinka Music Player App
 
-This project is a flutter application for multiple platforms (Windows, Linux, Android, iPhone) that allows you to control the backend ([Kalinka Audio Player](https://github.com/madenvel/KalinkaPlayer)) running on a device in your network.
+This project is a flutter application for multiple platforms (Windows, Linux, Android, iPhone) that allows you to control the backend ([Kalinka Music Player](https://github.com/madenvel/KalinkaPlayer)) running on a device in your network.
 
 ## Installing the app
 You will require android platform tools (adb) and your phone connected in developer's mode.
