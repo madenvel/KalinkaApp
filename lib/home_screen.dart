@@ -8,7 +8,6 @@ import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/discover_source.dart';
 import 'package:kalinka/source_attribution.dart';
-import 'package:kalinka/custom_cache_manager.dart';
 import 'package:kalinka/providers/genre_filter_provider.dart';
 
 import 'data_model/data_model.dart';
@@ -24,11 +23,15 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 0;
 
-  static const BrowseItem browseItem =
-      BrowseItem(id: '', canBrowse: true, canAdd: false);
+  static const BrowseItem browseItem = BrowseItem(
+    id: '',
+    canBrowse: true,
+    canAdd: false,
+  );
 
-  static const BrowseItemsSourceDesc sourceDesc =
-      DefaultBrowseItemsSourceDesc(browseItem);
+  static const BrowseItemsSourceDesc sourceDesc = DefaultBrowseItemsSourceDesc(
+    browseItem,
+  );
 
   bool _hasActiveFilters(String inputSource) {
     final genreState = ref.watch(genreFilterProvider(inputSource)).value;
@@ -65,10 +68,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         showCheckmark: false,
         avatar: Stack(
           children: [
-            SourceAttribution(
-              id: source.id,
-              size: 24,
-            ),
+            SourceAttribution(id: source.id, size: 24),
             if (_hasActiveFilters(EntityId.fromString(source.id).source))
               Positioned(
                 right: 0,
@@ -131,8 +131,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             style: DefaultTextStyle.of(context).style.copyWith(fontSize: 16),
             children: [
               const TextSpan(
-                  text:
-                      'No input sources available. Please enable modules in the '),
+                text:
+                    'No input sources available. Please enable modules in the ',
+              ),
               TextSpan(
                 text: 'Settings',
                 style: TextStyle(
@@ -164,7 +165,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         for (final item in sources)
           RefreshIndicator(
             onRefresh: () async {
-              await KalinkaMusicCacheManager.instance.emptyCache();
               ref.invalidate(browseItemsProvider);
               ref.invalidate(genreFilterProvider);
             },
@@ -202,10 +202,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       error: (error, stack) => Scaffold(
         appBar: AppBar(title: Text('Discover')),
         body: Center(
-          child: Text(
-            'Error: $error',
-            style: TextStyle(color: Colors.red),
-          ),
+          child: Text('Error: $error', style: TextStyle(color: Colors.red)),
         ),
       ),
     );
