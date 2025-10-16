@@ -1,3 +1,6 @@
+import 'dart:ui' show AppLifecycleState;
+
+import 'package:flutter/widgets.dart' show AppLifecycleListener;
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show
         AsyncValue,
@@ -24,6 +27,48 @@ import 'package:kalinka/providers/kalinka_player_api_provider.dart'
 import 'package:kalinka/providers/wire_event_provider.dart'
     show wireEventsProvider;
 import 'package:kalinka/settings_screen.dart';
+
+enum LifecycleTransition { none, toActive, toInactive }
+
+LifecycleTransition getLifecycleTransition(
+  AppLifecycleState? prev,
+  AppLifecycleState next,
+) {
+  final wasActive = prev != null ? isAppActive(prev) : false;
+  final isActive = isAppActive(next);
+  if (wasActive != isActive) {
+    return isActive
+        ? LifecycleTransition.toActive
+        : LifecycleTransition.toInactive;
+  }
+  return LifecycleTransition.none;
+}
+
+bool isAppActive(AppLifecycleState state) {
+  return state == AppLifecycleState.resumed ||
+      state == AppLifecycleState.inactive;
+}
+
+/// Expose app lifecycle as a provider.
+final appLifecycleProvider =
+    NotifierProvider<AppLifecycleNotifier, AppLifecycleState>(
+      AppLifecycleNotifier.new,
+    );
+
+class AppLifecycleNotifier extends Notifier<AppLifecycleState> {
+  AppLifecycleListener? _listener;
+
+  @override
+  AppLifecycleState build() {
+    // Assume resumed initially (Flutter may deliver the real state soon after)
+    state = AppLifecycleState.resumed;
+
+    _listener = AppLifecycleListener(onStateChange: (s) => state = s);
+
+    ref.onDispose(() => _listener?.dispose());
+    return state;
+  }
+}
 
 class AppState {
   final PlayerState playerState;
@@ -69,65 +114,31 @@ class AppStateStore extends Notifier<AppState> {
   AppState build() {
     state = AppState.empty;
 
+    final eventQueue = <WireEvent>[];
+    bool appActiveLastState = isAppActive(ref.read(appLifecycleProvider));
+
+    ref.listen(appLifecycleProvider, (prev, next) {
+      final lifecycleTransition = getLifecycleTransition(prev, next);
+      if (lifecycleTransition == LifecycleTransition.toActive) {
+        // Process any queued events
+        for (final ev in eventQueue) {
+          _processEvent(ev);
+        }
+        eventQueue.clear();
+        appActiveLastState = true;
+      } else if (lifecycleTransition == LifecycleTransition.toInactive) {
+        appActiveLastState = false;
+      }
+    }, fireImmediately: true);
+
     // Listen once to the unified wire
     ref.listen<AsyncValue<WireEvent>>(wireEventsProvider, (prev, next) {
       next.when(
         data: (ev) {
-          switch (ev.payload) {
-            case StateReplayEvent event:
-              state = AppState(
-                playerState: event.state,
-                playQueue: List.unmodifiable(event.trackList.items),
-                playbackMode: event.playbackMode,
-                deviceVolume: DeviceVolume.empty,
-              );
-              _loadDeviceVolumeState();
-              break;
-
-            case StateChangedEvent event:
-              final newState = state.playerState.copyWith(event.state);
-              state = state.copyWith(playerState: newState);
-              break;
-
-            case TracksAddedEvent event:
-              final q = List<Track>.from(state.playQueue);
-              q.addAll(event.tracks);
-              state = state.copyWith(playQueue: List.unmodifiable(q));
-              break;
-
-            case TracksRemovedEvent event:
-              final trackList = List<Track>.from(state.playQueue);
-              int len = event.indices.length;
-              for (var i = 0; i < len; ++i) {
-                trackList.removeAt(event.indices[i]);
-              }
-              state = state.copyWith(playQueue: List.unmodifiable(trackList));
-              break;
-
-            case VolumeChangedEvent event:
-              state = state.copyWith(
-                deviceVolume: state.deviceVolume.copyWith(
-                  currentVolume: event.volume,
-                ),
-              );
-              break;
-
-            // ignore: unused_local_variable
-            case FavoriteAddedEvent event:
-              // state = state.copyWith(
-              //     favourites:
-              //         Set.unmodifiable({...state.favourites, event.entityId}));
-              break;
-
-            // ignore: unused_local_variable
-            case FavoriteRemovedEvent event:
-              // final f = Set<String>.from(state.favourites)
-              //   ..remove(event.entityId);
-              // state = state.copyWith(favourites: Set.unmodifiable(f));
-              break;
-            case PlaybackModeChangedEvent event:
-              state = state.copyWith(playbackMode: event.mode);
-              break;
+          if (appActiveLastState == true) {
+            _processEvent(ev);
+          } else {
+            eventQueue.add(ev);
           }
         },
         loading: () {
@@ -149,6 +160,65 @@ class AppStateStore extends Notifier<AppState> {
     return ref.read(kalinkaProxyProvider).getVolume().then((volume) {
       state = state.copyWith(deviceVolume: volume);
     });
+  }
+
+  void _processEvent(WireEvent ev) {
+    switch (ev.payload) {
+      case StateReplayEvent event:
+        state = AppState(
+          playerState: event.state,
+          playQueue: List.unmodifiable(event.trackList.items),
+          playbackMode: event.playbackMode,
+          deviceVolume: DeviceVolume.empty,
+        );
+        _loadDeviceVolumeState();
+        break;
+
+      case StateChangedEvent event:
+        final newState = state.playerState.copyWith(event.state);
+        state = state.copyWith(playerState: newState);
+        break;
+
+      case TracksAddedEvent event:
+        final q = List<Track>.from(state.playQueue);
+        q.addAll(event.tracks);
+        state = state.copyWith(playQueue: List.unmodifiable(q));
+        break;
+
+      case TracksRemovedEvent event:
+        final trackList = List<Track>.from(state.playQueue);
+        int len = event.indices.length;
+        for (var i = 0; i < len; ++i) {
+          trackList.removeAt(event.indices[i]);
+        }
+        state = state.copyWith(playQueue: List.unmodifiable(trackList));
+        break;
+
+      case VolumeChangedEvent event:
+        state = state.copyWith(
+          deviceVolume: state.deviceVolume.copyWith(
+            currentVolume: event.volume,
+          ),
+        );
+        break;
+
+      // ignore: unused_local_variable
+      case FavoriteAddedEvent event:
+        // state = state.copyWith(
+        //     favourites:
+        //         Set.unmodifiable({...state.favourites, event.entityId}));
+        break;
+
+      // ignore: unused_local_variable
+      case FavoriteRemovedEvent event:
+        // final f = Set<String>.from(state.favourites)
+        //   ..remove(event.entityId);
+        // state = state.copyWith(favourites: Set.unmodifiable(f));
+        break;
+      case PlaybackModeChangedEvent event:
+        state = state.copyWith(playbackMode: event.mode);
+        break;
+    }
   }
 }
 
