@@ -85,7 +85,7 @@ class _PlaybarState extends ConsumerState<Playbar> {
 
   @override
   void dispose() {
-    // Clean up listener and lifecycle observer.
+    // Clean up player state listener. The lifecycle observer is disposed automatically by Riverpod.
     _detachPlayerStateListener();
     super.dispose();
   }
