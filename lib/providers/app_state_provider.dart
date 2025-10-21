@@ -135,7 +135,7 @@ class AppStateStore extends Notifier<AppState> {
     ref.listen<AsyncValue<WireEvent>>(wireEventsProvider, (prev, next) {
       next.when(
         data: (ev) {
-          if (appActiveLastState == true) {
+          if (appActiveLastState) {
             _processEvent(ev);
           } else {
             eventQueue.add(ev);
