@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/data_model/data_model.dart'
-    show PlayerState, PlayerStateType;
+    show PlaybackState, PlayerStateType;
 import 'package:kalinka/providers/app_state_provider.dart'
     show playerStateProvider;
 import 'package:kalinka/providers/monotonic_clock_provider.dart'
@@ -11,8 +11,8 @@ import 'package:kalinka/providers/monotonic_clock_provider.dart'
 /// Expose app lifecycle as a provider.
 final appLifecycleProvider =
     NotifierProvider<AppLifecycleNotifier, AppLifecycleState>(
-  AppLifecycleNotifier.new,
-);
+      AppLifecycleNotifier.new,
+    );
 
 class AppLifecycleNotifier extends Notifier<AppLifecycleState> {
   AppLifecycleListener? _listener;
@@ -22,9 +22,7 @@ class AppLifecycleNotifier extends Notifier<AppLifecycleState> {
     // Assume resumed initially (Flutter may deliver the real state soon after)
     state = AppLifecycleState.resumed;
 
-    _listener = AppLifecycleListener(
-      onStateChange: (s) => state = s,
-    );
+    _listener = AppLifecycleListener(onStateChange: (s) => state = s);
 
     ref.onDispose(() => _listener?.dispose());
     return state;
@@ -35,14 +33,16 @@ class AppLifecycleNotifier extends Notifier<AppLifecycleState> {
 /// - Uses `Stopwatch` (monotonic) to advance between accurate updates.
 /// - Emits once per second only when app is RESUMED.
 /// - On resume, emits immediately (catch-up) and restarts the 1s tick.
-final playbackTimeMsProvider =
-    NotifierProvider<PlaybackTimeMsNotifier, int>(PlaybackTimeMsNotifier.new);
+final playbackTimeMsProvider = NotifierProvider<PlaybackTimeMsNotifier, int>(
+  PlaybackTimeMsNotifier.new,
+);
 
 class PlaybackTimeMsNotifier extends Notifier<int> {
-  int getDeltaMs(PlayerState playerState) {
+  int getDeltaMs(PlaybackState playerState) {
     if (playerState.state == PlayerStateType.playing) {
-      int delta = ref.read(monotonicClockProvider).elapsedMilliseconds -
-          playerState.timestamp;
+      int delta =
+          ref.read(monotonicClockProvider).elapsedMilliseconds -
+          playerState.timestampNs;
       return delta;
     }
     return 0;

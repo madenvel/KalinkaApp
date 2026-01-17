@@ -1,169 +1,96 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show
-        AsyncValue,
         AsyncValueExtensions,
         Notifier,
         NotifierProvider,
         Provider,
         ProviderListenableSelect;
-import 'package:kalinka/data_model/data_model.dart'
-    show DeviceVolume, PlaybackMode, PlayerState, Track;
-import 'package:kalinka/data_model/wire_events.dart'
-    show
-        WireEvent,
-        StateReplayEvent,
-        StateChangedEvent,
-        TracksAddedEvent,
-        TracksRemovedEvent,
-        VolumeChangedEvent,
-        FavoriteAddedEvent,
-        FavoriteRemovedEvent,
-        PlaybackModeChangedEvent;
-import 'package:kalinka/providers/kalinka_player_api_provider.dart'
-    show kalinkaProxyProvider;
+import 'package:kalinka/data_model/ext_device_events.dart';
+import 'package:kalinka/data_model/playqueue_events.dart' show PlayQueueState;
+import 'package:kalinka/providers/monotonic_clock_provider.dart'
+    show monotonicClockProvider;
 import 'package:kalinka/providers/wire_event_provider.dart'
-    show wireEventsProvider;
-import 'package:kalinka/settings_screen.dart';
+    show playQueueEventBusProvider, extDeviceEventBusProvider;
+import 'package:logger/logger.dart';
 
-class AppState {
-  final PlayerState playerState;
-  final List<Track> playQueue;
-  final PlaybackMode playbackMode;
-  final DeviceVolume deviceVolume;
+final logger = Logger();
 
-  const AppState({
-    required this.playerState,
-    required this.playQueue,
-    required this.playbackMode,
-    required this.deviceVolume,
-  });
-
-  AppState copyWith({
-    PlayerState? playerState,
-    List<Track>? playQueue,
-    Set<String>? favourites,
-    PlaybackMode? playbackMode,
-    DeviceVolume? deviceVolume,
-  }) => AppState(
-    playerState: playerState ?? this.playerState,
-    playQueue: playQueue ?? this.playQueue,
-    playbackMode: playbackMode ?? this.playbackMode,
-    deviceVolume: deviceVolume ?? this.deviceVolume,
-  );
-
-  static final empty = AppState(
-    playerState: PlayerState.empty,
-    playQueue: <Track>[],
-    playbackMode: PlaybackMode.empty,
-    deviceVolume: DeviceVolume.empty,
-  );
-}
-
-// 1) The store: single source of truth fed by the wire events
-final appStateStoreProvider = NotifierProvider<AppStateStore, AppState>(
-  AppStateStore.new,
-);
-
-class AppStateStore extends Notifier<AppState> {
+class PlayQueueStateStore extends Notifier<PlayQueueState> {
   @override
-  AppState build() {
-    state = AppState.empty;
+  PlayQueueState build() {
+    state = PlayQueueState.empty;
 
     // Listen once to the unified wire
-    ref.listen<AsyncValue<WireEvent>>(wireEventsProvider, (prev, next) {
+    ref.listen(playQueueEventBusProvider, (prev, next) {
       next.when(
-        data: (ev) {
-          switch (ev.payload) {
-            case StateReplayEvent event:
-              state = AppState(
-                playerState: event.state,
-                playQueue: List.unmodifiable(event.trackList.items),
-                playbackMode: event.playbackMode,
-                deviceVolume: DeviceVolume.empty,
-              );
-              _loadDeviceVolumeState();
-              break;
-
-            case StateChangedEvent event:
-              final newState = state.playerState.copyWith(event.state);
-              state = state.copyWith(playerState: newState);
-              break;
-
-            case TracksAddedEvent event:
-              final q = List<Track>.from(state.playQueue);
-              q.addAll(event.tracks);
-              state = state.copyWith(playQueue: List.unmodifiable(q));
-              break;
-
-            case TracksRemovedEvent event:
-              final trackList = List<Track>.from(state.playQueue);
-              int len = event.indices.length;
-              for (var i = 0; i < len; ++i) {
-                trackList.removeAt(event.indices[i]);
-              }
-              state = state.copyWith(playQueue: List.unmodifiable(trackList));
-              break;
-
-            case VolumeChangedEvent event:
-              state = state.copyWith(
-                deviceVolume: state.deviceVolume.copyWith(
-                  currentVolume: event.volume,
-                ),
-              );
-              break;
-
-            // ignore: unused_local_variable
-            case FavoriteAddedEvent event:
-              // state = state.copyWith(
-              //     favourites:
-              //         Set.unmodifiable({...state.favourites, event.entityId}));
-              break;
-
-            // ignore: unused_local_variable
-            case FavoriteRemovedEvent event:
-              // final f = Set<String>.from(state.favourites)
-              //   ..remove(event.entityId);
-              // state = state.copyWith(favourites: Set.unmodifiable(f));
-              break;
-            case PlaybackModeChangedEvent event:
-              state = state.copyWith(playbackMode: event.mode);
-              break;
-          }
+        data: (event) {
+          final timestamp = ref
+              .read(monotonicClockProvider)
+              .elapsedMilliseconds;
+          state = state.apply(event, timestamp);
         },
         loading: () {
-          state = AppState.empty;
+          state = PlayQueueState.empty;
         },
         error: (Object error, StackTrace stackTrace) {
-          state = AppState.empty;
+          state = PlayQueueState.empty;
           logger.e('Error occurred: $error', stackTrace: stackTrace);
         },
       );
     });
 
-    _loadDeviceVolumeState();
-
     return state;
-  }
-
-  Future<void> _loadDeviceVolumeState() async {
-    return ref.read(kalinkaProxyProvider).getVolume().then((volume) {
-      state = state.copyWith(deviceVolume: volume);
-    });
   }
 }
 
+class ExtDeviceStateStore extends Notifier<ExtDeviceState> {
+  @override
+  ExtDeviceState build() {
+    state = ExtDeviceState.empty;
+
+    // Listen once to the unified wire
+    ref.listen(extDeviceEventBusProvider, (prev, next) {
+      next.when(
+        data: (event) {
+          state = state.apply(event);
+        },
+        loading: () {
+          state = ExtDeviceState.empty;
+        },
+        error: (Object error, StackTrace stackTrace) {
+          state = ExtDeviceState.empty;
+          logger.e('Error occurred: $error', stackTrace: stackTrace);
+        },
+      );
+    });
+
+    return state;
+  }
+}
+
+final playQueueStateStoreProvider =
+    NotifierProvider<PlayQueueStateStore, PlayQueueState>(
+      () => PlayQueueStateStore(),
+    );
+
+final extDeviceStateStoreProvider =
+    NotifierProvider<ExtDeviceStateStore, ExtDeviceState>(
+      () => ExtDeviceStateStore(),
+    );
+
 final playerStateProvider = Provider(
-  (ref) => ref.watch(appStateStoreProvider.select((s) => s.playerState)),
+  (ref) =>
+      ref.watch(playQueueStateStoreProvider.select((s) => s.playbackState)),
 );
 
 final playQueueProvider = Provider(
-  (ref) => ref.watch(appStateStoreProvider.select((s) => s.playQueue)),
+  (ref) => ref.watch(playQueueStateStoreProvider.select((s) => s.trackList)),
 );
 
 final volumeStateProvider = Provider(
-  (ref) => ref.watch(appStateStoreProvider.select((s) => s.deviceVolume)),
+  (ref) => ref.watch(extDeviceStateStoreProvider.select((s) => s.volume)),
 );
 
 final playbackModeProvider = Provider(
-  (ref) => ref.watch(appStateStoreProvider.select((s) => s.playbackMode)),
+  (ref) => ref.watch(playQueueStateStoreProvider.select((s) => s.playbackMode)),
 );

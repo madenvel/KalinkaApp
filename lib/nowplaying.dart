@@ -100,7 +100,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
     return RepaintBoundary(child: _buildProgressBarWidget(context));
   }
 
-  BrowseItem? _getBrowseItem(BuildContext context, PlayerState playerState) {
+  BrowseItem? _getBrowseItem(BuildContext context, PlaybackState playerState) {
     final Track? track = playerState.currentTrack;
     if (track == null) return null;
 
@@ -215,6 +215,12 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
     );
     final position = ref.watch(playbackTimeMsProvider);
 
+    // Guard against zero/unknown duration to keep Slider constraints valid.
+    final bool hasDuration = duration > 0;
+    final double maxValue = hasDuration ? duration.toDouble() : 1.0;
+    final double rawValue = isSeeking ? seekValue : position.toDouble();
+    final double clampedValue = rawValue.clamp(0, maxValue);
+
     return Column(
       children: [
         SliderTheme(
@@ -225,18 +231,20 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
             trackHeight: 4,
           ),
           child: Slider(
-            value: isSeeking
-                ? seekValue
-                : (duration >= position ? position.toDouble() : 0),
+            value: clampedValue,
             min: 0,
-            max: duration.toDouble(),
-            onChanged: (double value) {
-              setState(() {
-                seekValue = value.clamp(0, duration.toDouble());
-              });
-            },
-            onChangeStart: (_) => setState(() => isSeeking = true),
-            onChangeEnd: (value) => _handleSeek(value),
+            max: maxValue,
+            onChanged: hasDuration
+                ? (double value) {
+                    setState(() {
+                      seekValue = value.clamp(0, maxValue);
+                    });
+                  }
+                : null,
+            onChangeStart: hasDuration
+                ? (_) => setState(() => isSeeking = true)
+                : null,
+            onChangeEnd: hasDuration ? (value) => _handleSeek(value) : null,
           ),
         ),
         _buildTimeIndicators(position, duration),

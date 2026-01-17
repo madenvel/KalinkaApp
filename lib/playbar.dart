@@ -38,8 +38,9 @@ class _PlaybarState extends ConsumerState<Playbar> {
 
   double? _calculateRelativeProgress(BuildContext context) {
     final position = ref.watch(playbackTimeMsProvider);
-    final duration = ref.watch(playerStateProvider
-        .select((state) => state.audioInfo?.durationMs ?? 0));
+    final duration = ref.watch(
+      playerStateProvider.select((state) => state.audioInfo?.durationMs ?? 0),
+    );
     return duration != 0 ? position / duration : 0.0;
   }
 
@@ -62,57 +63,69 @@ class _PlaybarState extends ConsumerState<Playbar> {
   }
 
   void playerStateChanged(int index) {
-    if (mounted) {
-      if (index != _currentPageIndex && _carouselController.ready) {
-        _carouselController.animateToPage(index);
-      }
-    }
+    if (!mounted || index == _currentPageIndex) return;
+
+    // Defer until after the current frame so the PageView is built and attached.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_carouselController.ready) return;
+      _currentPageIndex = index;
+      _carouselController.animateToPage(index);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final hasTracks =
-        ref.watch(playQueueProvider.select((data) => data.isNotEmpty));
+    final hasTracks = ref.watch(
+      playQueueProvider.select((data) => data.isNotEmpty),
+    );
 
     if (!hasTracks) {
       return const SizedBox.shrink();
     }
 
     return InkWell(
-        child: Container(
-            width: double.infinity,
-            color: Theme.of(context).bottomNavigationBarTheme.backgroundColor,
-            child: Column(children: [
-              const Divider(height: 0),
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0, bottom: 6.0),
-                child: _buildTile(context),
-              ),
-              RepaintBoundary(
-                  child: LinearProgressIndicator(
+      child: Container(
+        width: double.infinity,
+        color: Theme.of(context).bottomNavigationBarTheme.backgroundColor,
+        child: Column(
+          children: [
+            const Divider(height: 0),
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0, bottom: 6.0),
+              child: _buildTile(context),
+            ),
+            RepaintBoundary(
+              child: LinearProgressIndicator(
                 value: _calculateRelativeProgress(context),
-              )),
-              const Divider(height: 0)
-            ])),
-        onTap: () {
-          widget.onTap?.call();
-        });
+              ),
+            ),
+            const Divider(height: 0),
+          ],
+        ),
+      ),
+      onTap: () {
+        widget.onTap?.call();
+      },
+    );
   }
 
   Widget _buildTile(BuildContext context) {
     final playerState = ref.watch(playerStateProvider);
 
-    return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-      const SizedBox(width: 8),
-      _buildImage(context, playerState),
-      const SizedBox(width: 8),
-      Expanded(child: _buildCarousel(context, playerState)),
-      _buildPlaybutton(context, playerState),
-      const SizedBox(width: 8),
-    ]);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const SizedBox(width: 8),
+        _buildImage(context, playerState),
+        const SizedBox(width: 8),
+        Expanded(child: _buildCarousel(context, playerState)),
+        _buildPlaybutton(context, playerState),
+        const SizedBox(width: 8),
+      ],
+    );
   }
 
-  IconData _getPlaybackIcon(PlayerState state) {
+  IconData _getPlaybackIcon(PlaybackState state) {
     switch (state.state) {
       case PlayerStateType.playing:
         return Icons.pause;
@@ -124,9 +137,11 @@ class _PlaybarState extends ConsumerState<Playbar> {
         return Icons.hourglass_empty;
       case PlayerStateType.error:
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(state.message ?? "Error while playing track."),
-          ));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message ?? "Error while playing track."),
+            ),
+          );
         });
         return Icons.error;
       default:
@@ -134,81 +149,88 @@ class _PlaybarState extends ConsumerState<Playbar> {
     }
   }
 
-  Widget _buildPlaybutton(BuildContext context, PlayerState state) {
+  Widget _buildPlaybutton(BuildContext context, PlaybackState state) {
     final kalinkaApi = ref.read(kalinkaProxyProvider);
     return IconButton(
-        icon: Icon(_getPlaybackIcon(state),
-            size: 36, color: Theme.of(context).colorScheme.surface),
-        style: IconButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.secondary,
-          padding: const EdgeInsets.all(8),
-        ),
-        onPressed: () {
-          switch (state.state) {
-            case PlayerStateType.playing:
-              kalinkaApi.pause(paused: true);
-              break;
-            case PlayerStateType.paused:
-              kalinkaApi.pause(paused: false);
-              break;
-            case PlayerStateType.stopped:
-            case PlayerStateType.error:
-              kalinkaApi.play();
-              break;
-            default:
-              break;
-          }
-        });
+      icon: Icon(
+        _getPlaybackIcon(state),
+        size: 36,
+        color: Theme.of(context).colorScheme.surface,
+      ),
+      style: IconButton.styleFrom(
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        padding: const EdgeInsets.all(8),
+      ),
+      onPressed: () {
+        switch (state.state) {
+          case PlayerStateType.playing:
+            kalinkaApi.pause(paused: true);
+            break;
+          case PlayerStateType.paused:
+            kalinkaApi.pause(paused: false);
+            break;
+          case PlayerStateType.stopped:
+          case PlayerStateType.error:
+            kalinkaApi.play();
+            break;
+          default:
+            break;
+        }
+      },
+    );
   }
 
   Widget _buildInfoText(BuildContext context, Track track) {
     return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            track.title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            '${track.performer?.name ?? 'Unknown Artist'} • ${track.album?.title ?? 'Unknown Album'}',
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).listTileTheme.subtitleTextStyle,
-          )
-        ]);
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          track.title,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          overflow: TextOverflow.ellipsis,
+        ),
+        Text(
+          '${track.performer?.name ?? 'Unknown Artist'} • ${track.album?.title ?? 'Unknown Album'}',
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).listTileTheme.subtitleTextStyle,
+        ),
+      ],
+    );
   }
 
-  Widget _buildImage(BuildContext context, PlayerState playerState) {
-    String? imgSource = playerState.currentTrack?.album?.image?.small ??
+  Widget _buildImage(BuildContext context, PlaybackState playerState) {
+    String? imgSource =
+        playerState.currentTrack?.album?.image?.small ??
         playerState.currentTrack?.album?.image?.thumbnail ??
         playerState.currentTrack?.album?.image?.large;
     if (imgSource == null || imgSource.isEmpty) {
       return const SizedBox(
-          width: 48, height: 48, child: Icon(Icons.music_note, size: 48));
-    }
-    return SizedBox(
         width: 48,
         height: 48,
-        child: CachedNetworkImage(
-          fit: BoxFit.contain,
-          cacheManager: KalinkaMusicCacheManager.instance,
-          imageUrl: ref.read(urlResolverProvider).abs(imgSource),
-          imageBuilder: (context, imageProvider) => Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4),
-              image: DecorationImage(
-                image: imageProvider,
-              ),
-            ),
+        child: Icon(Icons.music_note, size: 48),
+      );
+    }
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: CachedNetworkImage(
+        fit: BoxFit.contain,
+        cacheManager: KalinkaMusicCacheManager.instance,
+        imageUrl: ref.read(urlResolverProvider).abs(imgSource),
+        imageBuilder: (context, imageProvider) => Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(4),
+            image: DecorationImage(image: imageProvider),
           ),
-          placeholder: (context, url) =>
-              const Icon(Icons.music_note, size: 48.0),
-          errorWidget: (context, url, error) => const Icon(Icons.error),
-        ));
+        ),
+        placeholder: (context, url) => const Icon(Icons.music_note, size: 48.0),
+        errorWidget: (context, url, error) => const Icon(Icons.error),
+      ),
+    );
   }
 
-  Widget _buildCarousel(BuildContext context, PlayerState state) {
+  Widget _buildCarousel(BuildContext context, PlaybackState state) {
     final trackListState = ref.watch(playQueueProvider);
     final index = state.index;
     final kalinkaApi = ref.read(kalinkaProxyProvider);
