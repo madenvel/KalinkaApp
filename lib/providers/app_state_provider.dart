@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show WidgetsBinding;
 import 'package:flutter_riverpod/flutter_riverpod.dart'
     show
         AsyncValueExtensions,
@@ -20,21 +21,28 @@ class PlayQueueStateStore extends Notifier<PlayQueueState> {
   PlayQueueState build() {
     state = PlayQueueState.empty;
 
-    // Listen once to the unified wire
     ref.listen(playQueueEventBusProvider, (prev, next) {
       next.when(
         data: (event) {
           final timestamp = ref
               .read(monotonicClockProvider)
               .elapsedMilliseconds;
-          state = state.apply(event, timestamp);
+          // Defer state updates to avoid modifying during build phase
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            state = state.apply(event, timestamp);
+          });
         },
         loading: () {
-          state = PlayQueueState.empty;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            state = PlayQueueState.empty;
+          });
         },
         error: (Object error, StackTrace stackTrace) {
-          state = PlayQueueState.empty;
           logger.e('Error occurred: $error', stackTrace: stackTrace);
+          // Defer state update to avoid modifying during build phase
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            state = PlayQueueState.empty;
+          });
         },
       );
     });
@@ -48,18 +56,25 @@ class ExtDeviceStateStore extends Notifier<ExtDeviceState> {
   ExtDeviceState build() {
     state = ExtDeviceState.empty;
 
-    // Listen once to the unified wire
     ref.listen(extDeviceEventBusProvider, (prev, next) {
       next.when(
         data: (event) {
-          state = state.apply(event);
+          // Defer state updates to avoid modifying during build phase
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            state = state.apply(event);
+          });
         },
         loading: () {
-          state = ExtDeviceState.empty;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            state = ExtDeviceState.empty;
+          });
         },
         error: (Object error, StackTrace stackTrace) {
-          state = ExtDeviceState.empty;
           logger.e('Error occurred: $error', stackTrace: stackTrace);
+          // Defer state update to avoid modifying during build phase
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            state = ExtDeviceState.empty;
+          });
         },
       );
     });
