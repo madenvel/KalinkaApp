@@ -19,9 +19,17 @@ StreamProvider<TEvent> makeEventBusProvider<TEvent>({
     final cancel = CancelToken();
     final Stream<String> stream = openStream(ref, cancel);
 
+    ref.onDispose(() {
+      cancel.cancel();
+    });
+
     final lines = stream.transform(const LineSplitter());
 
     await for (final line in lines) {
+      if (cancel.isCancelled) {
+        break;
+      }
+
       if (line.isEmpty) continue;
 
       try {
