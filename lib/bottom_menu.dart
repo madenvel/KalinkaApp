@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/add_to_playlist.dart';
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
+import 'package:kalinka/data_model/kalinka_ws_api.dart';
 import 'package:kalinka/providers/kalinka_player_api_provider.dart'
     show kalinkaProxyProvider;
+import 'package:kalinka/providers/kalinka_ws_api_provider.dart';
 import 'package:kalinka/providers/user_favoriteids_provider.dart'
     show userFavoritesIdsProvider;
 import 'package:kalinka/providers/user_playlist_provider.dart';
@@ -16,12 +18,13 @@ class BottomMenu extends ConsumerWidget {
   final bool showPlay;
   final bool showAddToQueue;
 
-  const BottomMenu(
-      {super.key,
-      required this.browseItem,
-      required this.parentContext,
-      this.showPlay = true,
-      this.showAddToQueue = true});
+  const BottomMenu({
+    super.key,
+    required this.browseItem,
+    required this.parentContext,
+    this.showPlay = true,
+    this.showAddToQueue = true,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -51,40 +54,55 @@ class BottomMenu extends ConsumerWidget {
   List<Widget> _buildPlaybackControls(BuildContext context, WidgetRef ref) {
     List<Widget> widgets = [];
     final kalinkaApi = ref.read(kalinkaProxyProvider);
+    final wsApi = ref.read(kalinkaWsApiProvider);
 
     if (showPlay && browseItem.canAdd == true) {
-      widgets.add(ListTile(
-        title: const Text('Play'),
-        leading: const Icon(Icons.play_arrow),
-        onTap: () {
-          kalinkaApi.clear().then((_) {
-            return kalinkaApi.add([browseItem.id]);
-          }).then((_) {
-            return kalinkaApi.play();
-          });
-          Navigator.pop(context);
-        },
-      ));
+      widgets.add(
+        ListTile(
+          title: const Text('Play'),
+          leading: const Icon(Icons.play_arrow),
+          onTap: () {
+            kalinkaApi
+                .clear()
+                .then((_) {
+                  return kalinkaApi.add([browseItem.id]);
+                })
+                .then((_) {
+                  return wsApi.sendQueueCommand(const QueueCommand.play());
+                });
+            Navigator.pop(context);
+          },
+        ),
+      );
     }
 
     if (showAddToQueue && browseItem.canAdd) {
-      widgets.add(ListTile(
-        title: const Text('Add to queue'),
-        leading: const Icon(Icons.queue_music),
-        onTap: () {
-          kalinkaApi.add([browseItem.id]).then((_) {
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text('Added item to playueue'),
-                duration: Duration(seconds: 2)));
-          }).catchError((error, stackTrace) {
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Error adding item to queue')));
-          });
-          Navigator.pop(context);
-        },
-      ));
+      widgets.add(
+        ListTile(
+          title: const Text('Add to queue'),
+          leading: const Icon(Icons.queue_music),
+          onTap: () {
+            kalinkaApi
+                .add([browseItem.id])
+                .then((_) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Added item to playueue'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                })
+                .catchError((error, stackTrace) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Error adding item to queue')),
+                  );
+                });
+            Navigator.pop(context);
+          },
+        ),
+      );
     }
 
     return widgets;
@@ -102,13 +120,14 @@ class BottomMenu extends ConsumerWidget {
         onTap: () {
           Navigator.pop(context);
           Navigator.push(
-              parentContext,
-              MaterialPageRoute(
-                  builder: (context) => AddToPlaylist(
-                        items: BrowseItemsList(0, 1, 1, [browseItem]),
-                      )));
+            parentContext,
+            MaterialPageRoute(
+              builder: (context) =>
+                  AddToPlaylist(items: BrowseItemsList(0, 1, 1, [browseItem])),
+            ),
+          );
         },
-      )
+      ),
     ];
   }
 
@@ -120,29 +139,33 @@ class BottomMenu extends ConsumerWidget {
     final notifier = ref.read(userFavoritesIdsProvider.notifier);
 
     if (browseItem.canFavorite && !state.contains(browseItem.id) == true) {
-      widgets.add(ListTile(
-        title: const Text('Add to favorites'),
-        leading: const Icon(Icons.favorite),
-        onTap: () {
-          notifier.add(browseItem);
-          Navigator.pop(context);
-        },
-      ));
+      widgets.add(
+        ListTile(
+          title: const Text('Add to favorites'),
+          leading: const Icon(Icons.favorite),
+          onTap: () {
+            notifier.add(browseItem);
+            Navigator.pop(context);
+          },
+        ),
+      );
     }
 
     if (browseItem.canFavorite && state.contains(browseItem.id)) {
-      widgets.add(ListTile(
-        title: const Text('Delete from favorites'),
-        leading: const Icon(Icons.heart_broken),
-        onTap: () {
-          notifier.remove(browseItem);
-          if (browseItem.browseType == BrowseType.playlist) {
-            final playlistNotifier = ref.read(userPlaylistProvider.notifier);
-            playlistNotifier.removePlaylist(browseItem.playlist!);
-          }
-          Navigator.pop(context);
-        },
-      ));
+      widgets.add(
+        ListTile(
+          title: const Text('Delete from favorites'),
+          leading: const Icon(Icons.heart_broken),
+          onTap: () {
+            notifier.remove(browseItem);
+            if (browseItem.browseType == BrowseType.playlist) {
+              final playlistNotifier = ref.read(userPlaylistProvider.notifier);
+              playlistNotifier.removePlaylist(browseItem.playlist!);
+            }
+            Navigator.pop(context);
+          },
+        ),
+      );
     }
 
     return widgets;
@@ -157,39 +180,47 @@ class BottomMenu extends ConsumerWidget {
         browseItem.album?.artist?.id ?? browseItem.track?.performer?.id;
     final browseType = browseItem.browseType;
     if (albumId != null && browseType != BrowseType.album) {
-      widgets.add(ListTile(
-        title: const Text('More from this Album'),
-        leading: const Icon(Icons.album),
-        onTap: () {
-          kalinkaApi.getMetadata(albumId).then((BrowseItem item) {
-            if (context.mounted) {
-              Navigator.pop(context);
-              Navigator.push(
+      widgets.add(
+        ListTile(
+          title: const Text('More from this Album'),
+          leading: const Icon(Icons.album),
+          onTap: () {
+            kalinkaApi.getMetadata(albumId).then((BrowseItem item) {
+              if (context.mounted) {
+                Navigator.pop(context);
+                Navigator.push(
                   parentContext,
                   MaterialPageRoute(
-                      builder: (context) => BrowseItemView(browseItem: item)));
-            }
-          });
-        },
-      ));
+                    builder: (context) => BrowseItemView(browseItem: item),
+                  ),
+                );
+              }
+            });
+          },
+        ),
+      );
     }
 
     if (artistId != null && browseType != BrowseType.artist) {
-      widgets.add(ListTile(
-        title: const Text('More from this Artist'),
-        leading: const Icon(Icons.person),
-        onTap: () {
-          kalinkaApi.getMetadata(artistId).then((BrowseItem item) {
-            if (context.mounted) {
-              Navigator.pop(context);
-              Navigator.push(
+      widgets.add(
+        ListTile(
+          title: const Text('More from this Artist'),
+          leading: const Icon(Icons.person),
+          onTap: () {
+            kalinkaApi.getMetadata(artistId).then((BrowseItem item) {
+              if (context.mounted) {
+                Navigator.pop(context);
+                Navigator.push(
                   parentContext,
                   MaterialPageRoute(
-                      builder: (context) => BrowseItemView(browseItem: item)));
-            }
-          });
-        },
-      ));
+                    builder: (context) => BrowseItemView(browseItem: item),
+                  ),
+                );
+              }
+            });
+          },
+        ),
+      );
     }
 
     return widgets;

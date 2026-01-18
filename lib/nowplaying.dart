@@ -9,7 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
 import 'package:kalinka/action_button.dart' show ActionButton;
 import 'package:kalinka/providers/app_state_provider.dart'
     show playbackModeProvider, playerStateProvider;
-import 'package:kalinka/providers/kalinka_player_api_provider.dart';
+import 'package:kalinka/data_model/kalinka_ws_api.dart';
+import 'package:kalinka/providers/kalinka_ws_api_provider.dart';
 import 'package:kalinka/providers/playback_time_provider.dart';
 import 'package:kalinka/providers/volume_control_provider.dart';
 import 'package:kalinka/shimmer.dart' show Shimmer;
@@ -45,13 +46,13 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   final logger = Logger();
   bool isSeeking = false;
   double seekValue = 0;
-  late final KalinkaPlayerProxy kalinkaApi;
+  late final KalinkaWsApi wsApi;
   late final ProviderSubscription playerStateSubscription;
 
   @override
   void initState() {
     super.initState();
-    kalinkaApi = ref.read(kalinkaProxyProvider);
+    wsApi = ref.read(kalinkaWsApiProvider);
     if (mounted) {
       playerStateSubscription = ref.listenManual(playerStateProvider, (
         previous,
@@ -254,14 +255,13 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
 
   void _handleSeek(double value) {
     logger.i('Seeking to $value');
-    kalinkaApi.seek(value.toInt()).then((response) {
-      if (response.positionMs == null || response.positionMs! < 0) {
-        logger.w('Seek failed, position=${response.positionMs}');
-        setState(() {
-          isSeeking = false;
+    wsApi
+        .sendQueueCommand(QueueCommand.seek(positionMs: value.toInt()))
+        .whenComplete(() {
+          setState(() {
+            isSeeking = false;
+          });
         });
-      }
-    });
   }
 
   Widget _buildTimeIndicators(int position, int duration) {
@@ -407,7 +407,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
       children: [
         ActionButton(
           icon: Icons.fast_rewind,
-          onPressed: () => kalinkaApi.previous(),
+          onPressed: () => wsApi.sendQueueCommand(const QueueCommand.prev()),
           fixedButtonSize: 56,
         ),
         const SizedBox(width: 16),
@@ -428,7 +428,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
         const SizedBox(width: 16),
         ActionButton(
           icon: Icons.fast_forward,
-          onPressed: () => kalinkaApi.next(),
+          onPressed: () => wsApi.sendQueueCommand(const QueueCommand.next()),
           fixedButtonSize: 56,
         ),
       ],
@@ -438,13 +438,13 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
   void _handlePlayPause(PlayerStateType state) {
     switch (state) {
       case PlayerStateType.playing:
-        kalinkaApi.pause(paused: true);
+        wsApi.sendQueueCommand(const QueueCommand.pause(paused: true));
         break;
       case PlayerStateType.paused:
-        kalinkaApi.pause(paused: false);
+        wsApi.sendQueueCommand(const QueueCommand.pause(paused: false));
         break;
       default:
-        kalinkaApi.play();
+        wsApi.sendQueueCommand(const QueueCommand.play());
     }
   }
 
@@ -472,9 +472,12 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
       repeatSingle = false;
     }
 
-    await ref
-        .read(kalinkaProxyProvider)
-        .setPlaybackMode(repeatOne: repeatSingle, repeatAll: repeatAll);
+    await wsApi.sendQueueCommand(
+      QueueCommand.setPlaybackMode(
+        repeatSingle: repeatSingle,
+        repeatAll: repeatAll,
+      ),
+    );
   }
 
   IconData _getRepeatIcon(PlaybackMode state) {

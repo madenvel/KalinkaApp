@@ -49,3 +49,7 @@ final webSocketProvider = FutureProvider.autoDispose.family<WebSocket, String>((
     rethrow;
   }
 });
+
+final deviceWebSocketProvider = webSocketProvider('/device/ws');
+
+final queueWebSocketProvider = webSocketProvider('/queue/ws');

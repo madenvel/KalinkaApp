@@ -3,69 +3,82 @@ import 'package:flutter_riverpod/flutter_riverpod.dart' show WidgetRef;
 import 'package:kalinka/add_to_playlist.dart' show AddToPlaylist;
 import 'package:kalinka/data_model/data_model.dart'
     show BrowseItem, BrowseItemsList;
+import 'package:kalinka/data_model/kalinka_ws_api.dart';
 import 'package:kalinka/providers/kalinka_player_api_provider.dart'
     show kalinkaProxyProvider;
+import 'package:kalinka/providers/kalinka_ws_api_provider.dart';
 
 class BrowseItemActions {
   static void addToPlaylistAction(BuildContext context, BrowseItem browseItem) {
     Navigator.of(context).push(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (context) => AddToPlaylist(
-          items: BrowseItemsList(0, 1, 1, [browseItem]),
-        ),
+        builder: (context) =>
+            AddToPlaylist(items: BrowseItemsList(0, 1, 1, [browseItem])),
       ),
     );
   }
 
   static void addToQueueAction(
-      BuildContext context, WidgetRef ref, BrowseItem browseItem) {
+    BuildContext context,
+    WidgetRef ref,
+    BrowseItem browseItem,
+  ) {
     final kalinkaApi = ref.read(kalinkaProxyProvider);
-    kalinkaApi.add([browseItem.id]).then((_) {
-      // Optional: Show confirmation dialog only on success
-      if (context.mounted) {
-        // Check if the widget is still in the tree
-        showDialog(
-          context: context,
-          builder: (BuildContext dialogContext) {
-            return AlertDialog(
-              title: const Text('Added to Queue'),
-              content:
-                  Text('${browseItem.name ?? "Items"} added successfully.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('OK'),
-                ),
-              ],
+    kalinkaApi
+        .add([browseItem.id])
+        .then((_) {
+          // Optional: Show confirmation dialog only on success
+          if (context.mounted) {
+            // Check if the widget is still in the tree
+            showDialog(
+              context: context,
+              builder: (BuildContext dialogContext) {
+                return AlertDialog(
+                  title: const Text('Added to Queue'),
+                  content: Text(
+                    '${browseItem.name ?? "Items"} added successfully.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                );
+              },
             );
-          },
-        );
-      }
-    }).catchError((error) {
-      // Optional: Show error message
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to add to queue: $error')),
-        );
-      }
-    });
+          }
+        })
+        .catchError((error) {
+          // Optional: Show error message
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to add to queue: $error')),
+            );
+          }
+        });
   }
 
-  static Future<void> replaceAndPlay(BuildContext context, WidgetRef ref,
-      BrowseItem browseItem, int index) async {
+  static Future<void> replaceAndPlay(
+    BuildContext context,
+    WidgetRef ref,
+    BrowseItem browseItem,
+    int index,
+  ) async {
     final id = browseItem.id;
     final kalinkaApi = ref.read(kalinkaProxyProvider);
+    final wsApi = ref.read(kalinkaWsApiProvider);
     try {
       await kalinkaApi.clear();
       await kalinkaApi.add([id]);
-      await kalinkaApi.play(index);
+      await wsApi.sendQueueCommand(QueueCommand.play(index: index));
     } catch (e) {
       // Handle potential errors from the player proxy
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error playing item: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error playing item: $e')));
       }
     }
   }

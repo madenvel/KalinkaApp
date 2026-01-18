@@ -12,6 +12,8 @@ import 'package:kalinka/providers/browse_item_data_provider_riverpod.dart';
 import 'package:kalinka/browse_item_view.dart' show BrowseItemView;
 import 'package:kalinka/constants.dart';
 import 'package:kalinka/providers/kalinka_player_api_provider.dart';
+import 'package:kalinka/data_model/kalinka_ws_api.dart';
+import 'package:kalinka/providers/kalinka_ws_api_provider.dart';
 import 'package:kalinka/playlist_creation_dialog.dart';
 import 'package:kalinka/bottom_menu.dart';
 import 'package:kalinka/browse_item_list.dart';
@@ -45,8 +47,8 @@ class SearchControllerProvider extends Notifier<SearchController> {
 
 final searchControllerProvider =
     NotifierProvider<SearchControllerProvider, SearchController>(
-  SearchControllerProvider.new,
-);
+      SearchControllerProvider.new,
+    );
 
 final searchTypeProvider = NotifierProvider<SearchTypeProvider, SearchType>(
   SearchTypeProvider.new,
@@ -65,7 +67,7 @@ class Library extends ConsumerStatefulWidget {
     'Tracks',
     'Albums',
     'Artists',
-    'Playlists'
+    'Playlists',
   ];
 
   @override
@@ -84,10 +86,7 @@ class _LibraryState extends ConsumerState<Library> {
         titleSpacing: KalinkaConstants.kContentHorizontalPadding,
         title: _buildAppBarTitle(context),
         actions: !searchBarVisible
-            ? [
-                _buildSearchButton(context),
-                _buildActionButton(context),
-              ]
+            ? [_buildSearchButton(context), _buildActionButton(context)]
             : [_buildCancelSearchButton(context)],
       ),
       body: _buildBody(context),
@@ -110,43 +109,48 @@ class _LibraryState extends ConsumerState<Library> {
         },
       );
     }
-    return const Row(children: [
-      Icon(Icons.library_music),
-      SizedBox(width: 8),
-      Text('My Library')
-    ]);
+    return const Row(
+      children: [
+        Icon(Icons.library_music),
+        SizedBox(width: 8),
+        Text('My Library'),
+      ],
+    );
   }
 
   Widget _buildSearchButton(BuildContext context) {
     return IconButton(
-        icon: const Icon(Icons.search),
-        tooltip: 'Search',
-        onPressed: () {
-          setState(() {
-            searchBarVisible = !searchBarVisible;
-          });
+      icon: const Icon(Icons.search),
+      tooltip: 'Search',
+      onPressed: () {
+        setState(() {
+          searchBarVisible = !searchBarVisible;
         });
+      },
+    );
   }
 
   Widget _buildActionButton(BuildContext context) {
     return IconButton(
-        icon: const Icon(Icons.playlist_add),
-        tooltip: 'Create New Playlist',
-        onPressed: () {
-          PlaylistCreationDialog.show(
-              context: context,
-              onCreateCallback: (playlistId) {
-                final textEdit = ref.read(searchControllerProvider).text;
-                final searchType = ref.read(searchTypeProvider);
-                if (textEdit.isEmpty && searchType == SearchType.playlist) {
-                  return;
-                }
-                ref.read(searchControllerProvider).clear();
-                ref
-                    .read(searchTypeProvider.notifier)
-                    .updateSearchType(SearchType.playlist);
-              });
-        });
+      icon: const Icon(Icons.playlist_add),
+      tooltip: 'Create New Playlist',
+      onPressed: () {
+        PlaylistCreationDialog.show(
+          context: context,
+          onCreateCallback: (playlistId) {
+            final textEdit = ref.read(searchControllerProvider).text;
+            final searchType = ref.read(searchTypeProvider);
+            if (textEdit.isEmpty && searchType == SearchType.playlist) {
+              return;
+            }
+            ref.read(searchControllerProvider).clear();
+            ref
+                .read(searchTypeProvider.notifier)
+                .updateSearchType(SearchType.playlist);
+          },
+        );
+      },
+    );
   }
 
   Widget _buildBody(BuildContext context) {
@@ -168,70 +172,81 @@ class _LibraryState extends ConsumerState<Library> {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(
-            horizontal: KalinkaConstants.kScreenContentHorizontalPadding,
-            vertical: KalinkaConstants.kContentVerticalPadding),
+          horizontal: KalinkaConstants.kScreenContentHorizontalPadding,
+          vertical: KalinkaConstants.kContentVerticalPadding,
+        ),
         child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: List.generate(Library.searchTypes.length, (index) {
-              final isSelected = Library.searchTypes[index] == searchType;
-              return Padding(
-                padding: KalinkaConstants.kFilterChipPadding,
-                child: FilterChip(
-                    label: Text(Library.searchTypesStr[index]),
-                    selected: isSelected,
-                    selectedColor:
-                        Theme.of(context).colorScheme.primaryContainer,
-                    showCheckmark: false,
-                    onSelected: (_) {
-                      notifier.updateSearchType(Library.searchTypes[index]);
-                    }),
-              );
-            })),
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: List.generate(Library.searchTypes.length, (index) {
+            final isSelected = Library.searchTypes[index] == searchType;
+            return Padding(
+              padding: KalinkaConstants.kFilterChipPadding,
+              child: FilterChip(
+                label: Text(Library.searchTypesStr[index]),
+                selected: isSelected,
+                selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                showCheckmark: false,
+                onSelected: (_) {
+                  notifier.updateSearchType(Library.searchTypes[index]);
+                },
+              ),
+            );
+          }),
+        ),
       ),
     );
   }
 
   Widget _buildItemList(BuildContext context) {
     final sourceDesc = UserFavoriteBrowseItemsDesc(
-        ref.watch(searchTypeProvider),
-        ref.watch(searchControllerProvider).text);
+      ref.watch(searchTypeProvider),
+      ref.watch(searchControllerProvider).text,
+    );
 
     final asyncValue = ref.watch(browseItemsProvider(sourceDesc));
     final state = asyncValue.value;
 
     if (state == null || asyncValue.isLoading) {
       return Shimmer(
-          child: BrowseItemListPlaceholder(browseItem: sourceDesc.sourceItem));
+        child: BrowseItemListPlaceholder(browseItem: sourceDesc.sourceItem),
+      );
     }
 
     if (state.totalCount == 0) {
       final searchController = ref.read(searchControllerProvider);
       return Column(
         children: [
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Icon(Icons.search, size: 96),
-            Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(
-                      bottom: KalinkaConstants.kContentVerticalPadding),
-                  child: const Text('No items found',
-                      style: TextStyle(fontSize: 18)),
-                ),
-                if (searchBarVisible && searchController.text.isNotEmpty)
-                  ElevatedButton(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.search, size: 96),
+              Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      bottom: KalinkaConstants.kContentVerticalPadding,
+                    ),
+                    child: const Text(
+                      'No items found',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  ),
+                  if (searchBarVisible && searchController.text.isNotEmpty)
+                    ElevatedButton(
                       onPressed: () {
                         setState(() {
                           ref.read(searchControllerProvider).clear();
                           searchBarVisible = false;
                         });
                       },
-                      child: const Text('Clear filter'))
-              ],
-            ),
-            const SizedBox(width: 96),
-          ]),
-          const Spacer()
+                      child: const Text('Clear filter'),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 96),
+            ],
+          ),
+          const Spacer(),
         ],
       );
     }
@@ -242,11 +257,11 @@ class _LibraryState extends ConsumerState<Library> {
       onTap: (context, index, item) {
         if (item.canBrowse) {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) {
-              return BrowseItemView(
-                browseItem: item,
-              );
-            }),
+            MaterialPageRoute(
+              builder: (context) {
+                return BrowseItemView(browseItem: item);
+              },
+            ),
           );
         } else if (item.canAdd) {
           _playTrack(context, item.id, index);
@@ -255,14 +270,15 @@ class _LibraryState extends ConsumerState<Library> {
       onAction: (context, index, item) {
         final parentContext = context;
         showModalBottomSheet(
-            context: context,
-            showDragHandle: true,
-            isScrollControlled: false,
-            useRootNavigator: true,
-            scrollControlDisabledMaxHeightRatio: 0.7,
-            builder: (context) {
-              return BottomMenu(parentContext: parentContext, browseItem: item);
-            });
+          context: context,
+          showDragHandle: true,
+          isScrollControlled: false,
+          useRootNavigator: true,
+          scrollControlDisabledMaxHeightRatio: 0.7,
+          builder: (context) {
+            return BottomMenu(parentContext: parentContext, browseItem: item);
+          },
+        );
       },
       pageSize: 0,
       showSourceAttribution: true,
@@ -271,6 +287,7 @@ class _LibraryState extends ConsumerState<Library> {
 
   void _playTrack(BuildContext context, String trackId, int index) async {
     final kalinkaApi = ref.read(kalinkaProxyProvider);
+    final wsApi = ref.read(kalinkaWsApiProvider);
     final state = ref.read(playerStateProvider);
 
     bool needToAdd = true;
@@ -279,11 +296,11 @@ class _LibraryState extends ConsumerState<Library> {
     }
 
     if (!needToAdd) {
-      kalinkaApi.play(index);
+      wsApi.sendQueueCommand(QueueCommand.play(index: index));
     } else {
       await kalinkaApi.clear();
       await kalinkaApi.add([trackId]);
-      await kalinkaApi.play();
+      await wsApi.sendQueueCommand(const QueueCommand.play());
     }
   }
 

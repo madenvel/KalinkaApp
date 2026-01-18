@@ -8,8 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
         ProviderSubscription;
 import 'package:kalinka/providers/app_state_provider.dart'
     show playQueueProvider, playerStateProvider;
-import 'package:kalinka/providers/kalinka_player_api_provider.dart'
-    show kalinkaProxyProvider;
+import 'package:kalinka/data_model/kalinka_ws_api.dart';
+import 'package:kalinka/providers/kalinka_ws_api_provider.dart';
 import 'package:kalinka/providers/playback_time_provider.dart'
     show playbackTimeMsProvider;
 import 'package:kalinka/providers/url_resolver.dart';
@@ -150,7 +150,7 @@ class _PlaybarState extends ConsumerState<Playbar> {
   }
 
   Widget _buildPlaybutton(BuildContext context, PlaybackState state) {
-    final kalinkaApi = ref.read(kalinkaProxyProvider);
+    final wsApi = ref.read(kalinkaWsApiProvider);
     return IconButton(
       icon: Icon(
         _getPlaybackIcon(state),
@@ -164,14 +164,14 @@ class _PlaybarState extends ConsumerState<Playbar> {
       onPressed: () {
         switch (state.state) {
           case PlayerStateType.playing:
-            kalinkaApi.pause(paused: true);
+            wsApi.sendQueueCommand(const QueueCommand.pause(paused: true));
             break;
           case PlayerStateType.paused:
-            kalinkaApi.pause(paused: false);
+            wsApi.sendQueueCommand(const QueueCommand.pause(paused: false));
             break;
           case PlayerStateType.stopped:
           case PlayerStateType.error:
-            kalinkaApi.play();
+            wsApi.sendQueueCommand(const QueueCommand.play());
             break;
           default:
             break;
@@ -233,7 +233,7 @@ class _PlaybarState extends ConsumerState<Playbar> {
   Widget _buildCarousel(BuildContext context, PlaybackState state) {
     final trackListState = ref.watch(playQueueProvider);
     final index = state.index;
-    final kalinkaApi = ref.read(kalinkaProxyProvider);
+    final wsApi = ref.read(kalinkaWsApiProvider);
 
     if (trackListState.isEmpty) {
       return const SizedBox.shrink();
@@ -250,7 +250,7 @@ class _PlaybarState extends ConsumerState<Playbar> {
         onPageChanged: (index, reason) {
           if (reason == CarouselPageChangedReason.manual) {
             _currentPageIndex = index;
-            kalinkaApi.play(index);
+            wsApi.sendQueueCommand(QueueCommand.play(index: index));
           } else if (reason == CarouselPageChangedReason.controller) {
             _currentPageIndex = index;
           }

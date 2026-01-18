@@ -29,17 +29,36 @@ abstract class KalinkaPlayerProxy {
   Future<StatusMessage> pause({bool paused = true});
   Future<StatusMessage> stop();
   Future<TrackList> listTracks({int offset = 0, int limit = 100});
-  Future<StatusMessage> setPlaybackMode(
-      {bool? repeatOne, bool? repeatAll, bool? shuffle});
-  Future<BrowseItemsList> search(SearchType queryType, String query,
-      {int offset = 0, int limit = 30});
-  Future<BrowseItemsList> browse(String id,
-      {int offset = 0, int limit = 10, List<String>? genreIds});
-  Future<BrowseItemsList> browseItem(BrowseItem item,
-      {int offset = 0, int limit = 10, List<String>? genreIds});
+  Future<StatusMessage> setPlaybackMode({
+    bool? repeatOne,
+    bool? repeatAll,
+    bool? shuffle,
+  });
+  Future<BrowseItemsList> search(
+    SearchType queryType,
+    String query, {
+    int offset = 0,
+    int limit = 30,
+  });
+  Future<BrowseItemsList> browse(
+    String id, {
+    int offset = 0,
+    int limit = 10,
+    List<String>? genreIds,
+  });
+  Future<BrowseItemsList> browseItem(
+    BrowseItem item, {
+    int offset = 0,
+    int limit = 10,
+    List<String>? genreIds,
+  });
   Future<BrowseItem> getMetadata(String id);
-  Future<BrowseItemsList> getFavorite(SearchType queryType,
-      {int offset = 0, int limit = 10, String filter = ''});
+  Future<BrowseItemsList> getFavorite(
+    SearchType queryType, {
+    int offset = 0,
+    int limit = 10,
+    String filter = '',
+  });
   Future<StatusMessage> addFavorite(String id);
   Future<StatusMessage> removeFavorite(String id);
   Future<FavoriteIds> getFavoriteIds();
@@ -66,11 +85,13 @@ class KalinkaPlayerProxyImpl implements KalinkaPlayerProxy {
   @override
   Future<StatusMessage> play([int? index]) async {
     return client
-        .put('/queue/play',
-            queryParameters: index != null ? {'index': index} : null)
+        .put(
+          '/queue/play',
+          queryParameters: index != null ? {'index': index} : null,
+        )
         .then((response) {
-      return statusMessageFromResponse(response);
-    });
+          return statusMessageFromResponse(response);
+        });
   }
 
   @override
@@ -91,29 +112,31 @@ class KalinkaPlayerProxyImpl implements KalinkaPlayerProxy {
   Future<StatusMessage> add(List<String> items) async {
     return client
         .post(
-      '/queue/add',
-      data: items,
-      options: Options(contentType: Headers.jsonContentType),
-    )
+          '/queue/add',
+          data: items,
+          options: Options(contentType: Headers.jsonContentType),
+        )
         .then((response) {
-      return statusMessageFromResponse(response);
-    });
+          return statusMessageFromResponse(response);
+        });
   }
 
   @override
   Future<StatusMessage> remove(int index) async {
     return client.post('/queue/remove', queryParameters: {'index': index}).then(
-        (response) {
-      return statusMessageFromResponse(response);
-    });
+      (response) {
+        return statusMessageFromResponse(response);
+      },
+    );
   }
 
   @override
   Future<StatusMessage> pause({bool paused = true}) async {
     return client.put('/queue/pause', queryParameters: {'paused': paused}).then(
-        (response) {
-      return statusMessageFromResponse(response);
-    });
+      (response) {
+        return statusMessageFromResponse(response);
+      },
+    );
   }
 
   @override
@@ -125,65 +148,100 @@ class KalinkaPlayerProxyImpl implements KalinkaPlayerProxy {
 
   @override
   Future<TrackList> listTracks({int offset = 0, int limit = 100}) async {
-    return client.get('/queue/list', queryParameters: {
-      'offset': offset.toString(),
-      'limit': limit.toString()
-    }).then((response) {
-      if (response.statusCode != 200) {
-        throw Exception('Failed to list tracks');
-      }
+    return client
+        .get(
+          '/queue/list',
+          queryParameters: {
+            'offset': offset.toString(),
+            'limit': limit.toString(),
+          },
+        )
+        .then((response) {
+          if (response.statusCode != 200) {
+            throw Exception('Failed to list tracks');
+          }
 
-      return TrackList.fromJson(response.data);
-    });
+          return TrackList.fromJson(response.data);
+        });
   }
 
   @override
-  Future<StatusMessage> setPlaybackMode(
-      {bool? repeatOne, bool? repeatAll, bool? shuffle}) async {
-    return client.put('/queue/mode', queryParameters: {
-      if (repeatOne != null) 'repeat_single': repeatOne,
-      if (repeatAll != null) 'repeat_all': repeatAll,
-      if (shuffle != null) 'shuffle': shuffle
-    }).then((response) {
-      return statusMessageFromResponse(response);
-    });
+  Future<StatusMessage> setPlaybackMode({
+    bool? repeatOne,
+    bool? repeatAll,
+    bool? shuffle,
+  }) async {
+    return client
+        .put(
+          '/queue/mode',
+          queryParameters: {
+            if (repeatOne != null) 'repeat_single': repeatOne,
+            if (repeatAll != null) 'repeat_all': repeatAll,
+            if (shuffle != null) 'shuffle': shuffle,
+          },
+        )
+        .then((response) {
+          return statusMessageFromResponse(response);
+        });
   }
 
   @override
-  Future<BrowseItemsList> search(SearchType queryType, String query,
-      {int offset = 0, int limit = 30}) async {
+  Future<BrowseItemsList> search(
+    SearchType queryType,
+    String query, {
+    int offset = 0,
+    int limit = 30,
+  }) async {
     final url = '/search/${queryType.toStringValue()}/$query';
-    return client.get(url, queryParameters: {
-      'offset': offset.toString(),
-      'limit': limit.toString()
-    }).then((response) {
-      if (response.statusCode != 200) {
-        throw Exception('Failed to search for $queryType $query');
-      }
+    return client
+        .get(
+          url,
+          queryParameters: {
+            'offset': offset.toString(),
+            'limit': limit.toString(),
+          },
+        )
+        .then((response) {
+          if (response.statusCode != 200) {
+            throw Exception('Failed to search for $queryType $query');
+          }
 
-      return BrowseItemsList.fromJson(response.data);
-    });
+          return BrowseItemsList.fromJson(response.data);
+        });
   }
 
   @override
-  Future<BrowseItemsList> browse(String id,
-      {int offset = 0, int limit = 10, List<String>? genreIds}) async {
-    return client.get('/browse/$id', queryParameters: {
-      'offset': offset.toString(),
-      'limit': limit.toString(),
-      ...genreIds != null ? {'genre_ids': genreIds} : {}
-    }).then((response) {
-      if (response.statusCode != 200) {
-        throw Exception('Failed to browse $id, url=${response.realUri}');
-      }
+  Future<BrowseItemsList> browse(
+    String id, {
+    int offset = 0,
+    int limit = 10,
+    List<String>? genreIds,
+  }) async {
+    return client
+        .get(
+          '/browse/$id',
+          queryParameters: {
+            'offset': offset.toString(),
+            'limit': limit.toString(),
+            ...genreIds != null ? {'genre_ids': genreIds} : {},
+          },
+        )
+        .then((response) {
+          if (response.statusCode != 200) {
+            throw Exception('Failed to browse $id, url=${response.realUri}');
+          }
 
-      return BrowseItemsList.fromJson(response.data);
-    });
+          return BrowseItemsList.fromJson(response.data);
+        });
   }
 
   @override
-  Future<BrowseItemsList> browseItem(BrowseItem item,
-      {int offset = 0, int limit = 10, List<String>? genreIds}) {
+  Future<BrowseItemsList> browseItem(
+    BrowseItem item, {
+    int offset = 0,
+    int limit = 10,
+    List<String>? genreIds,
+  }) {
     if (item.canBrowse) {
       return browse(item.id, offset: offset, limit: limit, genreIds: genreIds);
     }
@@ -196,7 +254,8 @@ class KalinkaPlayerProxyImpl implements KalinkaPlayerProxy {
     return client.get('/get/$id').then((response) {
       if (response.statusCode != 200) {
         throw Exception(
-            'Failed to get metadata for $id, url=${response.realUri}');
+          'Failed to get metadata for $id, url=${response.realUri}',
+        );
       }
 
       return BrowseItem.fromJson(response.data);
@@ -204,21 +263,30 @@ class KalinkaPlayerProxyImpl implements KalinkaPlayerProxy {
   }
 
   @override
-  Future<BrowseItemsList> getFavorite(SearchType queryType,
-      {int offset = 0, int limit = 10, String filter = ''}) async {
-    return client.get('/favorite/list/${queryType.toStringValue()}',
-        queryParameters: {
-          'offset': offset.toString(),
-          'limit': limit.toString(),
-          'filter': filter
-        }).then((response) {
-      if (response.statusCode != 200) {
-        throw Exception(
-            'Failed to get favorite ${queryType.toStringValue()}, url=${response.realUri}');
-      }
+  Future<BrowseItemsList> getFavorite(
+    SearchType queryType, {
+    int offset = 0,
+    int limit = 10,
+    String filter = '',
+  }) async {
+    return client
+        .get(
+          '/favorite/list/${queryType.toStringValue()}',
+          queryParameters: {
+            'offset': offset.toString(),
+            'limit': limit.toString(),
+            'filter': filter,
+          },
+        )
+        .then((response) {
+          if (response.statusCode != 200) {
+            throw Exception(
+              'Failed to get favorite ${queryType.toStringValue()}, url=${response.realUri}',
+            );
+          }
 
-      return BrowseItemsList.fromJson(response.data);
-    });
+          return BrowseItemsList.fromJson(response.data);
+        });
   }
 
   @override
@@ -257,13 +325,18 @@ class KalinkaPlayerProxyImpl implements KalinkaPlayerProxy {
 
   @override
   Future<void> setVolume(int volume) async {
-    return client.put('/device/set_volume',
-        queryParameters: {'volume': volume.toString()}).then((response) {
-      if (response.statusCode != 200) {
-        throw Exception(
-            'Failed to set volume to $volume, url=${response.realUri}');
-      }
-    });
+    return client
+        .put(
+          '/device/set_volume',
+          queryParameters: {'volume': volume.toString()},
+        )
+        .then((response) {
+          if (response.statusCode != 200) {
+            throw Exception(
+              'Failed to set volume to $volume, url=${response.realUri}',
+            );
+          }
+        });
   }
 
   @override
@@ -279,81 +352,106 @@ class KalinkaPlayerProxyImpl implements KalinkaPlayerProxy {
   @override
   Future<GenreList> getGenres(String? source) async {
     return client
-        .get('/genre/list',
-            queryParameters: source != null ? {'source': source} : null)
+        .get(
+          '/genre/list',
+          queryParameters: source != null ? {'source': source} : null,
+        )
         .then((response) {
-      if (response.statusCode != 200) {
-        throw Exception('Failed to get genres, url=${response.realUri}');
-      }
-      return GenreList.fromJson(response.data);
-    });
+          if (response.statusCode != 200) {
+            throw Exception('Failed to get genres, url=${response.realUri}');
+          }
+          return GenreList.fromJson(response.data);
+        });
   }
 
   @override
   Future<SeekStatusMessage> seek(int positionMs) async {
-    return client.put('/queue/current_track/seek', queryParameters: {
-      'position_ms': positionMs.toString()
-    }).then((response) {
-      if (response.statusCode != 200) {
-        throw Exception('Request failed, url=${response.realUri}');
-      }
-      return SeekStatusMessage.fromJson(response.data);
-    });
+    return client
+        .put(
+          '/queue/current_track/seek',
+          queryParameters: {'position_ms': positionMs.toString()},
+        )
+        .then((response) {
+          if (response.statusCode != 200) {
+            throw Exception('Request failed, url=${response.realUri}');
+          }
+          return SeekStatusMessage.fromJson(response.data);
+        });
   }
 
   @override
   Future<Playlist> playlistCreate(String name, String? description) async {
-    return client.post('/playlist/create', queryParameters: {
-      'name': name,
-      if (description != null) 'description': description
-    }).then((response) {
-      if (response.statusCode != 200) {
-        throw Exception('Failed to create playlist, url=${response.realUri}');
-      }
-      return Playlist.fromJson(response.data);
-    });
+    return client
+        .post(
+          '/playlist/create',
+          queryParameters: {
+            'name': name,
+            if (description != null) 'description': description,
+          },
+        )
+        .then((response) {
+          if (response.statusCode != 200) {
+            throw Exception(
+              'Failed to create playlist, url=${response.realUri}',
+            );
+          }
+          return Playlist.fromJson(response.data);
+        });
   }
 
   @override
   Future<void> playlistDelete(String playlistId) async {
-    return client.delete('/playlist/delete',
-        queryParameters: {'playlist_id': playlistId}).then((response) {
-      if (response.statusCode != 200) {
-        throw Exception(
-            'Failed to delete playlist, url=${response.realUri}, message=${response.statusMessage}');
-      }
-    });
+    return client
+        .delete(
+          '/playlist/delete',
+          queryParameters: {'playlist_id': playlistId},
+        )
+        .then((response) {
+          if (response.statusCode != 200) {
+            throw Exception(
+              'Failed to delete playlist, url=${response.realUri}, message=${response.statusMessage}',
+            );
+          }
+        });
   }
 
   @override
   Future<Playlist> playlistAddTracks(
-      String playlistId, List<String> trackIds) async {
+    String playlistId,
+    List<String> trackIds,
+  ) async {
     return client
-        .post('/playlist/add_tracks',
-            queryParameters: {
-              'playlist_id': playlistId,
-            },
-            data: trackIds,
-            options: Options(contentType: Headers.jsonContentType))
+        .post(
+          '/playlist/add_tracks',
+          queryParameters: {'playlist_id': playlistId},
+          data: trackIds,
+          options: Options(contentType: Headers.jsonContentType),
+        )
         .then((response) {
-      if (response.statusCode != 200) {
-        throw Exception(
-            'Failed to add tracks to playlist, url=${response.realUri}');
-      }
-      return Playlist.fromJson(response.data);
-    });
+          if (response.statusCode != 200) {
+            throw Exception(
+              'Failed to add tracks to playlist, url=${response.realUri}',
+            );
+          }
+          return Playlist.fromJson(response.data);
+        });
   }
 
   @override
   Future<BrowseItemsList> playlistUserList(int offset, int limit) async {
-    return client.get('/playlist/list',
-        queryParameters: {'offset': offset, 'limit': limit}).then((response) {
-      if (response.statusCode != 200) {
-        throw Exception(
-            'Failed to list user playlists, url=${response.realUri}');
-      }
-      return BrowseItemsList.fromJson(response.data);
-    });
+    return client
+        .get(
+          '/playlist/list',
+          queryParameters: {'offset': offset, 'limit': limit},
+        )
+        .then((response) {
+          if (response.statusCode != 200) {
+            throw Exception(
+              'Failed to list user playlists, url=${response.realUri}',
+            );
+          }
+          return BrowseItemsList.fromJson(response.data);
+        });
   }
 
   @override
@@ -379,13 +477,16 @@ class KalinkaPlayerProxyImpl implements KalinkaPlayerProxy {
   @override
   Future<void> saveSettings(Map<String, dynamic> settings) async {
     final String encodedSettings = jsonEncode(settings);
-    final response = await client.put('/server/config',
-        options: Options(contentType: Headers.jsonContentType),
-        data: encodedSettings);
+    final response = await client.put(
+      '/server/config',
+      options: Options(contentType: Headers.jsonContentType),
+      data: encodedSettings,
+    );
 
     if (response.statusCode != 200) {
       throw Exception(
-          'Failed to save settings, status: ${response.statusCode}, body: ${response.data}');
+        'Failed to save settings, status: ${response.statusCode}, body: ${response.data}',
+      );
     }
   }
 

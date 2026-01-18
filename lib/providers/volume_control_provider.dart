@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kalinka/data_model/data_model.dart';
 import 'package:kalinka/providers/app_state_provider.dart';
-import 'package:kalinka/providers/kalinka_player_api_provider.dart';
+import 'package:kalinka/data_model/kalinka_ws_api.dart';
+import 'package:kalinka/providers/kalinka_ws_api_provider.dart';
 
 class VolumeController extends Notifier<DeviceVolume> {
   bool _blockNotifications = false;
@@ -27,9 +28,12 @@ class VolumeController extends Notifier<DeviceVolume> {
 
     final currentVolume = state.currentVolume;
     state = state.copyWith(currentVolume: value);
-    ref.read(kalinkaProxyProvider).setVolume(value).catchError((error) {
-      state = state.copyWith(currentVolume: currentVolume);
-    });
+    ref
+        .read(kalinkaWsApiProvider)
+        .sendDeviceCommand(DeviceCommand.setVolume(volume: value))
+        .catchError((error) {
+          state = state.copyWith(currentVolume: currentVolume);
+        });
   }
 
   void setBlockNotifications(bool blockNotifications) {
@@ -37,5 +41,6 @@ class VolumeController extends Notifier<DeviceVolume> {
   }
 }
 
-final volumeControlProvider =
-    NotifierProvider<VolumeController, DeviceVolume>(VolumeController.new);
+final volumeControlProvider = NotifierProvider<VolumeController, DeviceVolume>(
+  VolumeController.new,
+);

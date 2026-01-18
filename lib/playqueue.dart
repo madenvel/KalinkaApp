@@ -10,6 +10,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'
 import 'package:kalinka/providers/app_state_provider.dart';
 import 'package:kalinka/providers/kalinka_player_api_provider.dart'
     show kalinkaProxyProvider;
+import 'package:kalinka/data_model/kalinka_ws_api.dart';
+import 'package:kalinka/providers/kalinka_ws_api_provider.dart';
 import 'package:kalinka/providers/url_resolver.dart' show urlResolverProvider;
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
@@ -57,8 +59,9 @@ class _PlayQueueState extends ConsumerState<PlayQueue>
       return const SizedBox.shrink();
     }
 
-    int? currentTrackIndex =
-        ref.watch(playerStateProvider.select((state) => state.index));
+    int? currentTrackIndex = ref.watch(
+      playerStateProvider.select((state) => state.index),
+    );
 
     // Scroll to current track when it changes
     if (currentTrackIndex != null &&
@@ -66,8 +69,9 @@ class _PlayQueueState extends ConsumerState<PlayQueue>
         tracks.isNotEmpty) {
       _previousTrackIndex = currentTrackIndex;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Future.delayed(Duration(milliseconds: 500))
-            .then((_) => scrollToIndex(currentTrackIndex));
+        Future.delayed(
+          Duration(milliseconds: 500),
+        ).then((_) => scrollToIndex(currentTrackIndex));
       });
     }
 
@@ -83,57 +87,85 @@ class _PlayQueueState extends ConsumerState<PlayQueue>
       },
       itemBuilder: (context, index) {
         final bool isCurrentTrack = index == currentTrackIndex;
-        return Column(children: [
-          if (isCurrentTrack)
-            const ListTile(
-                title: Text('Current track',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 15.0))),
-          isCurrentTrack
-              ? Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withValues(alpha: 0.4),
-                    border: Border(
-                      left: BorderSide(
-                        color: Theme.of(context).colorScheme.secondaryContainer,
-                        width: 4.0,
+        return Column(
+          children: [
+            if (isCurrentTrack)
+              const ListTile(
+                title: Text(
+                  'Current track',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.0),
+                ),
+              ),
+            isCurrentTrack
+                ? Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.4),
+                      border: Border(
+                        left: BorderSide(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.secondaryContainer,
+                          width: 4.0,
+                        ),
                       ),
                     ),
+                    child: _buildTrackTile(
+                      context,
+                      tracks[index],
+                      isCurrentTrack,
+                      index,
+                    ),
+                  )
+                : _buildTrackTile(
+                    context,
+                    tracks[index],
+                    isCurrentTrack,
+                    index,
                   ),
-                  child: _buildTrackTile(
-                      context, tracks[index], isCurrentTrack, index),
-                )
-              : _buildTrackTile(context, tracks[index], isCurrentTrack, index),
-          isCurrentTrack ? const Divider(height: 1.0) : const SizedBox.shrink(),
-          tracks.length - 1 > index && isCurrentTrack
-              ? const ListTile(
-                  title: Text('Next tracks',
+            isCurrentTrack
+                ? const Divider(height: 1.0)
+                : const SizedBox.shrink(),
+            tracks.length - 1 > index && isCurrentTrack
+                ? const ListTile(
+                    title: Text(
+                      'Next tracks',
                       style: TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 15.0)))
-              : const SizedBox.shrink()
-        ]);
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15.0,
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ],
+        );
       },
     );
   }
 
   Widget _buildTrackTile(
-      BuildContext context, Track track, bool isCurrentTrack, int index) {
+    BuildContext context,
+    Track track,
+    bool isCurrentTrack,
+    int index,
+  ) {
     final kalinkaApi = ref.read(kalinkaProxyProvider);
+    final wsApi = ref.read(kalinkaWsApiProvider);
     return ListTile(
       tileColor: isCurrentTrack
           ? null
           : null, // No background color needed as it's handled by Container
       leading: SizedBox(
-          width: 48,
-          height: 48,
-          child: RepaintBoundary(
-            child: ImageWithIndicator(
-                imageUrl: track.album?.image?.thumbnail,
-                showIndicator: isCurrentTrack),
-          )),
+        width: 48,
+        height: 48,
+        child: RepaintBoundary(
+          child: ImageWithIndicator(
+            imageUrl: track.album?.image?.thumbnail,
+            showIndicator: isCurrentTrack,
+          ),
+        ),
+      ),
       title: Text(
         track.title,
         overflow: TextOverflow.ellipsis,
@@ -141,15 +173,18 @@ class _PlayQueueState extends ConsumerState<PlayQueue>
             ? const TextStyle(fontWeight: FontWeight.bold)
             : null,
       ),
-      subtitle: Text(track.performer?.name ?? 'Unknown performer',
-          overflow: TextOverflow.ellipsis),
+      subtitle: Text(
+        track.performer?.name ?? 'Unknown performer',
+        overflow: TextOverflow.ellipsis,
+      ),
       trailing: IconButton(
-          icon: const Icon(Icons.clear),
-          onPressed: () {
-            kalinkaApi.remove(index);
-          }),
+        icon: const Icon(Icons.clear),
+        onPressed: () {
+          kalinkaApi.remove(index);
+        },
+      ),
       onTap: () {
-        kalinkaApi.play(index);
+        wsApi.sendQueueCommand(QueueCommand.play(index: index));
       },
     );
   }
@@ -160,13 +195,18 @@ class ImageWithIndicator extends ConsumerWidget {
   final double size;
   final bool showIndicator;
 
-  const ImageWithIndicator(
-      {super.key, this.imageUrl, this.size = 48, this.showIndicator = false});
+  const ImageWithIndicator({
+    super.key,
+    this.imageUrl,
+    this.size = 48,
+    this.showIndicator = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Stack(children: [
-      Positioned.fill(
+    return Stack(
+      children: [
+        Positioned.fill(
           child: imageUrl != null
               ? CachedNetworkImage(
                   fadeInDuration: Duration.zero,
@@ -175,20 +215,25 @@ class ImageWithIndicator extends ConsumerWidget {
                   cacheManager: KalinkaMusicCacheManager.instance,
                   imageUrl: ref.read(urlResolverProvider).abs(imageUrl!),
                   imageBuilder: (context, imageProvider) => Container(
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(4),
-                          image: DecorationImage(
-                              colorFilter: showIndicator
-                                  ? ColorFilter.mode(
-                                      Colors.grey, BlendMode.modulate)
-                                  : null,
-                              image: imageProvider))),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      image: DecorationImage(
+                        colorFilter: showIndicator
+                            ? ColorFilter.mode(Colors.grey, BlendMode.modulate)
+                            : null,
+                        image: imageProvider,
+                      ),
+                    ),
+                  ),
                   placeholder: (context, url) =>
                       const Icon(Icons.music_note, size: 48.0),
                   errorWidget: (context, url, error) =>
-                      const Icon(Icons.error, size: 48.0))
-              : const Icon(Icons.music_note, size: 48.0)),
-      if (showIndicator) const Center(child: SoundwaveWidget())
-    ]);
+                      const Icon(Icons.error, size: 48.0),
+                )
+              : const Icon(Icons.music_note, size: 48.0),
+        ),
+        if (showIndicator) const Center(child: SoundwaveWidget()),
+      ],
+    );
   }
 }

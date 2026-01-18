@@ -8,7 +8,7 @@ import 'package:kalinka/data_model/playqueue_events.dart' show PlayQueueEvent;
 import 'package:kalinka/providers/connection_state_provider.dart';
 import 'package:kalinka/providers/kalinka_player_api_provider.dart';
 import 'package:kalinka/providers/websocket_provider.dart'
-    show webSocketProvider;
+    show deviceWebSocketProvider, queueWebSocketProvider;
 import 'package:logger/logger.dart';
 
 final logger = Logger();
@@ -73,9 +73,7 @@ Stream<String> openPlayQueueStream(Ref ref, CancelToken cancel) async* {
 
 // WebSocket-based queue stream (expects text frames with JSON)
 Stream<String> openPlayQueueWsStream(Ref ref, CancelToken cancel) async* {
-  final wsPath = '/queue/ws';
-
-  final socket = await ref.watch(webSocketProvider(wsPath).future);
+  final socket = await ref.watch(queueWebSocketProvider.future);
 
   // Close the socket if the caller cancels via CancelToken
   cancel.whenCancel.then((_) => socket.close());
@@ -89,9 +87,7 @@ Stream<String> openPlayQueueWsStream(Ref ref, CancelToken cancel) async* {
 
 // Web-Socket-based external device stream (expects text frames with JSON)
 Stream<String> openExtDeviceWsStream(Ref ref, CancelToken cancel) async* {
-  final wsPath = '/device/ws';
-
-  final socket = await ref.watch(webSocketProvider(wsPath).future);
+  final socket = await ref.watch(deviceWebSocketProvider.future);
 
   // Close the socket if the caller cancels via CancelToken
   cancel.whenCancel.then((_) => socket.close());
