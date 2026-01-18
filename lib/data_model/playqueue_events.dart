@@ -96,7 +96,7 @@ class PlayQueueState {
 
   int _estimatePosition(PlaybackState playbackState, int serverTimeNs) {
     if (playbackState.state == PlayerStateType.playing) {
-      final delta = playbackState.timestampNs - serverTimeNs;
+      final delta = (serverTimeNs - playbackState.timestampNs) / 1_000_000;
       return (playbackState.position ?? 0) + delta.toInt();
     } else {
       return playbackState.position ?? 0;

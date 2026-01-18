@@ -255,13 +255,7 @@ class _NowPlayingState extends ConsumerState<NowPlaying> {
 
   void _handleSeek(double value) {
     logger.i('Seeking to $value');
-    wsApi
-        .sendQueueCommand(QueueCommand.seek(positionMs: value.toInt()))
-        .whenComplete(() {
-          setState(() {
-            isSeeking = false;
-          });
-        });
+    wsApi.sendQueueCommand(QueueCommand.seek(positionMs: value.toInt()));
   }
 
   Widget _buildTimeIndicators(int position, int duration) {
