@@ -7,6 +7,8 @@ import 'package:kalinka/data_model/ext_device_events.dart' show ExtDeviceEvent;
 import 'package:kalinka/data_model/playqueue_events.dart' show PlayQueueEvent;
 import 'package:kalinka/providers/connection_state_provider.dart';
 import 'package:kalinka/providers/kalinka_player_api_provider.dart';
+import 'package:kalinka/providers/websocket_provider.dart'
+    show webSocketProvider;
 import 'package:logger/logger.dart';
 
 final logger = Logger();
@@ -23,9 +25,7 @@ StreamProvider<TEvent> makeEventBusProvider<TEvent>({
       cancel.cancel();
     });
 
-    final lines = stream.transform(const LineSplitter());
-
-    await for (final line in lines) {
+    await for (final line in stream) {
       if (cancel.isCancelled) {
         break;
       }
@@ -65,7 +65,42 @@ Stream<String> openPlayQueueStream(Ref ref, CancelToken cancel) async* {
         },
       );
 
-  yield* resp.data!.stream.transform(unit8Transformer).transform(utf8.decoder);
+  yield* resp.data!.stream
+      .transform(unit8Transformer)
+      .transform(utf8.decoder)
+      .transform(const LineSplitter());
+}
+
+// WebSocket-based queue stream (expects text frames with JSON)
+Stream<String> openPlayQueueWsStream(Ref ref, CancelToken cancel) async* {
+  final wsPath = '/queue/ws';
+
+  final socket = await ref.watch(webSocketProvider(wsPath).future);
+
+  // Close the socket if the caller cancels via CancelToken
+  cancel.whenCancel.then((_) => socket.close());
+
+  yield* socket.map((event) {
+    if (event is String) return event;
+    if (event is List<int>) return utf8.decode(event);
+    return event.toString();
+  });
+}
+
+// Web-Socket-based external device stream (expects text frames with JSON)
+Stream<String> openExtDeviceWsStream(Ref ref, CancelToken cancel) async* {
+  final wsPath = '/device/ws';
+
+  final socket = await ref.watch(webSocketProvider(wsPath).future);
+
+  // Close the socket if the caller cancels via CancelToken
+  cancel.whenCancel.then((_) => socket.close());
+
+  yield* socket.map((event) {
+    if (event is String) return event;
+    if (event is List<int>) return utf8.decode(event);
+    return event.toString();
+  });
 }
 
 Stream<String> openExtDeviceStream(Ref ref, CancelToken cancel) async* {
@@ -84,15 +119,18 @@ Stream<String> openExtDeviceStream(Ref ref, CancelToken cancel) async* {
         },
       );
 
-  yield* resp.data!.stream.transform(unit8Transformer).transform(utf8.decoder);
+  yield* resp.data!.stream
+      .transform(unit8Transformer)
+      .transform(utf8.decoder)
+      .transform(const LineSplitter());
 }
 
 final playQueueEventBusProvider = makeEventBusProvider<PlayQueueEvent>(
-  openStream: openPlayQueueStream,
+  openStream: openPlayQueueWsStream,
   decodeEvent: (json) => PlayQueueEvent.fromJson(json as Map<String, Object?>),
 );
 
 final extDeviceEventBusProvider = makeEventBusProvider<ExtDeviceEvent>(
-  openStream: openExtDeviceStream,
+  openStream: openExtDeviceWsStream,
   decodeEvent: (json) => ExtDeviceEvent.fromJson(json as Map<String, Object?>),
 );
