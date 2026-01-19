@@ -4,6 +4,9 @@ import 'package:kalinka/data_model/data_model.dart';
 part 'ext_device_events.freezed.dart';
 part 'ext_device_events.g.dart';
 
+// To regenerate code, run:
+// dart run build_runner build --delete-conflicting-outputs
+
 /// External device event types matching backend values.
 @JsonEnum(fieldRename: FieldRename.snake, alwaysCreate: true)
 enum ExtDeviceEventType {

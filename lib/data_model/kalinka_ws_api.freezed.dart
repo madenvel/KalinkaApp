@@ -527,7 +527,7 @@ return setPlaybackMode(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( int? index)?  play,TResult Function( bool paused)?  pause,TResult Function()?  next,TResult Function()?  prev,TResult Function()?  stop,TResult Function(@JsonKey(name: 'position_ms')  int positionMs)?  seek,TResult Function( bool? shuffle, @JsonKey(name: 'repeat_single')  bool? repeatSingle, @JsonKey(name: 'repeat_all')  bool? repeatAll)?  setPlaybackMode,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( int? index)?  play,TResult Function( bool paused)?  pause,TResult Function()?  next,TResult Function()?  prev,TResult Function()?  stop,TResult Function( int positionMs)?  seek,TResult Function( bool? shuffle,  bool? repeatSingle,  bool? repeatAll)?  setPlaybackMode,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case PlayCommand() when play != null:
 return play(_that.index);case PauseCommand() when pause != null:
@@ -554,7 +554,7 @@ return setPlaybackMode(_that.shuffle,_that.repeatSingle,_that.repeatAll);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( int? index)  play,required TResult Function( bool paused)  pause,required TResult Function()  next,required TResult Function()  prev,required TResult Function()  stop,required TResult Function(@JsonKey(name: 'position_ms')  int positionMs)  seek,required TResult Function( bool? shuffle, @JsonKey(name: 'repeat_single')  bool? repeatSingle, @JsonKey(name: 'repeat_all')  bool? repeatAll)  setPlaybackMode,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( int? index)  play,required TResult Function( bool paused)  pause,required TResult Function()  next,required TResult Function()  prev,required TResult Function()  stop,required TResult Function( int positionMs)  seek,required TResult Function( bool? shuffle,  bool? repeatSingle,  bool? repeatAll)  setPlaybackMode,}) {final _that = this;
 switch (_that) {
 case PlayCommand():
 return play(_that.index);case PauseCommand():
@@ -577,7 +577,7 @@ return setPlaybackMode(_that.shuffle,_that.repeatSingle,_that.repeatAll);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( int? index)?  play,TResult? Function( bool paused)?  pause,TResult? Function()?  next,TResult? Function()?  prev,TResult? Function()?  stop,TResult? Function(@JsonKey(name: 'position_ms')  int positionMs)?  seek,TResult? Function( bool? shuffle, @JsonKey(name: 'repeat_single')  bool? repeatSingle, @JsonKey(name: 'repeat_all')  bool? repeatAll)?  setPlaybackMode,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( int? index)?  play,TResult? Function( bool paused)?  pause,TResult? Function()?  next,TResult? Function()?  prev,TResult? Function()?  stop,TResult? Function( int positionMs)?  seek,TResult? Function( bool? shuffle,  bool? repeatSingle,  bool? repeatAll)?  setPlaybackMode,}) {final _that = this;
 switch (_that) {
 case PlayCommand() when play != null:
 return play(_that.index);case PauseCommand() when pause != null:
@@ -597,8 +597,8 @@ return setPlaybackMode(_that.shuffle,_that.repeatSingle,_that.repeatAll);case _:
 /// @nodoc
 @JsonSerializable()
 
-class PlayCommand implements QueueCommand {
-  const PlayCommand({this.index, final  String? $type}): $type = $type ?? 'play';
+class PlayCommand extends QueueCommand {
+  const PlayCommand({this.index, final  String? $type}): $type = $type ?? 'play',super._();
   factory PlayCommand.fromJson(Map<String, dynamic> json) => _$PlayCommandFromJson(json);
 
  final  int? index;
@@ -670,8 +670,8 @@ as int?,
 /// @nodoc
 @JsonSerializable()
 
-class PauseCommand implements QueueCommand {
-  const PauseCommand({this.paused = true, final  String? $type}): $type = $type ?? 'pause';
+class PauseCommand extends QueueCommand {
+  const PauseCommand({this.paused = true, final  String? $type}): $type = $type ?? 'pause',super._();
   factory PauseCommand.fromJson(Map<String, dynamic> json) => _$PauseCommandFromJson(json);
 
 @JsonKey() final  bool paused;
@@ -743,8 +743,8 @@ as bool,
 /// @nodoc
 @JsonSerializable()
 
-class NextCommand implements QueueCommand {
-  const NextCommand({final  String? $type}): $type = $type ?? 'next';
+class NextCommand extends QueueCommand {
+  const NextCommand({final  String? $type}): $type = $type ?? 'next',super._();
   factory NextCommand.fromJson(Map<String, dynamic> json) => _$NextCommandFromJson(json);
 
 
@@ -782,8 +782,8 @@ String toString() {
 /// @nodoc
 @JsonSerializable()
 
-class PrevCommand implements QueueCommand {
-  const PrevCommand({final  String? $type}): $type = $type ?? 'prev';
+class PrevCommand extends QueueCommand {
+  const PrevCommand({final  String? $type}): $type = $type ?? 'prev',super._();
   factory PrevCommand.fromJson(Map<String, dynamic> json) => _$PrevCommandFromJson(json);
 
 
@@ -821,8 +821,8 @@ String toString() {
 /// @nodoc
 @JsonSerializable()
 
-class StopCommand implements QueueCommand {
-  const StopCommand({final  String? $type}): $type = $type ?? 'stop';
+class StopCommand extends QueueCommand {
+  const StopCommand({final  String? $type}): $type = $type ?? 'stop',super._();
   factory StopCommand.fromJson(Map<String, dynamic> json) => _$StopCommandFromJson(json);
 
 
@@ -860,11 +860,11 @@ String toString() {
 /// @nodoc
 @JsonSerializable()
 
-class SeekCommand implements QueueCommand {
-  const SeekCommand({@JsonKey(name: 'position_ms') required this.positionMs, final  String? $type}): $type = $type ?? 'seek';
+class SeekCommand extends QueueCommand {
+  const SeekCommand({required this.positionMs, final  String? $type}): $type = $type ?? 'seek',super._();
   factory SeekCommand.fromJson(Map<String, dynamic> json) => _$SeekCommandFromJson(json);
 
-@JsonKey(name: 'position_ms') final  int positionMs;
+ final  int positionMs;
 
 @JsonKey(name: 'command')
 final String $type;
@@ -903,7 +903,7 @@ abstract mixin class $SeekCommandCopyWith<$Res> implements $QueueCommandCopyWith
   factory $SeekCommandCopyWith(SeekCommand value, $Res Function(SeekCommand) _then) = _$SeekCommandCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'position_ms') int positionMs
+ int positionMs
 });
 
 
@@ -933,13 +933,13 @@ as int,
 /// @nodoc
 @JsonSerializable()
 
-class SetPlaybackModeCommand implements QueueCommand {
-  const SetPlaybackModeCommand({this.shuffle, @JsonKey(name: 'repeat_single') this.repeatSingle, @JsonKey(name: 'repeat_all') this.repeatAll, final  String? $type}): $type = $type ?? 'set_playback_mode';
+class SetPlaybackModeCommand extends QueueCommand {
+  const SetPlaybackModeCommand({this.shuffle, this.repeatSingle, this.repeatAll, final  String? $type}): $type = $type ?? 'set_playback_mode',super._();
   factory SetPlaybackModeCommand.fromJson(Map<String, dynamic> json) => _$SetPlaybackModeCommandFromJson(json);
 
  final  bool? shuffle;
-@JsonKey(name: 'repeat_single') final  bool? repeatSingle;
-@JsonKey(name: 'repeat_all') final  bool? repeatAll;
+ final  bool? repeatSingle;
+ final  bool? repeatAll;
 
 @JsonKey(name: 'command')
 final String $type;
@@ -978,7 +978,7 @@ abstract mixin class $SetPlaybackModeCommandCopyWith<$Res> implements $QueueComm
   factory $SetPlaybackModeCommandCopyWith(SetPlaybackModeCommand value, $Res Function(SetPlaybackModeCommand) _then) = _$SetPlaybackModeCommandCopyWithImpl;
 @useResult
 $Res call({
- bool? shuffle,@JsonKey(name: 'repeat_single') bool? repeatSingle,@JsonKey(name: 'repeat_all') bool? repeatAll
+ bool? shuffle, bool? repeatSingle, bool? repeatAll
 });
 
 

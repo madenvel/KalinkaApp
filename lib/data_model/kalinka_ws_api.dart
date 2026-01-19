@@ -3,8 +3,10 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'kalinka_ws_api.freezed.dart';
 part 'kalinka_ws_api.g.dart';
 
+// To regenerate code, run:
+// dart run build_runner build --delete-conflicting-outputs
+
 @Freezed(unionKey: 'command', unionValueCase: FreezedUnionCase.snake)
-@JsonSerializable(fieldRename: FieldRename.snake)
 sealed class DeviceCommand with _$DeviceCommand {
   const factory DeviceCommand.powerOn() = PowerOnCommand;
 
@@ -19,8 +21,9 @@ sealed class DeviceCommand with _$DeviceCommand {
 }
 
 @Freezed(unionKey: 'command', unionValueCase: FreezedUnionCase.snake)
-@JsonSerializable(fieldRename: FieldRename.snake)
 sealed class QueueCommand with _$QueueCommand {
+  const QueueCommand._();
+
   const factory QueueCommand.play({int? index}) = PlayCommand;
 
   const factory QueueCommand.pause({@Default(true) bool paused}) = PauseCommand;
