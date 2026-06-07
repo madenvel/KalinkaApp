@@ -1,3 +1,8 @@
+> [!WARNING]
+> **This project is deprecated and no longer supported.**
+>
+> KalinkaApp is now legacy. Please use **[KalinkaAI](https://github.com/madenvel/KalinkaAI)** instead, which is the actively maintained successor.
+
 # Kalinka Music Player App
 
 This project is a flutter application for multiple platforms (Windows, Linux, Android, iPhone) that allows you to control the backend ([Kalinka Music Player](https://github.com/madenvel/KalinkaPlayer)) running on a device in your network.
